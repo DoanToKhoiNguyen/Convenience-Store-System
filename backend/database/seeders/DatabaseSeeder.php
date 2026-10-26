@@ -19,6 +19,10 @@ class DatabaseSeeder extends Seeder
             VaiTroSeeder::class,
             TaiKhoanSeeder::class,
             SanPhamSeeder::class,
+            NhaCungCapSeeder::class,
+            KhuyenMaiSeeder::class,
+            HoaDonSeeder::class,         
+            ChiTietHoaDonSeeder::class,
         ]);
 
         // User::factory(10)->create();

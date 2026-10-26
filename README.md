@@ -57,7 +57,7 @@ convenience-store/
 
 ## Cài đặt và chạy
 
-### Cách 1: Dùng Docker (khuyên dùng)
+### Dùng Docker (khuyên dùng)
 
 ```bash
 git clone <URL-repo>

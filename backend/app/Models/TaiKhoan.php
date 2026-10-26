@@ -3,12 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Sanctum\HasApiTokens;
 
 class TaiKhoan extends Model
 {
+    use HasApiTokens;
+    
     protected $table = 'tai__khoan';
     protected $primaryKey = 'MaTaiKhoan';
-    protected $fillable = ['TenDangNhap', 'MatKhau', 'HoTen', 'Email', 'SoDienThoai', 'TrangThai', 'MaVaiTro'];
+    protected $fillable = ['TenDangNhap', 'MatKhau', 'HoTen', 
+    'Email', 'SoDienThoai', 'TrangThai', 'MaVaiTro'];
     protected $hidden = ['MatKhau'];
 
     public function getAuthPassword() { 

@@ -8,7 +8,8 @@ class HoaDon extends Model
 {
     protected $table = 'hoa_don';
     protected $primaryKey = 'MaHoaDon';
-    protected $fillable = ['NgayLap', 'TongTien', 'MaGiaoDich', 'TenGiaoDich', 'TrangThaiHD', 'TienGiamGia', 'MaTaiKhoan', 'MaKhuyenMai'];
+    protected $fillable = ['NgayLap', 'TongTien', 'MaGiaoDich', 'TenGiaoDich', 
+    'TrangThaiHoaDon', 'TienGiamGia', 'MaTaiKhoan', 'MaKhuyenMai'];
 
     public function taiKhoan() { 
         return $this->belongsTo(TaiKhoan::class, 'MaTaiKhoan', 'MaTaiKhoan'); 
