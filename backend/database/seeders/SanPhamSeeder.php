@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\NhaCungCap;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\SanPham;
@@ -13,6 +14,11 @@ class SanPhamSeeder extends Seeder
      */
     public function run(): void
     {
+        $nhaCungCap = NhaCungCap::all();
+
+        if($nhaCungCap->isEmpty()){
+            return;
+        }
         $sanPhams = [
             [
                 'TenSanPham' => 'Nước ngọt Coca Cola 330ml',
@@ -25,6 +31,7 @@ class SanPhamSeeder extends Seeder
                 'MoTa' => 'Nước giải khát có gas vị nguyên bản',
                 'ThanhPhan' => 'Nước bão hòa CO2, đường mía, màu thực phẩm',
                 'LoaiSanPham' => 'Đồ uống',
+                'MaNhaCungCap' => $nhaCungCap->random()->MaNhaCungCap,
             ],
             [
                 'TenSanPham' => 'Mì tôm Hảo Hảo chua cay',
@@ -37,6 +44,7 @@ class SanPhamSeeder extends Seeder
                 'MoTa' => 'Mì ăn liền hương vị tôm chua cay đặc trưng',
                 'ThanhPhan' => 'Vắt mì: Bột mì, dầu thực phẩm, tinh bột... Gói gia vị...',
                 'LoaiSanPham' => 'Thực phẩm khô',
+                'MaNhaCungCap' => $nhaCungCap->random()->MaNhaCungCap,
             ],
             [
                 'TenSanPham' => 'Bánh snack khoai tây Oishi',
@@ -49,6 +57,7 @@ class SanPhamSeeder extends Seeder
                 'MoTa' => 'Snack khoai tây giòn rụm thơm ngon',
                 'ThanhPhan' => 'Khoai tây tươi, dầu ăn, bột gia vị',
                 'LoaiSanPham' => 'Đồ ăn vặt',
+                'MaNhaCungCap' => $nhaCungCap->random()->MaNhaCungCap,
             ],
         ];
 

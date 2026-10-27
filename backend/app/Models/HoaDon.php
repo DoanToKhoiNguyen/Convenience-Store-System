@@ -20,4 +20,8 @@ class HoaDon extends Model
     public function chiTietHoaDon() { 
         return $this->hasMany(ChiTietHoaDon::class, 'MaHoaDon', 'MaHoaDon'); 
     }
+    public function sanPham()
+    {
+        return $this->belongsTo(SanPham::class, 'MaSanPham', 'MaSanPham');
+    }
 }

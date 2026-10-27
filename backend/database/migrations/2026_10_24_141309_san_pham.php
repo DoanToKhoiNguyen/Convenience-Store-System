@@ -23,6 +23,7 @@ return new class extends Migration
         $table->string('MoTa');
         $table->string('ThanhPhan');
         $table->string('LoaiSanPham');
+        $table->foreignId('MaNhaCungCap')->constrained('nha_cung_cap', 'MaNhaCungCap')->onDelete('cascade');
         $table->timestamps();
         });
     }

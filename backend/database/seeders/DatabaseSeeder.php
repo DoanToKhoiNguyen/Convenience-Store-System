@@ -18,8 +18,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             VaiTroSeeder::class,
             TaiKhoanSeeder::class,
-            SanPhamSeeder::class,
             NhaCungCapSeeder::class,
+            SanPhamSeeder::class,
             KhuyenMaiSeeder::class,
             HoaDonSeeder::class,         
             ChiTietHoaDonSeeder::class,

@@ -20,4 +20,8 @@ class SanPham extends Model
     public function chiTietHoaDon() { 
         return $this->hasMany(ChiTietHoaDon::class, 'MaSanPham', 'MaSanPham'); 
     }
+    public function nhaCungCap(){
+        return $this->belongsTo(NhaCungCap::class, 'MaNhaCungCap', 'MaNhaCungCap');
+    }
+
 }
