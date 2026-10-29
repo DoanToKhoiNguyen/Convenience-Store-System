@@ -124,4 +124,41 @@ class HoaDonController extends Controller
             return response()->json(['message' => 'Lỗi thanh toán.', 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function index(Request $request): JsonResponse
+    {
+        // Lấy danh sách hóa đơn, kèm theo chi tiết hóa đơn và sắp xếp mới nhất lên đầu
+        $danhSachHoaDon = HoaDon::with(['chiTietHoaDon', 'taiKhoan'])
+                            ->orderBy('MaHoaDon', 'desc')
+                            ->get();
+
+        return response()->json([
+            'message' => 'Lấy danh sách hóa đơn thành công!',
+            'data'    => $danhSachHoaDon
+        ]);
+    }
+
+    public function huyNhap(Request $request, $maHD): JsonResponse
+    {
+        $hoaDon = HoaDon::where('MaHoaDon', $maHD)->first();
+        if (!$hoaDon) {
+            return response()->json(['message' => 'Không tìm thấy hóa đơn.'], 404);
+        }
+        if ($hoaDon->TrangThaiHoaDon) {
+            return response()->json(['message' => 'Hóa đơn đã thanh toán, không thể hủy.'], 400);
+        }
+
+        // Nhân viên chỉ được hủy hóa đơn nháp do chính mình tạo
+        $user = $request->user();
+        if ((int) $user->MaVaiTro === 3 && $hoaDon->MaTaiKhoan != $user->MaTaiKhoan) {
+            return response()->json(['message' => 'Bạn không có quyền hủy hóa đơn này.'], 403);
+        }
+
+        DB::transaction(function () use ($hoaDon) {
+            ChiTietHoaDon::where('MaHoaDon', $hoaDon->MaHoaDon)->delete();
+            $hoaDon->delete();
+        });
+
+        return response()->json(['message' => 'Đã hủy hóa đơn nháp.']);
+    }
 }

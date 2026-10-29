@@ -1,4 +1,9 @@
 export const environment = {
     production: false,
-    apiUrl: 'http://localhost:8000/api'
+    apiUrl: '/api',
+    bank: {
+        bankId: 'ICB',
+        accountNo: '106877469477',
+        accountName: 'DOAN TO KHOI NGUYEN',
+    },
 };

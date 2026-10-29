@@ -15,6 +15,7 @@ return new class extends Migration
         $table->id('MaSanPham');
         $table->string('TenSanPham')->unique();
         $table->decimal('DonGiaBan', 12, 2);
+        $table->decimal('DonGiaNhap', 12, 2);
         $table->integer('TonKhoToiThieu');
         $table->integer('TonKhoToiDa');
         $table->integer('CanhBaoHSD');

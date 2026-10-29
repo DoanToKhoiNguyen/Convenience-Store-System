@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id('MaChiTietPhieuNhap');
             $table->string('TenSanPham');
             $table->integer('SoLuong');
+            $table->decimal('DonGia', 12, 2);
             $table->decimal('TongGia', 12, 2);
-        
+            $table->date('NgaySanXuat')->nullable();
+
             $table->foreignId('MaPhieuNhap')->constrained('phieu_nhap', 'MaPhieuNhap')->onDelete('cascade');
             $table->foreignId('MaSanPham')->constrained('san_pham', 'MaSanPham')->onDelete('cascade');
         

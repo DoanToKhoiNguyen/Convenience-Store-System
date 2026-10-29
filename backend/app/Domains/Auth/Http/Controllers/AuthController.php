@@ -23,6 +23,12 @@ class AuthController extends Controller
             ], 401);
         }
 
+        if (!$taiKhoan->TrangThai) {
+            return response()->json([
+                'message' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.'
+            ], 403); // Mã 403 Forbidden
+        }
+
         // Tạo Token cho tài khoản
         $token = $taiKhoan->createToken('auth_token')->plainTextToken;
 

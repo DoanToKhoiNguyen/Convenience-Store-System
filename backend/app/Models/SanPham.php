@@ -8,7 +8,7 @@ class SanPham extends Model
 {
     protected $table = 'san_pham';
     protected $primaryKey = 'MaSanPham';
-    protected $fillable = ['TenSanPham', 'DonGiaBan', 'TonKhoToiThieu', 'TonKhoToiDa', 
+    protected $fillable = ['TenSanPham', 'DonGiaBan', 'DonGiaNhap', 'TonKhoToiThieu', 'TonKhoToiDa', 
     'CanhBaoHSD', 'SoLuongHienTai', 'TenThuongHieu', 'MoTa', 'ThanhPhan', 'LoaiSanPham'];
 
     public function capNhatTonKho() { 

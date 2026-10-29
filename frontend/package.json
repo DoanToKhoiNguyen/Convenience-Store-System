@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --proxy-config proxy.conf.json",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
@@ -20,6 +20,7 @@
     "@angular/router": "^22.2.0",
     "@angular/service-worker": "^22.2.0",
     "@ngrx/signals": "^22.0.1",
+    "@primeuix/themes": "^3.1.0",
     "@tailwindcss/postcss": "^4.3.3",
     "dexie": "^4.4.6",
     "echarts": "^6.1.0",

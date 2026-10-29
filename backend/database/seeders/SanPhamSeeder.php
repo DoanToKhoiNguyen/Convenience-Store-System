@@ -23,6 +23,7 @@ class SanPhamSeeder extends Seeder
             [
                 'TenSanPham' => 'Nước ngọt Coca Cola 330ml',
                 'DonGiaBan' => 10000.00,
+                'DonGiaNhap' => 8000.00,
                 'TonKhoToiThieu' => 20,
                 'TonKhoToiDa' => 500,
                 'CanhBaoHSD' => 30, // Số ngày cảnh báo trước hạn sử dụng
@@ -36,6 +37,7 @@ class SanPhamSeeder extends Seeder
             [
                 'TenSanPham' => 'Mì tôm Hảo Hảo chua cay',
                 'DonGiaBan' => 4500.00,
+                'DonGiaNhap' => 3000.00,
                 'TonKhoToiThieu' => 50,
                 'TonKhoToiDa' => 1000,
                 'CanhBaoHSD' => 60,
@@ -49,6 +51,7 @@ class SanPhamSeeder extends Seeder
             [
                 'TenSanPham' => 'Bánh snack khoai tây Oishi',
                 'DonGiaBan' => 6000.00,
+                'DonGiaNhap' => 5000.00,
                 'TonKhoToiThieu' => 15,
                 'TonKhoToiDa' => 300,
                 'CanhBaoHSD' => 45,

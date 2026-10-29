@@ -17,11 +17,15 @@ class CheckAccountStatus
     {
         $user = $request->user();
 
-        if ($user && $user->TrangThai == false) {
+        if ($user && !$user->TrangThai) {
+            $user->tokens()->delete();
+
             return response()->json([
-                'message' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ chủ doanh nghiệp.'
+                'message' => 'Tài khoản đã bị khóa.',
+                'code'    => 'ACCOUNT_LOCKED',
             ], 403);
         }
+
         return $next($request);
     }
 }
