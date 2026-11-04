@@ -230,8 +230,8 @@ export class PurchaseList {
     this.loading.set(true);
     this.service.list(this.page).subscribe({
       next: (p) => {
-        this.orders.set(p.data);
-        this.total.set(p.total);
+        this.orders.set(p.data ?? []);
+        this.total.set(p.total ?? 0);
         this.loading.set(false);
       },
       error: (e) => {

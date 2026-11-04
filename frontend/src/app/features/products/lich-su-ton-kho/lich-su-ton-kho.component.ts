@@ -1,5 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
@@ -8,7 +8,7 @@ import { ProductService } from '../product.service';
 @Component({
   selector: 'app-lich-su-ton-kho',
   standalone: true,
-  imports: [CommonModule, TableModule, CardModule, TagModule],
+  imports: [CommonModule, DatePipe, TableModule, CardModule, TagModule],
   template: `
     <div class="p-6">
   <h2 class="text-xl font-bold mb-4">Lịch Sử Thay Đổi & Cập Nhật Tồn Kho</h2>
@@ -30,7 +30,7 @@ import { ProductService } from '../product.service';
         <!-- Dùng vòng lặp @for của Angular 17+ -->
         @for (item of danhSachLichSu(); track item.MaCapNhat) {
           <tr class="border-b hover:bg-slate-50">
-            <td class="p-3">{{ item.ThoiGianCapNhat }}</td>
+            <td class="p-3">{{ item.ThoiGianCapNhat | date: 'dd/MM/yyyy HH:mm' }}</td>
             <td class="p-3">{{ item.san_pham?.TenSanPham }}</td>
             <td class="p-3">{{ item.SoLuongHienTai }}</td>
             <td class="p-3 font-semibold text-emerald-600">{{ item.SoLuongMoi }}</td>
@@ -58,8 +58,8 @@ export class LichSuTonKhoComponent implements OnInit {
 
   taiLichSu() {
     this.service.layLichSuTonKho().subscribe({
-      next: (res) => this.danhSachLichSu.set(res.data || res),
-      error: (err: any) => console.error('Lỗi tải lịch sử tồn kho', err) // Thêm : any vào đây
+      next: (data) => this.danhSachLichSu.set(data),
+      error: (err: any) => console.error('Lỗi tải lịch sử tồn kho', err),
     });
   }
 }

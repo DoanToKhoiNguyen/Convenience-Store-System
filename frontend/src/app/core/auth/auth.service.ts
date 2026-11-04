@@ -1,10 +1,9 @@
-import { AuthUser } from './auth.models';
+import { AuthUser, PasswordPayload, ProfilePayload } from './auth.models';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { tap } from 'rxjs';
+import { tap, of, catchError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-
 interface LoginResponse {
     message: string;
     access_token: string;
@@ -23,6 +22,26 @@ export class AuthService {
         JSON.parse(localStorage.getItem('user') ?? 'null'),
     );
     readonly isLoggedIn = computed(() => !!this.token());
+
+    // Gọi lúc khởi động để xác thực lại token với backend
+    verify() {
+        if (!this.token()) return of(null);
+        return this.http.get<any>(`${environment.apiUrl}/me`).pipe(
+            tap((res) => {
+                const fresh = res?.user ?? res?.data ?? res;
+                if (!fresh || typeof fresh !== 'object') return;
+
+                const current = this.user();
+                const role = Number(fresh.MaVaiTro ?? current?.MaVaiTro);
+                if (!role) return; // /me không có vai trò: giữ nguyên thông tin đã lưu
+
+                const user = { ...current, ...fresh, MaVaiTro: role } as AuthUser;
+                localStorage.setItem('user', JSON.stringify(user));
+                this.user.set(user);
+            }),
+            catchError(() => of(null)),
+        );
+    }
 
     login(username: string, password: string) {
         return this.http
@@ -67,6 +86,22 @@ export class AuthService {
         this.token.set(null);
         this.user.set(null);
         this.router.navigate(['/login']);
+    }
+
+    updateProfile(body: ProfilePayload) {
+        return this.http
+            .put<{ user: AuthUser }>(`${environment.apiUrl}/me`, body)
+            .pipe(tap((res) => this.setUser(res.user)));
+    }
+
+    changePassword(body: PasswordPayload) {
+        return this.http.put(`${environment.apiUrl}/me/mat-khau`, body);
+    }
+
+    private setUser(u: AuthUser) {
+        const user = { ...u, MaVaiTro: Number(u.MaVaiTro) };
+        localStorage.setItem('user', JSON.stringify(user));
+        this.user.set(user); // tên ở thanh bên cập nhật ngay
     }
 
     private save(token: string, user: AuthUser) {

@@ -170,7 +170,40 @@ Tóm tắt các bước (chi tiết xem `docs/deploy.md`):
   - Mọi thay đổi tồn kho ghi vào `stock_movements`.
   - Hóa đơn đã chốt không sửa, chỉ tạo phiếu hoàn/hủy.
 
-## Giấy phép và liên hệ
+Lần đầu
+bash
+git clone <URL-repo>
+cd convenience-store
 
-- Giấy phép: *(ghi loại license, hoặc "Nội bộ, không công khai")*
-- Người phụ trách: *(tên, email liên hệ)*
+Backend (mở terminal 1):
+
+bash
+cd backend
+composer install
+copy .env.example .env        # macOS/Linux: cp .env.example .env
+php artisan key:generate
+
+Mở backend/.env, sửa phần database cho khớp máy họ (DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD). Tạo sẵn database rỗng, rồi:
+
+bash
+php artisan migrate --seed
+php artisan serve
+
+Frontend (mở terminal 2):
+
+bash
+cd frontend
+npm install
+ng serve --proxy-config proxy.conf.json
+
+Mở http://localhost:4200 và đăng nhập bằng tài khoản seed (ví dụ admin / 123456).
+
+Nếu database chạy bằng Docker, thêm bước này trước php artisan migrate:
+
+bash
+docker compose up -d
+Những lần pull sau
+bash
+git pull
+cd backend && composer install && php artisan migrate
+cd ../frontend && npm install

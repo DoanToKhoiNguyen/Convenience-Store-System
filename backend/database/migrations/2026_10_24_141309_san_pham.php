@@ -14,16 +14,17 @@ return new class extends Migration
         Schema::create('san_pham', function (Blueprint $table){
         $table->id('MaSanPham');
         $table->string('TenSanPham')->unique();
-        $table->decimal('DonGiaBan', 12, 2);
-        $table->decimal('DonGiaNhap', 12, 2);
-        $table->integer('TonKhoToiThieu');
-        $table->integer('TonKhoToiDa');
-        $table->integer('CanhBaoHSD');
+        $table->decimal('DonGiaBan', 12, 2)->nullable();
+        $table->decimal('DonGiaNhap', 12, 2)->nullable();
+        $table->integer('TonKhoToiThieu')->nullable();
+        $table->integer('TonKhoToiDa')->nullable();
+        $table->integer('CanhBaoHSD')->nullable();
         $table->integer('SoLuongHienTai');
-        $table->string('TenThuongHieu');
-        $table->string('MoTa');
-        $table->string('ThanhPhan');
-        $table->string('LoaiSanPham');
+        $table->string('TenThuongHieu')->nullable();
+        $table->string('MoTa')->nullable();
+        $table->boolean('TrangThai')->nullable();
+        $table->string('ThanhPhan')->nullable();
+        $table->string('LoaiSanPham')->nullable();
         $table->foreignId('MaNhaCungCap')->constrained('nha_cung_cap', 'MaNhaCungCap')->onDelete('cascade');
         $table->timestamps();
         });
@@ -33,8 +34,11 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      */
+
     public function down(): void
     {
-        //
+        Schema::table('san_pham', function (Blueprint $table) {
+            $table->dropColumn('TrangThai');
+        });
     }
 };

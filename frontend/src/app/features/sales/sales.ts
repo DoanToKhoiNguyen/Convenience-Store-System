@@ -435,7 +435,7 @@ export class Sales {
 
   private loadProducts() {
     this.productService.getAll().subscribe({
-      next: (data) => this.products.set(data),
+      next: (data) => this.products.set(data.filter((p) => Number(p.TrangThai ?? 1) === 1)),
       error: () => this.error.set('Không tải được danh sách sản phẩm.'),
     });
   }

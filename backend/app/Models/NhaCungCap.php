@@ -8,7 +8,8 @@ class NhaCungCap extends Model
 {
     protected $table = 'nha_cung_cap';
     protected $primaryKey = 'MaNhaCungCap';
-    protected $fillable = ['TenNhaCungCap', 'DiaChi', 'SoDienThoai'];
+    protected $fillable = ['TenNhaCungCap', 'DiaChi', 'SoDienThoai', 'TrangThai'];
+    protected $casts = ['TrangThai' => 'boolean'];
 
     public function phieunhap(){
         return $this->hasMany(PhieuNhap::class, 'MaNhaCungCap', 'MaNhaCungCap');

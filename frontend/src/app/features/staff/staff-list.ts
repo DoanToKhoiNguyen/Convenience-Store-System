@@ -231,7 +231,7 @@ export class StaffList {
     this.loading.set(true);
     this.service.list().subscribe({
       next: (data) => {
-        this.staff.set(data);
+        this.staff.set(data ?? []);
         this.loading.set(false);
       },
       error: (e: HttpErrorResponse) => {

@@ -118,12 +118,15 @@ interface Group {
               }
             </td>
             <td>
-              @if (p.nha_cung_cap) {
-                {{ p.nha_cung_cap.TenNhaCungCap }}
-              } @else {
-                <span class="text-red-600">Chưa có nhà cung cấp</span>
-              }
-            </td>
+  @if (!p.nha_cung_cap) {
+    <span class="text-red-600">Chưa có nhà cung cấp</span>
+  } @else {
+    {{ p.nha_cung_cap.TenNhaCungCap }}
+    @if (!supplierActive(p)) {
+      <div class="text-xs text-red-600">Đã ngừng hợp tác</div>
+    }
+  }
+</td>
             <td class="text-right font-medium">{{ p.SoLuongHienTai }}</td>
             <td class="text-right">{{ p.TonKhoToiThieu }}</td>
             <td>
@@ -309,8 +312,14 @@ export class StockAlerts {
     return (p.SoLuongDangNhap ?? 0) > 0 || this.ordered().has(key(p));
   }
 
+
   canSelect(p: AlertProduct) {
-    return p.MaNhaCungCap != null && !this.isPending(p);
+    return (
+      p.MaNhaCungCap != null &&
+      this.supplierActive(p) &&
+      !this.isPending(p) &&
+      (this.maxQty(p) ?? 1) > 0
+    );
   }
 
   isSelected(p: AlertProduct) {
@@ -337,7 +346,12 @@ export class StockAlerts {
     const target = Number(p.TonKhoToiDa);
     return Math.max(target - current);
   }
-
+  // Số lượng tối đa còn được phép nhập (null = không giới hạn)
+  maxQty(p: AlertProduct): number | null {
+    if (!p.TonKhoToiDa) return null;
+    const current = Math.max(Number(p.SoLuongHienTai), 0);
+    return Math.max(Number(p.TonKhoToiDa) - current - (p.SoLuongDangNhap ?? 0), 0);
+  }
   qtyOf(p: AlertProduct): number {
     return this.qty()[key(p)] ?? this.suggested(p);
   }
@@ -345,6 +359,9 @@ export class StockAlerts {
   setQty(p: AlertProduct, raw: string) {
     const n = Math.floor(Number(raw));
     this.qty.update((q) => ({ ...q, [key(p)]: Number.isFinite(n) && n >= 1 ? n : 0 }));
+  }
+  supplierActive(p: AlertProduct) {
+    return Number(p.nha_cung_cap?.TrangThai ?? 1) === 1;
   }
 
   submit() {

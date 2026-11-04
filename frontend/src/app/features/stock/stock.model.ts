@@ -6,5 +6,5 @@ export interface AlertProduct extends Product {
     // Chỉ có nếu bạn làm phần "nên làm" ở cuối (số lượng đang nằm trong phiếu chưa nhận)
     SoLuongDangNhap?: number;
     // Laravel đổi nhaCungCap thành nha_cung_cap khi trả JSON
-    nha_cung_cap?: { MaNhaCungCap: number; TenNhaCungCap: string } | null;
+    nha_cung_cap?: { MaNhaCungCap: number; TenNhaCungCap: string; TrangThai?: boolean | number } | null;
 }

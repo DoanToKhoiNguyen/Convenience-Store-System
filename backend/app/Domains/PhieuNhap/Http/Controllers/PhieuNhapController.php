@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PhieuNhap;
 use App\Models\ChiTietPhieuNhap;
 use App\Models\SanPham;
+use App\Models\NhaCungCap;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -22,7 +23,13 @@ class PhieuNhapController extends Controller
             'ChiTiet.*.MaSanPham' => 'required|exists:san_pham,MaSanPham',
             'ChiTiet.*.SoLuong' => 'required|integer|min:1',
         ]);
-
+        $nhaCungCap = NhaCungCap::find($validated['MaNhaCungCap']);
+        if (!$nhaCungCap->TrangThai) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nhà cung cấp đã ngừng hợp tác, không thể lập phiếu nhập.',
+            ], 422);
+        }
         DB::beginTransaction();
 
         try {

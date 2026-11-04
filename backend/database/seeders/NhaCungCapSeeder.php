@@ -17,12 +17,14 @@ class NhaCungCapSeeder extends Seeder
             [
                 'TenNhaCungCap' => 'Công ty TNHH Nước Giải Khát Coca-Cola Việt Nam',
                 'DiaChi' => 'Thành phố Thủ Đức, TP. Hồ Chí Minh',
-                'SoDienThoai' => '02838966000',              
+                'SoDienThoai' => '02838966000',   
+                'TrangThai' => true           
             ],
             [
                 'TenNhaCungCap' => 'Công ty Cổ phần Acecook Việt Nam',
                 'DiaChi' => 'Khu công nghiệp Tân Bình, TP. Hồ Chí Minh',
-                'SoDienThoai' => '02838154064',                
+                'SoDienThoai' => '02838154064', 
+                'TrangThai' => true                 
             ],
         ];
 

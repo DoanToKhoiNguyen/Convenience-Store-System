@@ -10,7 +10,14 @@ export class StaffService {
     private url = `${environment.apiUrl}/nhan-vien`;
 
     list() {
-        return this.http.get<{ data: Staff[] }>(this.url).pipe(map((r) => r.data));
+        return this.http.get<any>(this.url).pipe(
+            map((r) => {
+                const d = r?.data ?? r;
+                if (Array.isArray(d)) return d as Staff[];       // { data: [...] }
+                if (Array.isArray(d?.data)) return d.data as Staff[]; // { data: { data: [...] } } (phân trang)
+                return d ? (Object.values(d) as Staff[]) : [];
+            }),
+        );
     }
 
     create(body: StaffPayload) {

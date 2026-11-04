@@ -49,6 +49,15 @@ export const routes: Routes = [
                 path: 'stock-alerts',
                 loadComponent: () => import('./features/stock/stock-alerts').then((m) => m.StockAlerts),
             },
+            {
+                path: 'profile',
+                loadComponent: () => import('./features/profile/profile').then((m) => m.Profile),
+            },
+            {
+                path: 'suppliers',
+                canActivate: [roleGuard(ROLE.OWNER, ROLE.MANAGER)],
+                loadComponent: () => import('./features/suppliers/supplier-list').then((m) => m.SupplierList),
+            },
         ],
 
     },

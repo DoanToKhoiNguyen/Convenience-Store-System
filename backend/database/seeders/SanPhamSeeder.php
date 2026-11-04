@@ -32,6 +32,7 @@ class SanPhamSeeder extends Seeder
                 'MoTa' => 'Nước giải khát có gas vị nguyên bản',
                 'ThanhPhan' => 'Nước bão hòa CO2, đường mía, màu thực phẩm',
                 'LoaiSanPham' => 'Đồ uống',
+                'TrangThai' => true,
                 'MaNhaCungCap' => $nhaCungCap->random()->MaNhaCungCap,
             ],
             [
@@ -46,6 +47,7 @@ class SanPhamSeeder extends Seeder
                 'MoTa' => 'Mì ăn liền hương vị tôm chua cay đặc trưng',
                 'ThanhPhan' => 'Vắt mì: Bột mì, dầu thực phẩm, tinh bột... Gói gia vị...',
                 'LoaiSanPham' => 'Thực phẩm khô',
+                'TrangThai' => true,
                 'MaNhaCungCap' => $nhaCungCap->random()->MaNhaCungCap,
             ],
             [
@@ -60,6 +62,7 @@ class SanPhamSeeder extends Seeder
                 'MoTa' => 'Snack khoai tây giòn rụm thơm ngon',
                 'ThanhPhan' => 'Khoai tây tươi, dầu ăn, bột gia vị',
                 'LoaiSanPham' => 'Đồ ăn vặt',
+                'TrangThai' => true,
                 'MaNhaCungCap' => $nhaCungCap->random()->MaNhaCungCap,
             ],
         ];

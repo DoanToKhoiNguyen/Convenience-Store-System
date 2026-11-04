@@ -40,7 +40,9 @@ class HoaDonController extends Controller
         }
 
         // Tìm sản phẩm theo tên để lấy mã sản phẩm và đơn giá
-        $sanPham = SanPham::where('TenSanPham', $validated['TenSanPham'])->first();
+        $sanPham = SanPham::where('TenSanPham', $validated['TenSanPham'])
+    ->where('TrangThai', true)
+    ->first();
         if (!$sanPham) {
             return response()->json(['message' => 'Không tìm thấy sản phẩm này.'], 404);
         }

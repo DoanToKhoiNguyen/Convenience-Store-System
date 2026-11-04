@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('TenNhaCungCap');
             $table->string('DiaChi');
             $table->string('SoDienThoai');
+            $table->boolean('TrangThai')->default(true);
             $table->timestamps();
         });
     }
@@ -25,6 +26,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('nha_cung_cap');
+        Schema::table('nha_cung_cap', function (Blueprint $table) {
+            $table->dropColumn('TrangThai');
+        });
     }
 };

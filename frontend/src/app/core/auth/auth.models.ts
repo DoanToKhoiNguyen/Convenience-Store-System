@@ -9,3 +9,14 @@ export interface AuthUser {
     roles?: string[];
     permissions?: string[];
 }
+export interface ProfilePayload {
+    HoTen: string;
+    Email: string;
+    SoDienThoai: string | null;
+}
+
+export interface PasswordPayload {
+    MatKhauCu: string;
+    MatKhauMoi: string;
+    NhapLaiMatKhau: string;
+}

@@ -2,6 +2,7 @@
 
 namespace App\Domains\SanPham\Http\Controllers;
 
+use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -9,17 +10,103 @@ use App\Models\SanPham;
 use App\Models\CapNhatTonKho;
 use App\Models\PhieuNhap;
 use App\Models\ChiTietPhieuNhap;
+use App\Models\NhaCungCap;
 use Illuminate\Support\Facades\DB;
 use Nette\Schema\Message;
+use App\Models\ChiTietHoaDon;
+use Illuminate\Database\QueryException;
 
 class SanPhamController extends Controller
 {
-    /**
-     * Tra cứu sản phẩm theo tên hoặc mã (Role 1, 2, 3 đều dùng được)
-     */
-    /**
-     * Tra cứu sản phẩm theo tên hoặc mã (Role 1, 2, 3 đều dùng được)
-     */
+    private function rules($ignoreId = null): array
+    {
+        return [
+            'TenSanPham'     => ['required', 'string', 'max:255',
+                Rule::unique('san_pham', 'TenSanPham')->ignore($ignoreId, 'MaSanPham')],
+            'LoaiSanPham'    => 'nullable|string|max:100',
+            'TenThuongHieu'  => 'nullable|string|max:100',
+            'MaNhaCungCap'   => 'required|exists:nha_cung_cap,MaNhaCungCap',
+            'DonGiaBan'      => 'required|numeric|min:0',
+            'DonGiaNhap'     => 'required|numeric|min:0',
+            'TonKhoToiThieu' => 'required|integer|min:0',
+            'TonKhoToiDa'    => 'nullable|integer|min:0|gte:TonKhoToiThieu',
+            'CanhBaoHSD'     => 'nullable|integer|min:0',
+            'MoTa'           => 'nullable|string',
+            'ThanhPhan'      => 'nullable|string',
+        ];
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $data = $request->validate($this->rules() + [
+            'SoLuongHienTai' => 'nullable|integer|min:0',
+        ]);
+
+        if (!NhaCungCap::where('MaNhaCungCap', $data['MaNhaCungCap'])->where('TrangThai', true)->exists()) {
+            return response()->json([
+                'message' => 'Nhà cung cấp đã ngừng hợp tác.',
+                'errors'  => ['MaNhaCungCap' => ['Nhà cung cấp đã ngừng hợp tác.']],
+            ], 422);
+        }
+
+        $soLuongBanDau = (int) ($data['SoLuongHienTai'] ?? 0);
+        $data['SoLuongHienTai'] = $soLuongBanDau;
+
+        if (!empty($data['TonKhoToiDa']) && $soLuongBanDau > $data['TonKhoToiDa']) {
+            return response()->json([
+                'message' => 'Số lượng ban đầu vượt quá mức tồn kho tối đa.',
+                'errors'  => ['SoLuongHienTai' => ['Số lượng ban đầu vượt quá mức tồn kho tối đa.']],
+            ], 422);
+        }
+
+        $sanPham = DB::transaction(function () use ($data, $soLuongBanDau, $request) {
+            $sp = SanPham::create($data);
+
+            if ($soLuongBanDau > 0) {
+                CapNhatTonKho::create([
+                    'ThoiGianCapNhat' => now(),
+                    'SoLuongMoi'      => $soLuongBanDau,
+                    'SoLuongHienTai'  => 0, // số lượng trước đó, theo cách bạn đang ghi lịch sử
+                    'LyDoCapNhat'     => 'Khởi tạo sản phẩm',
+                    'MaTaiKhoan'      => $request->user()->MaTaiKhoan,
+                    'MaSanPham'       => $sp->MaSanPham,
+                ]);
+            }
+
+            return $sp;
+        });
+
+        return response()->json(['message' => 'Thêm sản phẩm thành công!', 'data' => $sanPham], 201);
+    }
+
+    public function update(Request $request, $id): JsonResponse
+    {
+        $sanPham = SanPham::find($id);
+        if (!$sanPham) {
+            return response()->json(['message' => 'Không tìm thấy sản phẩm.'], 404);
+        }
+
+        $data = $request->validate($this->rules($id));
+
+        // Kiểm tra nếu đổi nhà cung cấp mới mà nhà cung cấp đó đã ngừng hợp tác (TrangThai = false)
+        if ((int) $data['MaNhaCungCap'] !== (int) $sanPham->MaNhaCungCap
+            && !NhaCungCap::where('MaNhaCungCap', $data['MaNhaCungCap'])->where('TrangThai', true)->exists()) {
+            return response()->json([
+                'message' => 'Nhà cung cấp đã ngừng hợp tác.',
+                'errors'  => ['MaNhaCungCap' => ['Nhà cung cấp đã ngừng hợp tác.']],
+            ], 422);
+        }
+
+        // Cập nhật dữ liệu một lần duy nhất
+        $sanPham->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật sản phẩm thành công!', 
+            'data'    => $sanPham
+        ], 200);
+    }
+
     public function search(Request $request): JsonResponse
     {
         // Nhận tham số 'q' từ query string do Angular truyền lên (hoặc fallback sang 'keyword' nếu có)
@@ -28,8 +115,10 @@ class SanPhamController extends Controller
         $query = SanPham::query();
 
         if (!empty($keyword)) {
-            $query->where('TenSanPham', 'LIKE', '%' . $keyword . '%')
-                  ->orWhere('MaSanPham', 'LIKE', '%' . $keyword . '%');
+            $query->where('TrangThai', true)->where(function ($q) use ($keyword) {
+    $q->where('TenSanPham', 'LIKE', '%' . $keyword . '%')
+      ->orWhere('MaSanPham', 'LIKE', '%' . $keyword . '%');
+});
         } else {
             // Nếu không truyền từ khóa hoặc từ khóa rỗng, có thể trả về danh sách trống hoặc toàn bộ tuỳ ý.
             // Để phục vụ tìm kiếm gợi ý, nếu trống ta trả về mảng rỗng thay vì báo lỗi 404 để không làm gián đoạn UI.
@@ -63,13 +152,18 @@ class SanPhamController extends Controller
     }
 
     public function index(Request $request): JsonResponse
-    {
-        $danhSach = SanPham::all();
+{
+    $query = SanPham::query();
 
-        return response()->json([
-            'data' => $danhSach
-        ]);
+    $user = $request->user('sanctum'); // route này công khai nên đọc token thủ công
+    $quanLy = $user && in_array((int) $user->MaVaiTro, [1, 2], true);
+
+    if (!$quanLy) {
+        $query->where('TrangThai', true);
     }
+
+    return response()->json(['data' => $query->get()]);
+}
 
     public function capNhatTonKho(Request $request, $sanPham): JsonResponse
     {
@@ -152,6 +246,7 @@ class SanPhamController extends Controller
             ->pluck('tong', 'MaSanPham');
 
         $sanPhams = SanPham::with('nhaCungCap')
+            ->where('TrangThai', true)
             ->whereColumn('SoLuongHienTai', '<=', 'TonKhoToiThieu')
             ->get()
             ->each(fn ($sp) => $sp->SoLuongDangNhap = (int) ($dangNhap[$sp->MaSanPham] ?? 0))
@@ -174,5 +269,54 @@ class SanPhamController extends Controller
             'message' => 'Lấy lịch sử tồn kho thành công!',
             'data'    => $lichSu
         ]);
+    }
+
+    
+
+    public function destroy($id): JsonResponse
+{
+    $sanPham = SanPham::find($id);
+    if (!$sanPham) {
+        return response()->json(['message' => 'Không tìm thấy sản phẩm.'], 404);
+    }
+
+    $daPhatSinh =
+        ChiTietHoaDon::where('MaSanPham', $sanPham->MaSanPham)->exists()
+        || ChiTietPhieuNhap::where('MaSanPham', $sanPham->MaSanPham)->exists();
+
+    if (!$daPhatSinh) {
+        try {
+            $sanPham->delete();
+
+            return response()->json([
+                'message' => 'Đã xóa sản phẩm.',
+                'action'  => 'deleted',
+            ]);
+        } catch (QueryException $e) {
+            // Còn dữ liệu khác tham chiếu tới sản phẩm: chuyển sang ẩn cho an toàn
+        }
+    }
+
+    $sanPham->TrangThai = false;
+    $sanPham->save();
+
+    return response()->json([
+        'message' => 'Sản phẩm đã có trong hóa đơn hoặc phiếu nhập nên được chuyển sang trạng thái ẩn.',
+        'action'  => 'hidden',
+        'data'    => $sanPham,
+    ]);
+}
+
+    public function hienLai($id): JsonResponse
+    {
+        $sanPham = SanPham::find($id);
+        if (!$sanPham) {
+            return response()->json(['message' => 'Không tìm thấy sản phẩm.'], 404);
+        }
+
+        $sanPham->TrangThai = true;
+        $sanPham->save();
+
+        return response()->json(['message' => 'Đã hiển thị lại sản phẩm.', 'data' => $sanPham]);
     }
 }

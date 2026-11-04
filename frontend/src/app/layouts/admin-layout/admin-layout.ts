@@ -17,6 +17,7 @@ const ALL_MENU: MenuItem[] = [
   { label: 'Cảnh báo kho', icon: 'pi pi-exclamation-triangle', link: '/admin/stock-alerts', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
   { label: 'Lịch sử tồn kho', icon: 'pi pi-history', link: 'lich-su-ton-kho', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
   { label: 'Phiếu nhập', icon: 'pi pi-truck', link: '/admin/purchases', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
+  { label: 'Nhà cung cấp', icon: 'pi pi-building', link: '/admin/suppliers', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Nhân viên', icon: 'pi pi-users', link: '/admin/staff', roles: [ROLE.OWNER, ROLE.MANAGER] },
 ];
 
@@ -45,16 +46,24 @@ const ALL_MENU: MenuItem[] = [
         </nav>
 
         <div class="border-t border-slate-700 p-4 text-sm">
-          <div class="font-medium text-white">{{ auth.user()?.HoTen }}</div>
-          <div class="text-slate-400">{{ roleName() }}</div>
-          <button
-            type="button"
-            (click)="auth.logout()"
-            class="mt-3 flex items-center gap-2 text-slate-300 hover:text-white"
-          >
-            <i class="pi pi-sign-out"></i> Đăng xuất
-          </button>
-        </div>
+  <a
+    routerLink="/admin/profile"
+    class="-m-2 block rounded-lg p-2 hover:bg-slate-800"
+  >
+    <div class="font-medium text-white">{{ auth.user()?.HoTen }}</div>
+    <div class="text-slate-400">{{ roleName() }}</div>
+    <div class="mt-1 text-xs text-emerald-400">
+      <i class="pi pi-user-edit mr-1"></i>Thông tin cá nhân
+    </div>
+  </a>
+  <button
+    type="button"
+    (click)="auth.logout()"
+    class="mt-4 flex items-center gap-2 text-slate-300 hover:text-white"
+  >
+    <i class="pi pi-sign-out"></i> Đăng xuất
+  </button>
+</div>
       </aside>
 
       <main class="flex-1 overflow-y-auto p-6">

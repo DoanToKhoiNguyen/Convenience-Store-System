@@ -1,15 +1,20 @@
-import { ApplicationConfig, provideZonelessChangeDetection, isDevMode, LOCALE_ID } from '@angular/core';
+import {
+  ApplicationConfig, provideZonelessChangeDetection, isDevMode,
+  LOCALE_ID, provideAppInitializer, inject,
+} from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localeVi from '@angular/common/locales/vi';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideServiceWorker } from '@angular/service-worker';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
-import { registerLocaleData } from '@angular/common';
-import localeVi from '@angular/common/locales/vi';
+import { firstValueFrom } from 'rxjs';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth-interceptor';
+import { AuthService } from './core/auth/auth.service';
 
 registerLocaleData(localeVi);
 
@@ -27,6 +32,7 @@ export const appConfig: ApplicationConfig = {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
     }),
+    provideAppInitializer(() => firstValueFrom(inject(AuthService).verify())),
     { provide: LOCALE_ID, useValue: 'vi' },
   ],
 };
