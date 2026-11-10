@@ -51,4 +51,11 @@ export class ProductService {
     restore(id: number | string) {
         return this.http.post<{ message: string }>(`${this.url}/${id}/hien-thi`, {});
     }
+
+    updateStock(id: number | string, soLuongMoi: number, lyDo: string) {
+        return this.http.put<{ message: string }>(`${this.url}/${id}/ton-kho`, {
+            SoLuongMoi: soLuongMoi,
+            LyDoCapNhat: lyDo,
+        });
+    }
 }

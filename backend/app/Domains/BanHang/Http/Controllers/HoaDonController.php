@@ -9,9 +9,12 @@ use App\Models\HoaDon;
 use App\Models\ChiTietHoaDon;
 use App\Models\SanPham;
 use Illuminate\Support\Facades\DB;
+use App\Domains\BanHang\Services\HoaDonService;
+use App\Domains\KhuyenMai\Services\KhuyenMaiService;
 
 class HoaDonController extends Controller
 {
+    
     public function store(Request $request): JsonResponse
     {
         $hoaDon = HoaDon::create([
@@ -19,6 +22,7 @@ class HoaDonController extends Controller
             'TrangThaiHoaDon' => false, // Chưa thanh toán
             'TongTien'    => 0,     // Ban đầu tổng tiền bằng 0
             'MaTaiKhoan'  => $request->user()->MaTaiKhoan, // Lấy nhân viên đang đăng nhập
+            'TongTienHang' => 0
         ]);
 
         return response()->json([
@@ -34,109 +38,99 @@ class HoaDonController extends Controller
             'SoLuong'    => 'required|integer|min:1',
         ]);
 
-        $hoaDon = HoaDon::where('MaHoaDon', $maHD)->first();
-        if (!$hoaDon) {
-            return response()->json(['message' => 'Không tìm thấy hóa đơn.'], 404);
-        }
-
-        // Tìm sản phẩm theo tên để lấy mã sản phẩm và đơn giá
         $sanPham = SanPham::where('TenSanPham', $validated['TenSanPham'])
-    ->where('TrangThai', true)
-    ->first();
+            ->where('TrangThai', true)
+            ->first();
         if (!$sanPham) {
             return response()->json(['message' => 'Không tìm thấy sản phẩm này.'], 404);
         }
 
-        $thanhTien = $sanPham->DonGiaBan * $validated['SoLuong'];
-
-        DB::beginTransaction();
         try {
-            // Tạo dòng chi tiết hóa đơn (maCTHD tự tăng, maHD lấy từ URL)
-            $chiTiet = ChiTietHoaDon::create([
-                'MaHoaDon'      => $maHD,
-                'MaSanPham'      => $sanPham->MaSanPham,
-                'TenSanPham'    => $sanPham->TenSanPham,
-                'SoLuong'   => $validated['SoLuong'],
-                'ThanhTien' => $thanhTien,
-            ]);
+            $ketQua = DB::transaction(function () use ($maHD, $validated, $sanPham) {
+                $hoaDon = HoaDon::where('MaHoaDon', $maHD)->lockForUpdate()->first();
+                if (!$hoaDon) {
+                    throw new \DomainException('Không tìm thấy hóa đơn.', 404);
+                }
+                if ($hoaDon->DaHuy || $hoaDon->TrangThaiHoaDon || $hoaDon->DaGiuHang) {
+                    throw new \DomainException('Hóa đơn này không còn chỉnh sửa được.', 400);
+                }
 
-            // Cập nhật lại tổng tiền của hóa đơn
-            $hoaDon->TongTien += $thanhTien;
-            $hoaDon->save();
+                $thanhTien = (float) $sanPham->DonGiaBan * $validated['SoLuong'];
 
-            DB::commit();
+                $chiTiet = ChiTietHoaDon::create([
+                    'MaHoaDon'   => $hoaDon->MaHoaDon,
+                    'MaSanPham'  => $sanPham->MaSanPham,
+                    'TenSanPham' => $sanPham->TenSanPham,
+                    'SoLuong'    => $validated['SoLuong'],
+                    'ThanhTien'  => $thanhTien,
+                ]);
 
-            return response()->json([
-                'message' => 'Thêm sản phẩm vào hóa đơn thành công!',
-                'data'    => [
-                    'hoaDon'  => $hoaDon->load('chiTietHoaDon'),
-                    'chiTiet' => $chiTiet
-                ]
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Lỗi khi thêm sản phẩm.', 'error' => $e->getMessage()], 500);
+                $hoaDon->TongTienHang = (float) $hoaDon->TongTienHang + $thanhTien;
+                $this->khuyenMai->apDungChoHoaDon($hoaDon); // tính TienGiamGia, MaKhuyenMai, TongTien
+                $hoaDon->save();
+
+                return [
+                    'hoaDon'  => $hoaDon->load('chiTietHoaDon', 'khuyenMai'),
+                    'chiTiet' => $chiTiet,
+                ];
+            });
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 400);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Lỗi khi thêm sản phẩm.'], 500);
         }
+
+        return response()->json(['message' => 'Thêm sản phẩm vào hóa đơn thành công!', 'data' => $ketQua]);
     }
 
     public function thanhToan(Request $request, $maHD): JsonResponse
     {
-        $hoaDon = HoaDon::with('chiTietHoaDon.sanPham')->where('MaHoaDon', $maHD)->first();
-
-        if (!$hoaDon) {
-            return response()->json(['message' => 'Không tìm thấy hóa đơn.'], 404);
-        }
-
-        if ($hoaDon->TrangThaiHoaDon) {
-            return response()->json(['message' => 'Hóa đơn này đã được thanh toán trước đó.'], 400);
-        }
-
-        DB::beginTransaction();
         try {
-            foreach ($hoaDon->chiTietHoaDon as $chiTiet) {
-                $sanPham = $chiTiet->sanPham;
-
-                // Kiểm tra tồn kho trước khi trừ
-                if ($sanPham->SoLuongHienTai < $chiTiet->SoLuong) {
-                    return response()->json([
-                        'message' => "Sản phẩm '{$sanPham->TenSanPham}' không đủ số lượng trong kho."
-                    ], 400);
-                }
-
-                // Trừ số lượng tồn kho
-                $sanPham->SoLuongHienTai -= $chiTiet->SoLuong;
-                $sanPham->save();
-            }
-
-            // Cập nhật trạng thái thành công (true) và thông tin thanh toán nếu có
-            $hoaDon->TrangThaiHoaDon = true;
-            $hoaDon->MaGiaoDich  = $request->input('maGiaoDich');
-            $hoaDon->TenGiaoDich = $request->input('tenGiaoDich');
-            $hoaDon->TienGiamGia = $request->input('tienGiamGia', 0);
-            $hoaDon->save();
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Thanh toán thành công và đã trừ tồn kho!',
-                'data'    => $hoaDon
+            $hoaDon = $this->service->thanhToan((int) $maHD, $request->user()->MaTaiKhoan, [
+                'maGiaoDich'  => $request->input('maGiaoDich'),
+                'tenGiaoDich' => $request->input('tenGiaoDich'),
+                
             ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Lỗi thanh toán.', 'error' => $e->getMessage()], 500);
+        } catch (\DomainException $e) {
+            return $this->loi($e);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Lỗi thanh toán.'], 500);
         }
+
+        return response()->json(['message' => 'Thanh toán thành công!', 'data' => $hoaDon]);
     }
 
     public function index(Request $request): JsonResponse
     {
-        // Lấy danh sách hóa đơn, kèm theo chi tiết hóa đơn và sắp xếp mới nhất lên đầu
-        $danhSachHoaDon = HoaDon::with(['chiTietHoaDon', 'taiKhoan'])
-                            ->orderBy('MaHoaDon', 'desc')
-                            ->get();
+        // Dọn hóa đơn quá hạn, phòng khi bộ lập lịch chưa chạy
+        $this->service->huyQuaHan();
+
+        $user = $request->user();
+        $query = HoaDon::with(['chiTietHoaDon', 'taiKhoan', 'khuyenMai'])->orderBy('MaHoaDon', 'desc');
+
+        if ((int) $user->MaVaiTro === 3) {
+            $query->where(function ($q) use ($user) {
+                $q->where('MaTaiKhoan', $user->MaTaiKhoan)
+                ->orWhere(function ($q2) {
+                    $q2->where('DaHuy', false)->where('TrangThaiHoaDon', false)->where('DaGiuHang', true);
+                });
+            });
+        }
+
+        match ($request->query('trang_thai')) {
+            'da_thanh_toan'  => $query->where('DaHuy', false)->where('TrangThaiHoaDon', true),
+            'cho_thanh_toan' => $query->where('DaHuy', false)->where('TrangThaiHoaDon', false)->where('DaGiuHang', true),
+            'da_huy'         => $query->where('DaHuy', true),
+            default          => $query->where(function ($q) {
+                $q->where('TrangThaiHoaDon', true)->orWhere('DaGiuHang', true)->orWhere('DaHuy', true);
+            }),
+        };
 
         return response()->json([
             'message' => 'Lấy danh sách hóa đơn thành công!',
-            'data'    => $danhSachHoaDon
+            'data'    => $query->paginate(15),
         ]);
     }
 
@@ -149,7 +143,9 @@ class HoaDonController extends Controller
         if ($hoaDon->TrangThaiHoaDon) {
             return response()->json(['message' => 'Hóa đơn đã thanh toán, không thể hủy.'], 400);
         }
-
+        if ($hoaDon->DaGiuHang || $hoaDon->DaHuy) {
+            return response()->json(['message' => 'Hóa đơn đang trong hàng đợi, hãy dùng chức năng hủy để hoàn kho.'], 400);
+        }
         // Nhân viên chỉ được hủy hóa đơn nháp do chính mình tạo
         $user = $request->user();
         if ((int) $user->MaVaiTro === 3 && $hoaDon->MaTaiKhoan != $user->MaTaiKhoan) {
@@ -162,5 +158,44 @@ class HoaDonController extends Controller
         });
 
         return response()->json(['message' => 'Đã hủy hóa đơn nháp.']);
+    }
+
+    public function __construct(
+        private HoaDonService $service,
+        private KhuyenMaiService $khuyenMai,
+    ){
+    }
+
+    private function loi(\DomainException $e): JsonResponse
+    {
+        return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 400);
+    }
+
+    public function chuyenVaoHangDoi(Request $request, $maHD): JsonResponse
+    {
+        try {
+            $hoaDon = $this->service->giuHang((int) $maHD, $request->user()->MaTaiKhoan);
+        } catch (\DomainException $e) {
+            return $this->loi($e);
+        }
+
+        return response()->json([
+            'message' => 'Đã đưa hóa đơn vào hàng đợi. Hàng được giữ trong 1 giờ.',
+            'data'    => $hoaDon,
+        ]);
+    }
+
+    public function huy(Request $request, $maHD): JsonResponse
+    {
+        $user = $request->user();
+        $lyDo = trim((string) $request->input('LyDo', '')) ?: 'Khách không thanh toán';
+
+        try {
+            $hoaDon = $this->service->huy((int) $maHD, "{$lyDo} (bởi {$user->HoTen})", $user->MaTaiKhoan);
+        } catch (\DomainException $e) {
+            return $this->loi($e);
+        }
+
+        return response()->json(['message' => 'Đã hủy hóa đơn và hoàn lại tồn kho.', 'data' => $hoaDon]);
     }
 }

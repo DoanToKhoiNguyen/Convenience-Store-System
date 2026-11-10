@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
             HoaDonSeeder::class,         
             ChiTietHoaDonSeeder::class,
         ]);
-
+        $this->call(CaLamViecSeeder::class);
         // User::factory(10)->create();
         User::factory()->create([
             'name' => 'Test User',

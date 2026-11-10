@@ -7,6 +7,9 @@ export interface Invoice {
     MaHoaDon: number;
     TongTien: number | string;
     TenGiaoDich?: string | null;
+    HanThanhToan?: string | null;
+    TienGiamGia?: number | string | null;
+    TongTienHang?: number | string | null;
 }
 
 export interface CheckoutLine {
@@ -48,7 +51,11 @@ export class SalesService {
             }),
         );
     }
-
+    hold(id: number) {
+        return this.http
+            .post<{ data: Invoice }>(`${this.url}/${id}/cho-thanh-toan`, {})
+            .pipe(map((r) => r.data));
+    }
     pay(id: number, method: string, txCode: string | null = null) {
         return this.http
             .put<{ data: Invoice }>(`${this.url}/${id}/thanh-toan`, {

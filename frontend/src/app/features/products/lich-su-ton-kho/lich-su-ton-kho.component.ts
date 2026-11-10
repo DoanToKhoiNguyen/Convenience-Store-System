@@ -12,7 +12,9 @@ import { ProductService } from '../product.service';
   template: `
     <div class="p-6">
   <h2 class="text-xl font-bold mb-4">Lịch Sử Thay Đổi & Cập Nhật Tồn Kho</h2>
-
+  <button type="button" (click)="taiLichSu()" class="mb-3 rounded bg-emerald-600 px-3 py-1 text-sm text-white">
+  Tải lại
+</button>
   <!-- Bảng hiển thị dữ liệu -->
   <div class="bg-white rounded-lg shadow overflow-hidden">
     <table class="w-full text-left border-collapse">
@@ -22,6 +24,7 @@ import { ProductService } from '../product.service';
           <th class="p-3">Sản phẩm</th>
           <th class="p-3">Cũ</th>
           <th class="p-3">Mới</th>
+          <th class="p-3">Thay đổi</th>
           <th class="p-3">Lý do</th>
           <th class="p-3">Người thực hiện</th>
         </tr>
@@ -34,12 +37,15 @@ import { ProductService } from '../product.service';
             <td class="p-3">{{ item.san_pham?.TenSanPham }}</td>
             <td class="p-3">{{ item.SoLuongHienTai }}</td>
             <td class="p-3 font-semibold text-emerald-600">{{ item.SoLuongMoi }}</td>
+            <td class="p-3 font-medium" [class]="(item.SoLuongMoi - item.SoLuongHienTai) >= 0 ? 'text-emerald-600' : 'text-red-600'">
+  {{ item.SoLuongMoi - item.SoLuongHienTai > 0 ? '+' : '' }}{{ item.SoLuongMoi - item.SoLuongHienTai }}
+</td>
             <td class="p-3">{{ item.LyDoCapNhat }}</td>
             <td class="p-3">{{ item.tai_khoan?.HoTen }}</td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="6" class="p-4 text-center text-slate-400">Chưa có lịch sử cập nhật tồn kho nào.</td>
+            <td colspan="7" class="p-4 text-center text-slate-400">Chưa có lịch sử cập nhật tồn kho nào.</td>
           </tr>
         }
       </tbody>

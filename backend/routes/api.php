@@ -8,6 +8,8 @@ use App\Domains\NhanVien\Http\Controllers\NhanVienController;
 use App\Domains\SanPham\Http\Controllers\SanPhamController;
 use App\Domains\BanHang\Http\Controllers\HoaDonController;
 use App\Domains\NhaCungCap\Http\Controllers\NhaCungCapController;
+use App\Domains\CaLamViec\Http\Controllers\LichDangKyController;
+use App\Domains\KhuyenMai\Http\Controllers\KhuyenMaiController;
 use App\Models\SanPham;
 use Illuminate\Routing\Router;
 
@@ -40,6 +42,12 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
         Route::put('/nha-cung-cap/{id}', [NhaCungCapController::class, 'update']);
         Route::delete('/nha-cung-cap/{id}', [NhaCungCapController::class, 'destroy']);
         Route::post('/nha-cung-cap/{id}/hien-thi', [NhaCungCapController::class, 'hienLai']);
+        Route::get('/lich-lam-viec', [LichDangKyController::class, 'thoiKhoaBieu']);
+        Route::post('/khuyen-mai', [KhuyenMaiController::class, 'store']);
+        Route::put('/khuyen-mai/{id}', [KhuyenMaiController::class, 'update']);
+        Route::delete('/khuyen-mai/{id}', [KhuyenMaiController::class, 'destroy']);
+        Route::post('/khuyen-mai/{id}/bat-lai', [KhuyenMaiController::class, 'batLai']);
+        Route::get('/lich-su-ton-kho', [SanPhamController::class, 'danhSachLichSuTonKho']);
     });
 
     Route::middleware(['role:1'])->group(function () {
@@ -58,8 +66,15 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
         Route::put('/san-pham/{maSanPham}/ton-kho', [SanPhamController::class, 'capNhatTonKho']);
         Route::put('/phieu-nhap/{id}/nhan-hang', [PhieuNhapController::class, 'xacNhanNhanHang']);
         Route::get('/hoa-don', [HoaDonController::class, 'index']);
-        Route::get('/san-pham/lich-su-ton-kho', [SanPhamController::class, 'danhSachLichSuTonKho']);
         Route::delete('/hoa-don/{maHD}', [HoaDonController::class, 'huyNhap']);
+        Route::get('/hoa-don', [HoaDonController::class, 'index']);
+        Route::post('/hoa-don/{maHD}/cho-thanh-toan', [HoaDonController::class, 'chuyenVaoHangDoi']);
+        Route::post('/hoa-don/{maHD}/huy', [HoaDonController::class, 'huy']);
+        Route::get('/ca-lam-viec', [LichDangKyController::class, 'danhSachCa']);
+        Route::get('/dang-ky-ca/tuan-sau', [LichDangKyController::class, 'tuanSau']);
+        Route::put('/dang-ky-ca/tuan-sau', [LichDangKyController::class, 'luuTuanSau']);
+        Route::get('/khuyen-mai', [KhuyenMaiController::class, 'index']);
+        Route::get('/khuyen-mai/uoc-tinh', [KhuyenMaiController::class, 'uocTinh']);
     });
 });
 Route::get('/san-pham/tra-cuu', [SanPhamController::class, 'search']);

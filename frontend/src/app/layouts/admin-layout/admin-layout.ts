@@ -13,11 +13,16 @@ interface MenuItem {
 const ALL_MENU: MenuItem[] = [
   { label: 'Tổng quan', icon: 'pi pi-home', link: '/admin' },
   { label: 'Bán hàng (POS)', icon: 'pi pi-shopping-cart', link: '/admin/sales', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
+  { label: 'Hóa đơn', icon: 'pi pi-receipt', link: '/admin/invoices', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
+  { label: 'Khuyến mãi', icon: 'pi pi-tag', link: '/admin/promotions', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Sản phẩm', icon: 'pi pi-box', link: '/admin/products' },
+  { label: 'Cập nhật tồn kho', icon: 'pi pi-sliders-h', link: '/admin/stock-update', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
   { label: 'Cảnh báo kho', icon: 'pi pi-exclamation-triangle', link: '/admin/stock-alerts', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
-  { label: 'Lịch sử tồn kho', icon: 'pi pi-history', link: 'lich-su-ton-kho', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
+  { label: 'Lịch sử tồn kho', icon: 'pi pi-history', link: '/admin/stock-history', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Phiếu nhập', icon: 'pi pi-truck', link: '/admin/purchases', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
   { label: 'Nhà cung cấp', icon: 'pi pi-building', link: '/admin/suppliers', roles: [ROLE.OWNER, ROLE.MANAGER] },
+  { label: 'Đăng ký ca làm', icon: 'pi pi-calendar-plus', link: '/admin/shift-register', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
+  { label: 'Thời khóa biểu', icon: 'pi pi-calendar', link: '/admin/timetable', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Nhân viên', icon: 'pi pi-users', link: '/admin/staff', roles: [ROLE.OWNER, ROLE.MANAGER] },
 ];
 

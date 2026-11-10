@@ -116,9 +116,9 @@ class SanPhamController extends Controller
 
         if (!empty($keyword)) {
             $query->where('TrangThai', true)->where(function ($q) use ($keyword) {
-    $q->where('TenSanPham', 'LIKE', '%' . $keyword . '%')
-      ->orWhere('MaSanPham', 'LIKE', '%' . $keyword . '%');
-});
+                    $q->where('TenSanPham', 'LIKE', '%' . $keyword . '%')
+                    ->orWhere('MaSanPham', 'LIKE', '%' . $keyword . '%');
+                });
         } else {
             // Nếu không truyền từ khóa hoặc từ khóa rỗng, có thể trả về danh sách trống hoặc toàn bộ tuỳ ý.
             // Để phục vụ tìm kiếm gợi ý, nếu trống ta trả về mảng rỗng thay vì báo lỗi 404 để không làm gián đoạn UI.
@@ -152,85 +152,19 @@ class SanPhamController extends Controller
     }
 
     public function index(Request $request): JsonResponse
-{
-    $query = SanPham::query();
-
-    $user = $request->user('sanctum'); // route này công khai nên đọc token thủ công
-    $quanLy = $user && in_array((int) $user->MaVaiTro, [1, 2], true);
-
-    if (!$quanLy) {
-        $query->where('TrangThai', true);
-    }
-
-    return response()->json(['data' => $query->get()]);
-}
-
-    public function capNhatTonKho(Request $request, $sanPham): JsonResponse
     {
-        $validated = $request->validate([
-            'SoLuongMoi' => 'required|Integer',
-            'LyDoCapNhat' => 'required|string'
-        ]);
+        $query = SanPham::query();
 
-        $sanPham = SanPham::where('MaSanPham', $sanPham)->first();
+        $user = $request->user('sanctum'); // route này công khai nên đọc token thủ công
+        $quanLy = $user && in_array((int) $user->MaVaiTro, [1, 2], true);
 
-        if(!$sanPham){
-            return response()->json([
-                'message' => 'Không tìm thấy sản phẩm'
-            ], 404);
+        if (!$quanLy) {
+            $query->where('TrangThai', true);
         }
 
-        DB::beginTransaction();
-        try{
-            // Lưu lại số lượng tồn kho cũ trước khi thay đổi
-            $soLuongHienTaiCu = $sanPham->SoLuongHienTai;
-            
-            // Tính số lượng mới sau khi cộng dồn (hoặc thay đổi)
-            $soLuongMoi = $validated['SoLuongMoi'];
-
-            // Kiểm tra không cho phép tồn kho âm
-            if ($soLuongMoi < 0) {
-                return response()->json(['message' => 'Số lượng tồn kho sau khi cập nhật không được nhỏ hơn 0.'], 400);
-            }
-
-            if ($sanPham->TonKhoToiDa && $soLuongMoi > $sanPham->TonKhoToiDa) {
-                return response()->json([
-                    'message' => "Số lượng tồn kho vượt quá mức tối đa cho phép ({$sanPham->TonKhoToiDa})."
-                ], 400);
-            }
-            // 1. Cập nhật số lượng mới vào bảng SAN_PHAM
-            $sanPham->SoLuongHienTai = $soLuongMoi;
-            $sanPham->save();
-
-            // 2. Ghi lịch sử vào bảng CAP_NHAT_TON_KHO
-            $lichSu = CapNhatTonKho::create([
-                'ThoiGianCapNhat' => now(),
-                'SoLuongMoi'      => $soLuongMoi,
-                'SoLuongHienTai'  => $soLuongHienTaiCu, 
-                'LyDoCapNhat'     => $validated['LyDoCapNhat'],
-                'MaTaiKhoan'      => $request->user()->MaTaiKhoan,
-                'MaSanPham'       => $sanPham->MaSanPham,
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Cập nhật số lượng tồn kho và ghi lịch sử thành công!',
-                'data'    => [
-                    'sanPham' => $sanPham,
-                    'lichSu'  => $lichSu
-                ]
-            ]);
-        }
-        catch(\Exception $e)
-        {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Lỗi cập nhật tồn kho',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json(['data' => $query->get()]);
     }
+
 
     public function danhSachCanhBao()
     {
@@ -259,53 +193,40 @@ class SanPhamController extends Controller
         ], 200);
     }
 
-    public function danhSachLichSuTonKho(Request $request): JsonResponse
-    {
-        $lichSu = CapNhatTonKho::with(['sanPham', 'taiKhoan'])
-                    ->orderBy('MaCapNhat', 'desc')
-                    ->get();
-
-        return response()->json([
-            'message' => 'Lấy lịch sử tồn kho thành công!',
-            'data'    => $lichSu
-        ]);
-    }
-
-    
 
     public function destroy($id): JsonResponse
-{
-    $sanPham = SanPham::find($id);
-    if (!$sanPham) {
-        return response()->json(['message' => 'Không tìm thấy sản phẩm.'], 404);
-    }
-
-    $daPhatSinh =
-        ChiTietHoaDon::where('MaSanPham', $sanPham->MaSanPham)->exists()
-        || ChiTietPhieuNhap::where('MaSanPham', $sanPham->MaSanPham)->exists();
-
-    if (!$daPhatSinh) {
-        try {
-            $sanPham->delete();
-
-            return response()->json([
-                'message' => 'Đã xóa sản phẩm.',
-                'action'  => 'deleted',
-            ]);
-        } catch (QueryException $e) {
-            // Còn dữ liệu khác tham chiếu tới sản phẩm: chuyển sang ẩn cho an toàn
+    {
+        $sanPham = SanPham::find($id);
+        if (!$sanPham) {
+            return response()->json(['message' => 'Không tìm thấy sản phẩm.'], 404);
         }
+
+        $daPhatSinh =
+            ChiTietHoaDon::where('MaSanPham', $sanPham->MaSanPham)->exists()
+            || ChiTietPhieuNhap::where('MaSanPham', $sanPham->MaSanPham)->exists();
+
+        if (!$daPhatSinh) {
+            try {
+                $sanPham->delete();
+
+                return response()->json([
+                    'message' => 'Đã xóa sản phẩm.',
+                    'action'  => 'deleted',
+                ]);
+            } catch (QueryException $e) {
+                // Còn dữ liệu khác tham chiếu tới sản phẩm: chuyển sang ẩn cho an toàn
+            }
+        }
+
+        $sanPham->TrangThai = false;
+        $sanPham->save();
+
+        return response()->json([
+            'message' => 'Sản phẩm đã có trong hóa đơn hoặc phiếu nhập nên được chuyển sang trạng thái ẩn.',
+            'action'  => 'hidden',
+            'data'    => $sanPham,
+        ]);
     }
-
-    $sanPham->TrangThai = false;
-    $sanPham->save();
-
-    return response()->json([
-        'message' => 'Sản phẩm đã có trong hóa đơn hoặc phiếu nhập nên được chuyển sang trạng thái ẩn.',
-        'action'  => 'hidden',
-        'data'    => $sanPham,
-    ]);
-}
 
     public function hienLai($id): JsonResponse
     {
@@ -318,5 +239,75 @@ class SanPhamController extends Controller
         $sanPham->save();
 
         return response()->json(['message' => 'Đã hiển thị lại sản phẩm.', 'data' => $sanPham]);
+    }
+
+    public function capNhatTonKho(Request $request, $maSanPham): JsonResponse
+    {
+        $validated = $request->validate([
+            'SoLuongMoi'  => 'required|integer|min:0',
+            'LyDoCapNhat' => 'required|string|max:255',
+        ]);
+
+        try {
+            $ketQua = DB::transaction(function () use ($validated, $maSanPham, $request) {
+                $sanPham = SanPham::where('MaSanPham', $maSanPham)->lockForUpdate()->first();
+                if (!$sanPham) {
+                    throw new \DomainException('Không tìm thấy sản phẩm', 404);
+                }
+
+                $cu  = (int) $sanPham->SoLuongHienTai;
+                $moi = (int) $validated['SoLuongMoi'];
+
+                if ($moi === $cu) {
+                    throw new \DomainException('Số lượng mới đang bằng số lượng hiện tại.', 422);
+                }
+                if ($sanPham->TonKhoToiDa && $moi > $sanPham->TonKhoToiDa) {
+                    throw new \DomainException(
+                        "Số lượng tồn kho vượt quá mức tối đa cho phép ({$sanPham->TonKhoToiDa}).", 422
+                    );
+                }
+
+                $sanPham->SoLuongHienTai = $moi;
+                $sanPham->save();
+
+                $lichSu = CapNhatTonKho::create([
+                    'ThoiGianCapNhat' => now(),
+                    'SoLuongMoi'      => $moi,
+                    'SoLuongHienTai'  => $cu,
+                    'LyDoCapNhat'     => $validated['LyDoCapNhat'],
+                    'MaTaiKhoan'      => $request->user()->MaTaiKhoan,
+                    'MaSanPham'       => $sanPham->MaSanPham,
+                ]);
+
+                return ['sanPham' => $sanPham, 'lichSu' => $lichSu];
+            });
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 400);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json([
+                'message' => 'Lỗi cập nhật tồn kho',
+                'error'   => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'Cập nhật số lượng tồn kho và ghi lịch sử thành công!',
+            'data'    => $ketQua,
+        ]);
+    }
+
+    public function danhSachLichSuTonKho(Request $request): JsonResponse
+    {
+        $lichSu = CapNhatTonKho::with(['sanPham', 'taiKhoan'])
+            ->orderByDesc('MaCapNhat')
+            ->limit(300)
+            ->get()
+            ->values();
+
+        return response()->json([
+            'message' => 'Lấy lịch sử tồn kho thành công!',
+            'data'    => $lichSu,
+        ]);
     }
 }

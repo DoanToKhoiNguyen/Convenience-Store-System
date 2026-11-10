@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AutoCompleteCompleteEvent, AutoCompleteModule } from 'primeng/autocomplete';
 import { ButtonModule } from 'primeng/button';
@@ -7,6 +7,9 @@ import { InputTextModule } from 'primeng/inputtext';
 import { Product } from '../products/product.model';
 import { ProductService } from '../products/product.service';
 import { SalesService } from './sales.service';
+import { PromotionService } from '../promotions/promotion.service';
+import { RouterLink } from '@angular/router';
+import { catchError, switchMap, throwError } from 'rxjs';
 
 import { HttpErrorResponse } from '@angular/common/http';
 import { DialogModule } from 'primeng/dialog';
@@ -21,6 +24,7 @@ interface CartLine {
 interface Receipt {
   id: number;
   total: number;
+  discount: number;
   method: string;
   given: number | null;
 }
@@ -31,7 +35,7 @@ const normalize = (s: string) =>
 
 @Component({
   selector: 'app-sales',
-  imports: [FormsModule, DecimalPipe, AutoCompleteModule, ButtonModule, InputTextModule, DialogModule],
+  imports: [FormsModule, DecimalPipe, DatePipe, AutoCompleteModule, ButtonModule, InputTextModule, DialogModule],
   template: `
     <h1 class="mb-4 text-2xl font-semibold text-slate-800">Bán hàng</h1>
 
@@ -40,15 +44,26 @@ const normalize = (s: string) =>
         <div class="font-semibold">Thanh toán thành công, hóa đơn #{{ r.id }}</div>
         <div class="mt-1 text-sm">
           Tổng tiền: <b>{{ r.total | number: '1.0-0' }} ₫</b> ({{ r.method }})
-          @if (r.method === 'Tiền mặt' && r.given !== null) {
+          @if (r.method === 'Tiền mặt' && r.given !== null && r.given >= r.total) {
             · Khách đưa {{ r.given | number: '1.0-0' }} ₫ · Tiền thừa
             <b>{{ r.given - r.total | number: '1.0-0' }} ₫</b>
+            @if (r.discount > 0) {
+              · Đã giảm {{ r.discount | number: '1.0-0' }} ₫
+            }
           }
         </div>
         <p-button label="Hóa đơn mới" icon="pi pi-plus" size="small" class="mt-3" (onClick)="newInvoice()" />
       </div>
     }
-
+    @if (queued(); as q) {
+  <div class="mb-4 rounded-xl bg-amber-50 p-4 text-amber-800">
+    <div class="font-semibold">Đã lưu hóa đơn #{{ q.id }} vào hàng đợi</div>
+    <div class="mt-1 text-sm">
+      Hàng được giữ @if (q.until) { đến <b>{{ q.until | date: 'HH:mm' }}</b> }. Quá hạn mà chưa thanh toán, hóa đơn tự hủy và hoàn lại kho.
+      <a routerLink="/admin/invoices" class="ml-1 underline">Xem hàng đợi</a>
+    </div>
+  </div>
+}
     @if (error()) {
       <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
     }
@@ -146,10 +161,20 @@ const normalize = (s: string) =>
 
       <!-- Cột phải: thanh toán -->
       <div class="h-fit space-y-4 rounded-xl bg-white p-5 shadow-sm">
-        <div class="flex items-baseline justify-between">
-          <span class="text-slate-600">Tạm tính</span>
-          <span class="text-2xl font-semibold text-slate-800">{{ total() | number: '1.0-0' }} ₫</span>
-        </div>
+        <div class="space-y-1">
+  <div class="flex items-baseline justify-between text-sm text-slate-600">
+    <span>Tạm tính</span><span>{{ total() | number: '1.0-0' }} ₫</span>
+  </div>
+  @if (discount() > 0) {
+    <div class="flex items-baseline justify-between text-sm text-emerald-700">
+      <span>Giảm giá ({{ promoName() }})</span><span>-{{ discount() | number: '1.0-0' }} ₫</span>
+    </div>
+  }
+  <div class="flex items-baseline justify-between">
+    <span class="text-slate-600">Cần thanh toán</span>
+    <span class="text-2xl font-semibold text-slate-800">{{ payable() | number: '1.0-0' }} ₫</span>
+  </div>
+</div>
 
         <div>
           <div class="mb-2 text-sm font-medium text-slate-700">Phương thức thanh toán</div>
@@ -161,26 +186,26 @@ const normalize = (s: string) =>
         </div>
 
         @if (method() === 'Tiền mặt') {
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Khách đưa (₫)</label>
-            <input
-              pInputText
-              type="number"
-              min="0"
-              class="w-full"
-              [ngModel]="given()"
-              (ngModelChange)="given.set($event)"
-            />
-            @if (given() !== null && given()! >= total() && total() > 0) {
-              <div class="mt-1 text-sm text-slate-600">
-                Tiền thừa: <b>{{ given()! - total() | number: '1.0-0' }} ₫</b>
-              </div>
-            }
-            @if (given() !== null && given()! < total()) {
-              <div class="mt-1 text-sm text-red-600">Khách đưa chưa đủ.</div>
-            }
-          </div>
-        }
+  <div>
+    <label class="mb-1 block text-sm font-medium text-slate-700">Khách đưa (₫)</label>
+    <input
+      pInputText
+      type="number"
+      min="0"
+      class="w-full"
+      [ngModel]="given()"
+      (ngModelChange)="given.set($event)"
+    />
+    @if (given() !== null && given()! >= payable() && payable() > 0) {
+      <div class="mt-1 text-sm text-slate-600">
+        Tiền thừa: <b>{{ given()! - payable() | number: '1.0-0' }} ₫</b>
+      </div>
+    }
+    @if (given() !== null && given()! < payable()) {
+      <div class="mt-1 text-sm text-red-600">Khách đưa chưa đủ.</div>
+    }
+  </div>
+}
 
         <p-button
           [label]="method() === 'Chuyển khoản' ? 'Hiện mã QR' : 'Thanh toán'"
@@ -189,6 +214,14 @@ const normalize = (s: string) =>
           [disabled]="!canPay()"
           [loading]="busy() && !pending()"
           (onClick)="pay()"
+        />
+        <p-button
+          label="Lưu vào hàng đợi (giữ hàng 1 giờ)"
+          icon="pi pi-clock"
+          styleClass="w-full"
+          [outlined]="true"
+          [disabled]="lines().length === 0 || busy()"
+          (onClick)="holdInvoice()"
         />
         <p class="text-xs text-slate-500">
           Giá và tổng tiền cuối cùng do máy chủ tính khi thanh toán.
@@ -234,9 +267,10 @@ const normalize = (s: string) =>
       }
 
       <ng-template #footer>
-        <p-button label="Hủy" [text]="true" [disabled]="busy()" (onClick)="cancelTransfer()" />
-        <p-button label="Đã nhận tiền" icon="pi pi-check" [loading]="busy()" (onClick)="confirmTransfer()" />
-      </ng-template>
+  <p-button label="Hủy" [text]="true" [disabled]="busy()" (onClick)="cancelTransfer()" />
+  <p-button label="Chờ thanh toán" icon="pi pi-clock" [outlined]="true" [disabled]="busy()" (onClick)="holdPending()" />
+  <p-button label="Đã nhận tiền" icon="pi pi-check" [loading]="busy()" (onClick)="confirmTransfer()" />
+</ng-template>
     </p-dialog>
   `,
 })
@@ -283,9 +317,89 @@ export class Sales {
   readonly canPay = computed(() => {
     if (this.lines().length === 0 || this.busy()) return false;
     const g = this.given();
-    return this.method() !== 'Tiền mặt' || g === null || g >= this.total();
+    return this.method() !== 'Tiền mặt' || g === null || g >= this.payable();
   });
+  readonly queued = signal<{ id: number; until: string | null } | null>(null);
 
+  holdInvoice() {
+    const lines = this.lines().map((l) => ({ name: l.product.TenSanPham, qty: l.qty }));
+    this.busy.set(true);
+    this.error.set(null);
+
+    this.sales
+      .createDraft(lines)
+      .pipe(
+        switchMap((draft) =>
+          this.sales.hold(draft.id).pipe(
+            catchError((err) =>
+              this.sales.cancelDraft(draft.id).pipe(switchMap(() => throwError(() => err))),
+            ),
+          ),
+        ),
+      )
+      .subscribe({
+        next: (inv) => this.afterHold(inv),
+        error: (e) => this.fail(e),
+      });
+  }
+  private promoService = inject(PromotionService);
+  readonly discount = signal(0);
+  readonly promoName = signal<string | null>(null);
+  private estimateSeq = 0;
+
+  readonly payable = computed(() => Math.max(this.total() - this.discount(), 0));
+
+  // Ước tính giảm giá để hiển thị. Số tiền cuối cùng do máy chủ tính khi lập hóa đơn.
+  private refreshEstimate() {
+    const seq = ++this.estimateSeq;
+    const total = this.total();
+    if (total <= 0) {
+      this.discount.set(0);
+      this.promoName.set(null);
+      return;
+    }
+    this.promoService.estimate(total).subscribe({
+      next: (e) => {
+        if (seq !== this.estimateSeq) return;
+        this.discount.set(e.giam);
+        this.promoName.set(e.chuong_trinh);
+      },
+      error: () => {
+        if (seq !== this.estimateSeq) return;
+        this.discount.set(0);
+        this.promoName.set(null);
+      },
+    });
+  }
+  // Dùng trong hộp QR khi khách chưa chuyển khoản
+  holdPending() {
+    const draft = this.pending();
+    if (!draft) return;
+    this.busy.set(true);
+    this.error.set(null);
+
+    this.sales.hold(draft.id).subscribe({
+      next: (inv) => {
+        this.pending.set(null);
+        this.afterHold(inv);
+      },
+      error: (e) => {
+        this.pending.set(null);
+        this.sales.cancelDraft(draft.id).subscribe();
+        this.fail(e);
+      },
+    });
+  }
+
+  private afterHold(inv: { MaHoaDon: number; HanThanhToan?: string | null }) {
+    this.busy.set(false);
+    this.queued.set({ id: inv.MaHoaDon, until: inv.HanThanhToan ?? null });
+    this.receipt.set(null);
+    this.lines.set([]);
+    this.refreshEstimate();
+    this.given.set(null);
+    this.loadProducts();
+  }
   constructor() {
     this.loadProducts();
   }
@@ -331,6 +445,7 @@ export class Sales {
 
     this.error.set(null);
     this.receipt.set(null);
+    this.queued.set(null);
     this.lines.update((ls) =>
       existing
         ? ls.map((l) => (l === existing ? { ...l, qty: newQty } : l))
@@ -341,6 +456,7 @@ export class Sales {
     this.selected.set(null);
     this.qty.set(1);
     setTimeout(() => document.getElementById('search')?.focus());
+    this.refreshEstimate();
   }
 
   change(line: CartLine, delta: number) {
@@ -352,10 +468,12 @@ export class Sales {
     }
     this.error.set(null);
     this.lines.update((ls) => ls.map((l) => (l === line ? { ...l, qty: q } : l)));
+    this.refreshEstimate();
   }
 
   remove(line: CartLine) {
     this.lines.update((ls) => ls.filter((l) => l !== line));
+    this.refreshEstimate();
   }
 
   pay() {
@@ -409,15 +527,21 @@ export class Sales {
     this.pending.set(null);
   }
 
-  private done(invoice: { MaHoaDon: number; TongTien: number | string }, method: string, given: number | null) {
+  private done(
+    invoice: { MaHoaDon: number; TongTien: number | string; TienGiamGia?: number | string | null },
+    method: string,
+    given: number | null,
+  ) {
     this.busy.set(false);
     this.receipt.set({
       id: invoice.MaHoaDon,
-      total: Number(invoice.TongTien), // tổng tiền do máy chủ tính
+      total: Number(invoice.TongTien), // số phải trả do máy chủ tính
+      discount: Number(invoice.TienGiamGia ?? 0),
       method,
       given,
     });
     this.lines.set([]);
+    this.refreshEstimate();
     this.given.set(null);
     this.loadProducts();
   }

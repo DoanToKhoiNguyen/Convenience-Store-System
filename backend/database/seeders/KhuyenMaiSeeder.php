@@ -14,24 +14,31 @@ class KhuyenMaiSeeder extends Seeder
      */
     public function run(): void
     {
-        $khuyenMais = [
+        KhuyenMai::updateOrCreate(
+            ['TenChuongTrinh' => 'Khuyến mãi khai trương giảm 10%'],
             [
-                'TenChuongTrinh' => 'Khuyến mãi khai trương giảm 10%',
-                'GiaTriGiam' => 10.00,
-                'DieuKienApDung' => 5000.00,
-                'NgayBatDau' => Carbon::now()->subDays(5),
-                'NgayKetThuc' => Carbon::now()->addDays(25),
-            ],
-            [
-                'TenChuongTrinh' => 'Đại tiệc cuối tuần giảm 15%',
-                'GiaTriGiam' => 15.00,
+                'LoaiGiam'      => 'phan_tram',
+                'GiaTriGiam'    => 10.00,
+                'GiamToiDa'     => 50000.00,
                 'DieuKienApDung' => 100000.00,
-                'NgayBatDau' => Carbon::now()->subDays(1),
-                'NgayKetThuc' => Carbon::now()->addDays(2),
-            ],
-        ];
-        foreach($khuyenMais as $km){
-            KhuyenMai::create($km);
-        }
+                'NgayBatDau'    => Carbon::now()->subDays(5),
+                'NgayKetThuc'   => Carbon::now()->addDays(25),
+                'TrangThai'     => true,
+            ]
+        );
+
+        // 2. Khuyến mãi đại tiệc cuối tuần
+        KhuyenMai::updateOrCreate(
+            ['TenChuongTrinh' => 'Đại tiệc cuối tuần giảm 15%'],
+            [
+                'LoaiGiam'      => 'phan_tram',
+                'GiaTriGiam'    => 15.00,
+                'GiamToiDa'     => 100000.00,
+                'DieuKienApDung' => 200000.00,
+                'NgayBatDau'    => Carbon::now()->subDays(1),
+                'NgayKetThuc'   => Carbon::now()->addDays(2),
+                'TrangThai'     => true,
+            ]
+        );
     }
 }

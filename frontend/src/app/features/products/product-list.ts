@@ -72,9 +72,11 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
             <th class="text-right">Giá bán</th>
             <th class="text-right">Tồn kho</th>
             <th>Trạng thái</th>
+            
             @if (canEdit()) {
-              <th class="text-right">Thao tác</th>
-            }
+  <th class="text-right">Thao tác</th>
+}
+            
           </tr>
         </ng-template>
 
@@ -97,12 +99,19 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
             @if (canEdit()) {
               <td class="text-right">
   <div class="flex justify-end gap-1">
-    <p-button label="Sửa" size="small" [text]="true" (onClick)="openEdit(p)" />
-    @if (isHidden(p)) {
-      <p-button label="Hiện lại" size="small" severity="success" [text]="true" [disabled]="busy()" (onClick)="restore(p)" />
-    } @else {
-      <p-button label="Xóa" size="small" severity="danger" [text]="true" [disabled]="busy()" (onClick)="remove(p)" />
-    }
+
+    @if (canEdit()) {
+  <td class="text-right">
+    <div class="flex justify-end gap-1">
+      <p-button label="Sửa" size="small" [text]="true" (onClick)="openEdit(p)" />
+      @if (isHidden(p)) {
+        <p-button label="Hiện lại" size="small" severity="success" [text]="true" [disabled]="busy()" (onClick)="restore(p)" />
+      } @else {
+        <p-button label="Xóa" size="small" severity="danger" [text]="true" [disabled]="busy()" (onClick)="remove(p)" />
+      }
+    </div>
+  </td>
+}
   </div>
 </td>
             }
@@ -222,6 +231,7 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
         />
       </ng-template>
     </p-dialog>
+
   `,
 })
 export class ProductList {
@@ -285,6 +295,54 @@ export class ProductList {
       (s) => Number(s.TrangThai ?? 1) === 1 || s.MaNhaCungCap === current,
     );
   });
+
+  readonly stockTarget = signal<Product | null>(null);
+  readonly stockBusy = signal(false);
+  readonly stockError = signal<string | null>(null);
+  readonly reasons = ['Kiểm kho', 'Hàng hỏng', 'Hàng hết hạn', 'Thất thoát', 'Điều chỉnh số liệu'];
+
+  readonly stockForm = this.fb.nonNullable.group({
+    SoLuongMoi: [0, [Validators.required, Validators.min(0)]],
+    LyDoCapNhat: ['', [Validators.required, Validators.maxLength(255)]],
+  });
+
+  openStock(p: Product) {
+    this.stockTarget.set(p);
+    this.stockError.set(null);
+    this.stockForm.reset({ SoLuongMoi: p.SoLuongHienTai, LyDoCapNhat: '' });
+  }
+
+  diff(p: Product): number {
+    const n = Number(this.stockForm.controls.SoLuongMoi.value);
+    return Number.isFinite(n) ? Math.floor(n) - Number(p.SoLuongHienTai) : 0;
+  }
+
+  saveStock() {
+    const p = this.stockTarget();
+    if (!p || this.stockForm.invalid) return;
+
+    const v = this.stockForm.getRawValue();
+    const moi = Math.floor(Number(v.SoLuongMoi));
+    if (moi === Number(p.SoLuongHienTai)) {
+      this.stockError.set('Số lượng mới đang bằng số lượng hiện tại.');
+      return;
+    }
+
+    this.stockBusy.set(true);
+    this.stockError.set(null);
+    this.service.updateStock(p.MaSanPham, moi, v.LyDoCapNhat.trim()).subscribe({
+      next: (res) => {
+        this.stockBusy.set(false);
+        this.stockTarget.set(null);
+        this.notify(res.message ?? 'Đã cập nhật tồn kho.');
+        this.load();
+      },
+      error: (e: HttpErrorResponse) => {
+        this.stockBusy.set(false);
+        this.stockError.set(this.errorText(e));
+      },
+    });
+  }
   constructor() {
     this.load();
     if (this.canEdit()) {

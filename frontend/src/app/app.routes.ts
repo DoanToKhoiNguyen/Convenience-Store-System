@@ -58,6 +58,35 @@ export const routes: Routes = [
                 canActivate: [roleGuard(ROLE.OWNER, ROLE.MANAGER)],
                 loadComponent: () => import('./features/suppliers/supplier-list').then((m) => m.SupplierList),
             },
+            {
+                path: 'invoices',
+                loadComponent: () => import('./features/invoices/invoice-list').then((m) => m.InvoiceList),
+            },
+            {
+                path: 'stock-history',
+                loadComponent: () =>
+                    import('./features/products/lich-su-ton-kho/lich-su-ton-kho.component').then(
+                        (m) => m.LichSuTonKhoComponent,
+                    ),
+            },
+            {
+                path: 'shift-register',
+                loadComponent: () => import('./features/shifts/shift-register').then((m) => m.ShiftRegister),
+            },
+            {
+                path: 'timetable',
+                canActivate: [roleGuard(ROLE.OWNER, ROLE.MANAGER)],
+                loadComponent: () => import('./features/shifts/shift-timetable').then((m) => m.ShiftTimetable),
+            },
+            {
+                path: 'promotions',
+                canActivate: [roleGuard(ROLE.OWNER, ROLE.MANAGER)],
+                loadComponent: () => import('./features/promotions/promotion-list').then((m) => m.PromotionList),
+            },
+            {
+                path: 'stock-update',
+                loadComponent: () => import('./features/stock/stock-update').then((m) => m.StockUpdate),
+            },
         ],
 
     },

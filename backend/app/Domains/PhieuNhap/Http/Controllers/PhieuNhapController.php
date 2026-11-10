@@ -7,6 +7,7 @@ use App\Models\PhieuNhap;
 use App\Models\ChiTietPhieuNhap;
 use App\Models\SanPham;
 use App\Models\NhaCungCap;
+use App\Models\CapNhatTonKho;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -273,11 +274,21 @@ class PhieuNhapController extends Controller
                     ]);
 
                 // Cộng số lượng vào kho của sản phẩm tương ứng
-                $sanPham = SanPham::find($chiTiet->MaSanPham);
-                if ($sanPham) {
-                    $sanPham->SoLuongHienTai += $chiTiet->SoLuong; 
-                    $sanPham->save();
-                }
+                $sanPham = SanPham::where('MaSanPham', $chiTiet->MaSanPham)->lockForUpdate()->first();
+if ($sanPham) {
+    $truoc = (int) $sanPham->SoLuongHienTai;
+    $sanPham->SoLuongHienTai = $truoc + (int) $chiTiet->SoLuong;
+    $sanPham->save();
+
+    CapNhatTonKho::create([
+        'ThoiGianCapNhat' => now(),
+        'SoLuongMoi'      => $sanPham->SoLuongHienTai,
+        'SoLuongHienTai'  => $truoc,
+        'LyDoCapNhat'     => "Nhận hàng - phiếu nhập #{$phieuNhap->MaPhieuNhap}",
+        'MaTaiKhoan'      => $maTaiKhoan,
+        'MaSanPham'       => $sanPham->MaSanPham,
+    ]);
+}
             }
 
             // 7. Cập nhật trạng thái phiếu thành "Đã nhận hàng", lưu nhân viên xác nhận và thời gian
