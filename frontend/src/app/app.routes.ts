@@ -87,6 +87,11 @@ export const routes: Routes = [
                 path: 'stock-update',
                 loadComponent: () => import('./features/stock/stock-update').then((m) => m.StockUpdate),
             },
+            {
+                path: 'reports',
+                canActivate: [roleGuard(ROLE.OWNER, ROLE.MANAGER)],
+                loadComponent: () => import('./features/reports/revenue-report').then((m) => m.RevenueReport_),
+            },
         ],
 
     },

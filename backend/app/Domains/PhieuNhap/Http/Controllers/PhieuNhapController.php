@@ -275,47 +275,47 @@ class PhieuNhapController extends Controller
 
                 // Cộng số lượng vào kho của sản phẩm tương ứng
                 $sanPham = SanPham::where('MaSanPham', $chiTiet->MaSanPham)->lockForUpdate()->first();
-if ($sanPham) {
-    $truoc = (int) $sanPham->SoLuongHienTai;
-    $sanPham->SoLuongHienTai = $truoc + (int) $chiTiet->SoLuong;
-    $sanPham->save();
+        if ($sanPham) {
+            $truoc = (int) $sanPham->SoLuongHienTai;
+            $sanPham->SoLuongHienTai = $truoc + (int) $chiTiet->SoLuong;
+            $sanPham->save();
 
-    CapNhatTonKho::create([
-        'ThoiGianCapNhat' => now(),
-        'SoLuongMoi'      => $sanPham->SoLuongHienTai,
-        'SoLuongHienTai'  => $truoc,
-        'LyDoCapNhat'     => "Nhận hàng - phiếu nhập #{$phieuNhap->MaPhieuNhap}",
-        'MaTaiKhoan'      => $maTaiKhoan,
-        'MaSanPham'       => $sanPham->MaSanPham,
-    ]);
-}
-            }
-
-            // 7. Cập nhật trạng thái phiếu thành "Đã nhận hàng", lưu nhân viên xác nhận và thời gian
-            $phieuNhap->TrangThai = 4; // 4 = Đã nhận hàng
-            $phieuNhap->MaTaiKhoan = $maTaiKhoan; // Hoặc tên cột lưu mã nhân viên xác nhận của bạn
-            $phieuNhap->NgayLap = now();
-            $phieuNhap->save();
-
-            DB::commit();
-
-            // 8. Trả về thông báo thành công
-            return response()->json([
-                'success' => true,
-                'message' => 'Xác nhận nhận hàng thành công!',
-                'data'    => $phieuNhap->load('chiTietPhieuNhap')
-            ], 200);
-
-        } catch (\Exception $e) 
-        {
-            DB::rollBack();
-
-            Log::error('Lỗi xác nhận nhận hàng: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Xác nhận nhận hàng thất bại: ' . $e->getMessage(),
-            ], 500);
+            CapNhatTonKho::create([
+                'ThoiGianCapNhat' => now(),
+                'SoLuongMoi'      => $sanPham->SoLuongHienTai,
+                'SoLuongHienTai'  => $truoc,
+                'LyDoCapNhat'     => "Nhận hàng - phiếu nhập #{$phieuNhap->MaPhieuNhap}",
+                'MaTaiKhoan'      => $maTaiKhoan,
+                'MaSanPham'       => $sanPham->MaSanPham,
+            ]);
         }
+                    }
+
+                    // 7. Cập nhật trạng thái phiếu thành "Đã nhận hàng", lưu nhân viên xác nhận và thời gian
+                    $phieuNhap->TrangThai = 4; // 4 = Đã nhận hàng
+                    $phieuNhap->MaTaiKhoan = $maTaiKhoan; // Hoặc tên cột lưu mã nhân viên xác nhận của bạn
+                    $phieuNhap->NgayLap = now();
+                    $phieuNhap->save();
+
+                    DB::commit();
+
+                    // 8. Trả về thông báo thành công
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Xác nhận nhận hàng thành công!',
+                        'data'    => $phieuNhap->load('chiTietPhieuNhap')
+                    ], 200);
+
+                } catch (\Exception $e) 
+                {
+                    DB::rollBack();
+
+                    Log::error('Lỗi xác nhận nhận hàng: ' . $e->getMessage());
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Xác nhận nhận hàng thất bại: ' . $e->getMessage(),
+                    ], 500);
+                }
     }
 }

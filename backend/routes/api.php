@@ -10,6 +10,7 @@ use App\Domains\BanHang\Http\Controllers\HoaDonController;
 use App\Domains\NhaCungCap\Http\Controllers\NhaCungCapController;
 use App\Domains\CaLamViec\Http\Controllers\LichDangKyController;
 use App\Domains\KhuyenMai\Http\Controllers\KhuyenMaiController;
+use App\Domains\BaoCao\Http\Controllers\BaoCaoController;
 use App\Models\SanPham;
 use Illuminate\Routing\Router;
 
@@ -48,6 +49,7 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
         Route::delete('/khuyen-mai/{id}', [KhuyenMaiController::class, 'destroy']);
         Route::post('/khuyen-mai/{id}/bat-lai', [KhuyenMaiController::class, 'batLai']);
         Route::get('/lich-su-ton-kho', [SanPhamController::class, 'danhSachLichSuTonKho']);
+        Route::get('/bao-cao/doanh-thu', [BaoCaoController::class, 'doanhThu']);
     });
 
     Route::middleware(['role:1'])->group(function () {

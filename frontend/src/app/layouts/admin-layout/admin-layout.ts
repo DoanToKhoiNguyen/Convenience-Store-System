@@ -12,6 +12,7 @@ interface MenuItem {
 
 const ALL_MENU: MenuItem[] = [
   { label: 'Tổng quan', icon: 'pi pi-home', link: '/admin' },
+  { label: 'Báo cáo doanh thu', icon: 'pi pi-chart-line', link: '/admin/reports', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Bán hàng (POS)', icon: 'pi pi-shopping-cart', link: '/admin/sales', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
   { label: 'Hóa đơn', icon: 'pi pi-receipt', link: '/admin/invoices', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
   { label: 'Khuyến mãi', icon: 'pi pi-tag', link: '/admin/promotions', roles: [ROLE.OWNER, ROLE.MANAGER] },
