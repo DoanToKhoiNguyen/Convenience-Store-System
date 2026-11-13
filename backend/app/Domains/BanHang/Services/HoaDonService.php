@@ -59,7 +59,7 @@ class HoaDonService
             $hoaDon->NgayThanhToan = now();
             $hoaDon->MaGiaoDich = $thongTin['maGiaoDich'] ?? null;
             $hoaDon->TenGiaoDich = $thongTin['tenGiaoDich'] ?? null;
-            $hoaDon->TienGiamGia = $thongTin['tienGiamGia'] ?? 0;
+            #$hoaDon->TienGiamGia = $thongTin['tienGiamGia'] ?? 0;
             $hoaDon->save();
 
             return $hoaDon->load('chiTietHoaDon');

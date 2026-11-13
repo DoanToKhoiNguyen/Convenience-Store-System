@@ -58,4 +58,14 @@ export class ProductService {
             LyDoCapNhat: lyDo,
         });
     }
+
+    uploadImage(id: number | string, file: File) {
+        const form = new FormData();
+        form.append('HinhAnh', file);
+        return this.http.post<{ message: string }>(`${this.url}/${id}/hinh-anh`, form);
+    }
+
+    removeImage(id: number | string) {
+        return this.http.delete<{ message: string }>(`${this.url}/${id}/hinh-anh`);
+    }
 }

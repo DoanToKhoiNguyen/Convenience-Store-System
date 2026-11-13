@@ -63,6 +63,7 @@ class HoaDonController extends Controller
                     'TenSanPham' => $sanPham->TenSanPham,
                     'SoLuong'    => $validated['SoLuong'],
                     'ThanhTien'  => $thanhTien,
+                    'GiaVon' => (float) ($sanPham->DonGiaNhap ?? 0),
                 ]);
 
                 $hoaDon->TongTienHang = (float) $hoaDon->TongTienHang + $thanhTien;

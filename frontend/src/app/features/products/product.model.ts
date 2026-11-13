@@ -13,11 +13,14 @@ export interface Product {
     MoTa?: string | null;
     ThanhPhan?: string | null;
     TrangThai?: boolean | number;
+    HinhAnh?: string | null;
+    hinh_anh_url?: string | null;
+    MaDanhMuc?: number | null;
 }
 
 export interface ProductPayload {
     TenSanPham: string;
-    LoaiSanPham: string | null;
+    MaDanhMuc: number;
     TenThuongHieu: string | null;
     MaNhaCungCap: number;
     DonGiaBan: number;

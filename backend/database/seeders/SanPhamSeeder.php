@@ -174,6 +174,7 @@ class SanPhamSeeder extends Seeder
         ];
 
         foreach ($sanPhams as $sanPham) {
+            $sanPham['MaDanhMuc'] = \App\Models\DanhMuc::firstOrCreate(['TenDanhMuc' => $sanPham['LoaiSanPham']])->MaDanhMuc;
             SanPham::updateOrCreate(
                 ['TenSanPham' => $sanPham['TenSanPham']], // Điều kiện tìm kiếm theo tên
                 $sanPham // Dữ liệu để cập nhật hoặc tạo mới

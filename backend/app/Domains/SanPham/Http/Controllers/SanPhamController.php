@@ -11,10 +11,12 @@ use App\Models\CapNhatTonKho;
 use App\Models\PhieuNhap;
 use App\Models\ChiTietPhieuNhap;
 use App\Models\NhaCungCap;
+use App\Models\DanhMuc;
 use Illuminate\Support\Facades\DB;
 use Nette\Schema\Message;
 use App\Models\ChiTietHoaDon;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Storage;
 
 class SanPhamController extends Controller
 {
@@ -23,7 +25,7 @@ class SanPhamController extends Controller
         return [
             'TenSanPham'     => ['required', 'string', 'max:255',
                 Rule::unique('san_pham', 'TenSanPham')->ignore($ignoreId, 'MaSanPham')],
-            'LoaiSanPham'    => 'nullable|string|max:100',
+            'MaDanhMuc'      => 'required|exists:danh_muc,MaDanhMuc',
             'TenThuongHieu'  => 'nullable|string|max:100',
             'MaNhaCungCap'   => 'required|exists:nha_cung_cap,MaNhaCungCap',
             'DonGiaBan'      => 'required|numeric|min:0',
@@ -48,6 +50,9 @@ class SanPhamController extends Controller
                 'errors'  => ['MaNhaCungCap' => ['Nhà cung cấp đã ngừng hợp tác.']],
             ], 422);
         }
+
+        $data['LoaiSanPham'] = DanhMuc::find($data['MaDanhMuc'])->TenDanhMuc;
+        $data['TrangThai'] = true;
 
         $soLuongBanDau = (int) ($data['SoLuongHienTai'] ?? 0);
         $data['SoLuongHienTai'] = $soLuongBanDau;
@@ -96,7 +101,8 @@ class SanPhamController extends Controller
                 'errors'  => ['MaNhaCungCap' => ['Nhà cung cấp đã ngừng hợp tác.']],
             ], 422);
         }
-
+        
+        $data['LoaiSanPham'] = DanhMuc::find($data['MaDanhMuc'])->TenDanhMuc;
         // Cập nhật dữ liệu một lần duy nhất
         $sanPham->update($data);
 
@@ -309,5 +315,45 @@ class SanPhamController extends Controller
             'message' => 'Lấy lịch sử tồn kho thành công!',
             'data'    => $lichSu,
         ]);
+    }
+
+    public function taiHinhAnh(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'HinhAnh' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048', // tối đa 2 MB
+        ]);
+
+        $sanPham = SanPham::find($id);
+        if (!$sanPham) {
+            return response()->json(['message' => 'Không tìm thấy sản phẩm.'], 404);
+        }
+
+        $duongDan = $request->file('HinhAnh')->store('san-pham', 'public');
+        $cu = $sanPham->HinhAnh;
+
+        $sanPham->HinhAnh = $duongDan;
+        $sanPham->save();
+
+        if ($cu) {
+            Storage::disk('public')->delete($cu);
+        }
+
+        return response()->json(['message' => 'Đã cập nhật ảnh sản phẩm.', 'data' => $sanPham]);
+    }
+
+    public function xoaHinhAnh($id): JsonResponse
+    {
+        $sanPham = SanPham::find($id);
+        if (!$sanPham) {
+            return response()->json(['message' => 'Không tìm thấy sản phẩm.'], 404);
+        }
+
+        if ($sanPham->HinhAnh) {
+            Storage::disk('public')->delete($sanPham->HinhAnh);
+        }
+        $sanPham->HinhAnh = null;
+        $sanPham->save();
+
+        return response()->json(['message' => 'Đã xóa ảnh sản phẩm.']);
     }
 }

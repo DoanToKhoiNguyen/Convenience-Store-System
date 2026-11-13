@@ -11,6 +11,8 @@ use App\Domains\NhaCungCap\Http\Controllers\NhaCungCapController;
 use App\Domains\CaLamViec\Http\Controllers\LichDangKyController;
 use App\Domains\KhuyenMai\Http\Controllers\KhuyenMaiController;
 use App\Domains\BaoCao\Http\Controllers\BaoCaoController;
+use App\Domains\SanPham\Http\Controllers\SanPhamCongKhaiController;
+use App\Domains\DanhMuc\Http\Controllers\DanhMucController;
 use App\Models\SanPham;
 use Illuminate\Routing\Router;
 
@@ -50,6 +52,12 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
         Route::post('/khuyen-mai/{id}/bat-lai', [KhuyenMaiController::class, 'batLai']);
         Route::get('/lich-su-ton-kho', [SanPhamController::class, 'danhSachLichSuTonKho']);
         Route::get('/bao-cao/doanh-thu', [BaoCaoController::class, 'doanhThu']);
+        Route::post('/san-pham/{id}/hinh-anh', [SanPhamController::class, 'taiHinhAnh']);
+        Route::delete('/san-pham/{id}/hinh-anh', [SanPhamController::class, 'xoaHinhAnh']);
+        Route::get('/danh-muc', [DanhMucController::class, 'index']);
+        Route::post('/danh-muc', [DanhMucController::class, 'store']);
+        Route::put('/danh-muc/{id}', [DanhMucController::class, 'update']);
+        Route::delete('/danh-muc/{id}', [DanhMucController::class, 'destroy']);
     });
 
     Route::middleware(['role:1'])->group(function () {
@@ -77,8 +85,12 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
         Route::put('/dang-ky-ca/tuan-sau', [LichDangKyController::class, 'luuTuanSau']);
         Route::get('/khuyen-mai', [KhuyenMaiController::class, 'index']);
         Route::get('/khuyen-mai/uoc-tinh', [KhuyenMaiController::class, 'uocTinh']);
+        Route::get('/san-pham/tra-cuu', [SanPhamController::class, 'search']);
+        Route::get('/san-pham/', [SanPhamController::class, 'index']);
+        Route::get('/san-pham/{id}', [SanPhamController::class, 'show']);
     });
 });
-Route::get('/san-pham/tra-cuu', [SanPhamController::class, 'search']);
-Route::get('/san-pham/', [SanPhamController::class, 'index']);
-Route::get('/san-pham/{id}', [SanPhamController::class, 'show']);
+#Route::get('/san-pham/tra-cuu', [SanPhamController::class, 'search']);
+#Route::get('/san-pham/', [SanPhamController::class, 'index']);
+#Route::get('/san-pham/{id}', [SanPhamController::class, 'show']);
+Route::get('/cong-khai/san-pham', [SanPhamCongKhaiController::class, 'index'])->middleware('throttle:60,1');

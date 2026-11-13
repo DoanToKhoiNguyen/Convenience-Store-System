@@ -11,6 +11,9 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ROLE } from '../../core/auth/roles';
 import { Product, ProductPayload, Supplier } from './product.model';
 import { ProductService } from './product.service';
+import { Observable, of } from 'rxjs';
+import { Category } from '../categories/category.model';
+import { CategoryService } from '../categories/category.service';
 
 // Bỏ dấu để gõ "nuoc ngot" vẫn tìm ra "Nước ngọt"
 const normalize = (s: string) =>
@@ -84,11 +87,20 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
           <tr>
             <td>{{ p.MaSanPham }}</td>
             <td>
-              <div class="font-medium text-slate-800">{{ p.TenSanPham }}</div>
-              @if (p.TenThuongHieu) {
-                <div class="text-xs text-slate-500">{{ p.TenThuongHieu }}</div>
-              }
-            </td>
+  <div class="flex items-center gap-3">
+    <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+      @if (p.hinh_anh_url) {
+        <img [src]="p.hinh_anh_url" alt="" class="h-full w-full object-cover" />
+      }
+    </div>
+    <div>
+      <div class="font-medium text-slate-800">{{ p.TenSanPham }}</div>
+      @if (p.TenThuongHieu) {
+        <div class="text-xs text-slate-500">{{ p.TenThuongHieu }}</div>
+      }
+    </div>
+  </div>
+</td>
             <td>{{ p.LoaiSanPham ?? '—' }}</td>
             @if (canEdit()) {
               <td class="text-right">{{ p.DonGiaNhap | number: '1.0-0' }} ₫</td>
@@ -145,14 +157,14 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Loại sản phẩm</label>
-            <input pInputText formControlName="LoaiSanPham" class="w-full" list="product-categories" />
-            <datalist id="product-categories">
-              @for (c of categories(); track c) {
-                <option [value]="c"></option>
-              }
-            </datalist>
-          </div>
+  <label class="mb-1 block text-sm font-medium text-slate-700">Danh mục *</label>
+  <select formControlName="MaDanhMuc" class="w-full rounded-md border border-slate-300 px-3 py-2">
+    <option [ngValue]="null" disabled>-- Chọn danh mục --</option>
+    @for (c of categories(); track c.MaDanhMuc) {
+      <option [ngValue]="c.MaDanhMuc">{{ c.TenDanhMuc }}</option>
+    }
+  </select>
+</div>
           <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">Thương hiệu</label>
             <input pInputText formControlName="TenThuongHieu" class="w-full" />
@@ -208,7 +220,47 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
             <input pInputText type="number" min="0" formControlName="SoLuongHienTai" class="w-full" />
           </div>
         }
+        <div>
+  
+  <div>
+  <label class="mb-1 block text-sm font-medium text-slate-700">Ảnh sản phẩm</label>
 
+  <div class="flex items-start gap-4">
+    <label
+      class="group relative flex h-24 w-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 transition hover:border-emerald-500 hover:bg-emerald-50 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-200"
+      title="Bấm để chọn ảnh"
+    >
+      <input
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        class="sr-only"
+        (change)="onFile($event)"
+      />
+
+      @if (imagePreview()) {
+        <img [src]="imagePreview()" alt="Ảnh sản phẩm" class="h-full w-full object-cover" />
+        <span
+          class="absolute inset-x-0 bottom-0 bg-black/50 py-1 text-center text-xs text-white opacity-0 transition group-hover:opacity-100"
+        >
+          Bấm để đổi ảnh
+        </span>
+      } @else {
+        <span class="flex flex-col items-center gap-1 px-2 text-center text-slate-400 group-hover:text-emerald-600">
+          <i class="pi pi-image text-3xl"></i>
+          <span class="text-xs font-medium">Bấm để chọn ảnh</span>
+        </span>
+      }
+    </label>
+
+    <div class="space-y-1 pt-1 text-xs text-slate-500">
+      <p>JPG, PNG hoặc WebP, tối đa 2 MB.</p>
+      @if (imagePreview()) {
+        <button type="button" class="text-red-600 underline" (click)="clearImage()">Xóa ảnh</button>
+      }
+    </div>
+  </div>
+</div>
+</div>
         <div>
           <label class="mb-1 block text-sm font-medium text-slate-700">Mô tả</label>
           <textarea formControlName="MoTa" rows="2" class="w-full rounded-md border border-slate-300 px-3 py-2"></textarea>
@@ -254,9 +306,8 @@ export class ProductList {
   // Chỉ chủ và quản lý được thêm / sửa (khớp route role:1,2 ở backend)
   readonly canEdit = computed(() => this.auth.hasAnyRole([ROLE.OWNER, ROLE.MANAGER]));
 
-  readonly categories = computed(() => [
-    ...new Set(this.products().map((p) => p.LoaiSanPham).filter((c): c is string => !!c)),
-  ]);
+  private categoryService = inject(CategoryService);
+  readonly categories = signal<Category[]>([]);
 
   readonly filtered = computed(() => {
     const k = normalize(this.keyword().trim());
@@ -269,7 +320,7 @@ export class ProductList {
   readonly form = this.fb.group(
     {
       TenSanPham: ['', Validators.required],
-      LoaiSanPham: [''],
+      MaDanhMuc: [null as number | null, Validators.required],
       TenThuongHieu: [''],
       MaNhaCungCap: [null as number | null, Validators.required],
       DonGiaNhap: [null as number | null, [Validators.required, Validators.min(0)]],
@@ -311,7 +362,64 @@ export class ProductList {
     this.stockError.set(null);
     this.stockForm.reset({ SoLuongMoi: p.SoLuongHienTai, LyDoCapNhat: '' });
   }
+  readonly imageFile = signal<File | null>(null);
+  readonly imagePreview = signal<string | null>(null);
+  readonly imageRemoved = signal(false);
 
+  onFile(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      this.formError.set('Chỉ nhận ảnh JPG, PNG hoặc WebP.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      this.formError.set('Ảnh không được lớn hơn 2 MB.');
+      return;
+    }
+
+    this.formError.set(null);
+    this.revokePreview();
+    this.imageFile.set(file);
+    this.imageRemoved.set(false);
+    this.imagePreview.set(URL.createObjectURL(file));
+  }
+
+  clearImage() {
+    this.revokePreview();
+    this.imageFile.set(null);
+    this.imageRemoved.set(true);
+    this.imagePreview.set(null);
+  }
+
+  private resetImage(url: string | null) {
+    this.revokePreview();
+    this.imageFile.set(null);
+    this.imageRemoved.set(false);
+    this.imagePreview.set(url);
+  }
+
+  private revokePreview() {
+    const url = this.imagePreview();
+    if (url?.startsWith('blob:')) URL.revokeObjectURL(url);
+  }
+
+  private saveImage(id: number | string): Observable<unknown> {
+    const file = this.imageFile();
+    if (file) return this.service.uploadImage(id, file);
+    if (this.imageRemoved()) return this.service.removeImage(id);
+    return of(null);
+  }
+
+  private finishSave(message: string) {
+    this.busy.set(false);
+    this.dialogOpen.set(false);
+    this.notify(message);
+    this.load();
+  }
   diff(p: Product): number {
     const n = Number(this.stockForm.controls.SoLuongMoi.value);
     return Number.isFinite(n) ? Math.floor(n) - Number(p.SoLuongHienTai) : 0;
@@ -349,6 +457,10 @@ export class ProductList {
       this.service.suppliers().subscribe({
         next: (s) => this.suppliers.set(s ?? []),
         error: () => this.error.set('Không tải được danh sách nhà cung cấp.'),
+      });
+      this.categoryService.list().subscribe({
+        next: (c) => this.categories.set(c ?? []),
+        error: () => this.error.set('Không tải được danh sách danh mục.'),
       });
     }
   }
@@ -416,8 +528,9 @@ export class ProductList {
   openCreate() {
     this.editing.set(null);
     this.formError.set(null);
+    this.resetImage(null);
     this.form.reset({
-      TenSanPham: '', LoaiSanPham: '', TenThuongHieu: '', MaNhaCungCap: null,
+      TenSanPham: '', MaDanhMuc: null, TenThuongHieu: '', MaNhaCungCap: null,
       DonGiaNhap: null, DonGiaBan: null, TonKhoToiThieu: 0, TonKhoToiDa: null,
       CanhBaoHSD: null, SoLuongHienTai: 0, MoTa: '', ThanhPhan: '',
     });
@@ -429,7 +542,7 @@ export class ProductList {
     this.formError.set(null);
     this.form.reset({
       TenSanPham: p.TenSanPham,
-      LoaiSanPham: p.LoaiSanPham ?? '',
+      MaDanhMuc: p.MaDanhMuc != null ? Number(p.MaDanhMuc) : null,
       TenThuongHieu: p.TenThuongHieu ?? '',
       MaNhaCungCap: p.MaNhaCungCap != null ? Number(p.MaNhaCungCap) : null,
       DonGiaNhap: num(p.DonGiaNhap as number | null),
@@ -442,6 +555,7 @@ export class ProductList {
       ThanhPhan: p.ThanhPhan ?? '',
     });
     this.dialogOpen.set(true);
+    this.resetImage(p.hinh_anh_url ?? null);
   }
 
   save() {
@@ -450,7 +564,7 @@ export class ProductList {
 
     const body: ProductPayload = {
       TenSanPham: (v.TenSanPham ?? '').trim(),
-      LoaiSanPham: text(v.LoaiSanPham),
+      MaDanhMuc: Number(v.MaDanhMuc),
       TenThuongHieu: text(v.TenThuongHieu),
       MaNhaCungCap: Number(v.MaNhaCungCap),
       DonGiaNhap: Number(v.DonGiaNhap),
@@ -472,11 +586,13 @@ export class ProductList {
     this.busy.set(true);
     this.formError.set(null);
     request.subscribe({
-      next: () => {
-        this.busy.set(false);
-        this.dialogOpen.set(false);
-        this.notify(current ? 'Đã cập nhật sản phẩm.' : 'Đã thêm sản phẩm.');
-        this.load();
+      next: (res) => {
+        const id = current?.MaSanPham ?? res.data.MaSanPham;
+        this.saveImage(id).subscribe({
+          next: () => this.finishSave(current ? 'Đã cập nhật sản phẩm.' : 'Đã thêm sản phẩm.'),
+          error: (e: HttpErrorResponse) =>
+            this.finishSave(`Đã lưu sản phẩm nhưng chưa cập nhật được ảnh: ${this.errorText(e)}`),
+        });
       },
       error: (e: HttpErrorResponse) => {
         this.busy.set(false);

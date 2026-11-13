@@ -92,6 +92,11 @@ export const routes: Routes = [
                 canActivate: [roleGuard(ROLE.OWNER, ROLE.MANAGER)],
                 loadComponent: () => import('./features/reports/revenue-report').then((m) => m.RevenueReport_),
             },
+            {
+                path: 'categories',
+                canActivate: [roleGuard(ROLE.OWNER, ROLE.MANAGER)],
+                loadComponent: () => import('./features/categories/category-list').then((m) => m.CategoryList),
+            },
         ],
 
     },
@@ -99,6 +104,10 @@ export const routes: Routes = [
         path: '403',
         loadComponent: () => import('./features/errors/forbidden').then((m) => m.Forbidden),
     },
-    { path: '', pathMatch: 'full', redirectTo: 'admin' },
-    { path: '**', redirectTo: 'admin' },
+    {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () => import('./features/public/home').then((m) => m.PublicHome),
+    },
+    { path: '**', redirectTo: '' },
 ];

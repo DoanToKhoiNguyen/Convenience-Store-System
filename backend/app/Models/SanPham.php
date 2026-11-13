@@ -9,9 +9,17 @@ class SanPham extends Model
     protected $table = 'san_pham';
     protected $primaryKey = 'MaSanPham';
     protected $fillable = ['TenSanPham', 'DonGiaBan', 'DonGiaNhap', 'TonKhoToiThieu', 'TonKhoToiDa', 
-    'CanhBaoHSD', 'SoLuongHienTai', 'TenThuongHieu', 'MoTa', 'ThanhPhan', 'TrangThai', 'LoaiSanPham', 'MaNhaCungCap'];
+    'CanhBaoHSD', 'SoLuongHienTai', 'TenThuongHieu', 'MoTa', 
+    'ThanhPhan', 'TrangThai', 'LoaiSanPham', 'MaNhaCungCap', 'HinhAnh'];
+
+    protected $appends = ['hinh_anh_url'];
     protected $casts = ['TrangThai' => 'boolean'];
     
+    public function getHinhAnhUrlAttribute(): ?string
+    {
+        return $this->HinhAnh ? '/storage/' . ltrim($this->HinhAnh, '/') : null;
+    }
+
     public function capNhatTonKho() { 
         return $this->hasMany(CapNhatTonKho::class, 'MaSanPham', 'MaSanPham'); 
     }
@@ -24,5 +32,8 @@ class SanPham extends Model
     public function nhaCungCap(){
         return $this->belongsTo(NhaCungCap::class, 'MaNhaCungCap', 'MaNhaCungCap');
     }
-
+    public function danhMuc()
+    {
+        return $this->belongsTo(DanhMuc::class, 'MaDanhMuc', 'MaDanhMuc');
+    }
 }

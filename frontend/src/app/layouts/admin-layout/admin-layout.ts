@@ -22,6 +22,7 @@ const ALL_MENU: MenuItem[] = [
   { label: 'Lịch sử tồn kho', icon: 'pi pi-history', link: '/admin/stock-history', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Phiếu nhập', icon: 'pi pi-truck', link: '/admin/purchases', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
   { label: 'Nhà cung cấp', icon: 'pi pi-building', link: '/admin/suppliers', roles: [ROLE.OWNER, ROLE.MANAGER] },
+  { label: 'Danh mục', icon: 'pi pi-tags', link: '/admin/categories', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Đăng ký ca làm', icon: 'pi pi-calendar-plus', link: '/admin/shift-register', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
   { label: 'Thời khóa biểu', icon: 'pi pi-calendar', link: '/admin/timetable', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Nhân viên', icon: 'pi pi-users', link: '/admin/staff', roles: [ROLE.OWNER, ROLE.MANAGER] },
