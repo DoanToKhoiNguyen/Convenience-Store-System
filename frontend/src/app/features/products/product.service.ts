@@ -52,10 +52,11 @@ export class ProductService {
         return this.http.post<{ message: string }>(`${this.url}/${id}/hien-thi`, {});
     }
 
-    updateStock(id: number | string, soLuongMoi: number, lyDo: string) {
+    updateStock(id: number | string, soLuongMoi: number, lyDo: string, maLo: number | null = null) {
         return this.http.put<{ message: string }>(`${this.url}/${id}/ton-kho`, {
             SoLuongMoi: soLuongMoi,
             LyDoCapNhat: lyDo,
+            MaLoHang: maLo,
         });
     }
 

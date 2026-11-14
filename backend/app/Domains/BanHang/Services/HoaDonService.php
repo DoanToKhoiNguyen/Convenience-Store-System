@@ -2,17 +2,20 @@
 
 namespace App\Domains\BanHang\Services;
 
-use App\Models\CapNhatTonKho;
 use App\Models\ChiTietHoaDon;
 use App\Models\HoaDon;
-use App\Models\SanPham;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Domains\LoHang\Services\LoHangService;
+use App\Models\HoaDonLo;
 
 class HoaDonService
 {
     public const PHUT_GIU_HANG = 60;
 
+    public function __construct(private LoHangService $lo)
+    {
+    }
     /** Đưa vào hàng đợi: trừ kho để giữ hàng, hạn thanh toán sau 1 giờ. */
     public function giuHang(int $maHD, int $maTaiKhoan): HoaDon
     {
@@ -141,8 +144,6 @@ class HoaDonService
         });
     }
 
-    // ---------------------------------------------------------------
-
     private function khoa(int $maHD): HoaDon
     {
         $hoaDon = HoaDon::where('MaHoaDon', $maHD)->lockForUpdate()->first();
@@ -177,14 +178,15 @@ class HoaDonService
     private function truKho($chiTiet, string $lyDo, int $maTaiKhoan): void
     {
         foreach ($chiTiet as $ct) {
-            $sp = SanPham::where('MaSanPham', $ct->MaSanPham)->lockForUpdate()->first();
+            $chia = $this->lo->xuatBan((int) $ct->MaSanPham, (int) $ct->SoLuong, $lyDo, $maTaiKhoan);
 
-            if (!$sp || $sp->SoLuongHienTai < $ct->SoLuong) {
-                $ten = $sp->TenSanPham ?? $ct->TenSanPham;
-                throw new \DomainException("Sản phẩm '{$ten}' không đủ số lượng trong kho.", 400);
+            foreach ($chia as $c) {
+                HoaDonLo::create([
+                    'MaChiTietHoaDon' => $ct->MaChiTietHoaDon,
+                    'MaLoHang'        => $c['MaLoHang'],
+                    'SoLuong'         => $c['SoLuong'],
+                ]);
             }
-
-            $this->doiTonKho($sp, -$ct->SoLuong, $lyDo, $maTaiKhoan);
         }
     }
 
@@ -194,15 +196,13 @@ class HoaDonService
             $chiTiet = ChiTietHoaDon::where('MaHoaDon', $hoaDon->MaHoaDon)->orderBy('MaSanPham')->get();
 
             foreach ($chiTiet as $ct) {
-                $sp = SanPham::where('MaSanPham', $ct->MaSanPham)->lockForUpdate()->first();
-                if ($sp) {
-                    $this->doiTonKho(
-                        $sp,
-                        (int) $ct->SoLuong,
-                        "Hoàn kho - hủy hóa đơn #{$hoaDon->MaHoaDon}: {$lyDo}",
-                        $maTaiKhoan
-                    );
-                }
+                $this->lo->hoanBan(
+                    (int) $ct->MaChiTietHoaDon,
+                    (int) $ct->MaSanPham,
+                    (int) $ct->SoLuong,
+                    "Hoàn kho - hủy hóa đơn #{$hoaDon->MaHoaDon}: {$lyDo}",
+                    $maTaiKhoan
+                );
             }
         }
 
@@ -213,20 +213,4 @@ class HoaDonService
         $hoaDon->save();
     }
 
-    /** Đổi tồn kho và ghi lịch sử (SoLuongHienTai = số cũ, SoLuongMoi = số mới, theo cách bạn đang ghi). */
-    private function doiTonKho(SanPham $sp, int $delta, string $lyDo, int $maTaiKhoan): void
-    {
-        $truoc = (int) $sp->SoLuongHienTai;
-        $sp->SoLuongHienTai = $truoc + $delta;
-        $sp->save();
-
-        CapNhatTonKho::create([
-            'ThoiGianCapNhat' => now(),
-            'SoLuongMoi'      => $sp->SoLuongHienTai,
-            'SoLuongHienTai'  => $truoc,
-            'LyDoCapNhat'     => $lyDo,
-            'MaTaiKhoan'      => $maTaiKhoan,
-            'MaSanPham'       => $sp->MaSanPham,
-        ]);
-    }
 }

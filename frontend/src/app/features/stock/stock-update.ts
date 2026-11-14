@@ -15,12 +15,12 @@ type Severity = 'success' | 'warn' | 'danger';
 
 // Bỏ dấu để gõ "nuoc ngot" vẫn tìm ra "Nước ngọt"
 const normalize = (s: string) =>
-    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase();
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase();
 
 @Component({
-    selector: 'app-stock-update',
-    imports: [ReactiveFormsModule, RouterLink, TableModule, TagModule, ButtonModule, DialogModule, InputTextModule],
-    template: `
+  selector: 'app-stock-update',
+  imports: [ReactiveFormsModule, RouterLink, TableModule, TagModule, ButtonModule, DialogModule, InputTextModule],
+  template: `
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-2xl font-semibold text-slate-800">Cập nhật tồn kho</h1>
@@ -137,6 +137,17 @@ const normalize = (s: string) =>
                 Đặt về 0 (hết hàng)
               </button>
             </div>
+            @if (p.lo_hang?.length) {
+  <div>
+    <label class="mb-1 block text-sm font-medium text-slate-700">Áp dụng cho lô</label>
+    <select formControlName="MaLoHang" class="w-full rounded-md border border-slate-300 px-3 py-2">
+      <option [ngValue]="null">Tự động (giảm lô hết hạn sớm nhất, tăng lô mới nhất)</option>
+      @for (l of p.lo_hang; track l.MaLoHang) {
+        <option [ngValue]="l.MaLoHang">{{ l.MaLo }} · còn {{ l.SoLuongCon }}{{ l.HanSuDung ? ' · HSD ' + l.HanSuDung : '' }}</option>
+      }
+    </select>
+  </div>
+}
             <input pInputText type="number" min="0" formControlName="SoLuongMoi" class="w-full" />
             @if (diff(p) !== 0) {
               <small [class]="diff(p) > 0 ? 'text-emerald-600' : 'text-red-600'">
@@ -168,148 +179,163 @@ const normalize = (s: string) =>
   `,
 })
 export class StockUpdate {
-    private service = inject(ProductService);
-    private fb = inject(FormBuilder);
+  private service = inject(ProductService);
+  private fb = inject(FormBuilder);
 
-    readonly tabs: { key: Filter; label: string }[] = [
-        { key: 'all', label: 'Tất cả' },
-        { key: 'low', label: 'Sắp hết' },
-        { key: 'out', label: 'Hết hàng' },
-    ];
-    readonly reasons = ['Kiểm kho', 'Hàng hỏng', 'Hàng hết hạn', 'Thất thoát', 'Điều chỉnh số liệu'];
+  readonly tabs: { key: Filter; label: string }[] = [
+    { key: 'all', label: 'Tất cả' },
+    { key: 'low', label: 'Sắp hết' },
+    { key: 'out', label: 'Hết hàng' },
+  ];
+  readonly reasons = ['Kiểm kho', 'Hàng hỏng', 'Hàng hết hạn', 'Thất thoát', 'Điều chỉnh số liệu'];
 
-    readonly products = signal<Product[]>([]);
-    readonly keyword = signal('');
-    readonly filter = signal<Filter>('all');
-    readonly loading = signal(true);
-    readonly busy = signal(false);
-    readonly error = signal<string | null>(null);
-    readonly success = signal<string | null>(null);
+  readonly products = signal<Product[]>([]);
+  readonly keyword = signal('');
+  readonly filter = signal<Filter>('all');
+  readonly loading = signal(true);
+  readonly busy = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly success = signal<string | null>(null);
 
-    readonly target = signal<Product | null>(null);
-    readonly formError = signal<string | null>(null);
+  readonly target = signal<Product | null>(null);
+  readonly formError = signal<string | null>(null);
 
-    readonly form = this.fb.nonNullable.group({
-        SoLuongMoi: [0, [Validators.required, Validators.min(0)]],
-        LyDoCapNhat: ['', [Validators.required, Validators.maxLength(255)]],
+  readonly form = this.fb.nonNullable.group({
+    SoLuongMoi: [0, [Validators.required, Validators.min(0)]],
+    LyDoCapNhat: ['', [Validators.required, Validators.maxLength(255)]],
+    MaLoHang: [null as number | null],
+  });
+
+  // Sản phẩm đã ẩn không cần cập nhật tồn kho
+  readonly active = computed(() => this.products().filter((p) => Number(p.TrangThai ?? 1) === 1));
+
+  readonly filtered = computed(() => {
+    const k = normalize(this.keyword().trim());
+    return this.active().filter(
+      (p) =>
+        this.matches(p, this.filter()) &&
+        (!k || normalize(p.TenSanPham).includes(k) || normalize(String(p.MaSanPham)).includes(k)),
+    );
+  });
+
+  constructor() {
+    this.load();
+  }
+
+  load() {
+    this.loading.set(true);
+    this.service.getAll().subscribe({
+      next: (data) => {
+        this.products.set(data ?? []);
+        this.loading.set(false);
+      },
+      error: (e: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.error.set(e.error?.message ?? 'Không tải được danh sách sản phẩm.');
+      },
     });
+  }
 
-    // Sản phẩm đã ẩn không cần cập nhật tồn kho
-    readonly active = computed(() => this.products().filter((p) => Number(p.TrangThai ?? 1) === 1));
+  private matches(p: Product, f: Filter): boolean {
+    const stock = Number(p.SoLuongHienTai);
+    const min = Number(p.TonKhoToiThieu ?? 0);
+    if (f === 'out') return stock <= 0;
+    if (f === 'low') return stock > 0 && stock <= min;
+    return true;
+  }
 
-    readonly filtered = computed(() => {
-        const k = normalize(this.keyword().trim());
-        return this.active().filter(
-            (p) =>
-                this.matches(p, this.filter()) &&
-                (!k || normalize(p.TenSanPham).includes(k) || normalize(String(p.MaSanPham)).includes(k)),
+  count(f: Filter): number {
+    return this.active().filter((p) => this.matches(p, f)).length;
+  }
+
+  status(p: Product): { label: string; severity: Severity } {
+    const stock = Number(p.SoLuongHienTai);
+    if (stock <= 0) return { label: 'Hết hàng', severity: 'danger' };
+    if (stock <= Number(p.TonKhoToiThieu ?? 0)) return { label: 'Sắp hết', severity: 'warn' };
+    return { label: 'Còn hàng', severity: 'success' };
+  }
+
+  open(p: Product) {
+    this.target.set(p);
+    this.formError.set(null);
+    this.form.reset({ SoLuongMoi: Number(p.SoLuongHienTai), LyDoCapNhat: '', MaLoHang: null });
+  }
+
+  close() {
+    if (!this.busy()) this.target.set(null);
+  }
+
+  private newQty(): number {
+    return Math.floor(Number(this.form.controls.SoLuongMoi.value));
+  }
+
+  diff(p: Product): number {
+    const n = this.newQty();
+    return Number.isFinite(n) ? n - Number(p.SoLuongHienTai) : 0;
+  }
+
+  overMax(p: Product): boolean {
+    const max = Number(p.TonKhoToiDa ?? 0);
+    return max > 0 && this.newQty() > max;
+  }
+
+  cannotSave(): boolean {
+    const p = this.target();
+    return !p || this.form.invalid || this.busy() || this.overMax(p);
+  }
+
+
+  save() {
+    const p = this.target();
+    if (!p || this.cannotSave()) return;
+
+    const moi = this.newQty();
+    const cu = Number(p.SoLuongHienTai);
+
+    if (moi === cu) {
+      this.formError.set('Số lượng mới đang bằng số lượng hiện tại.');
+      return;
+    }
+
+    this.busy.set(true);
+    this.formError.set(null);
+
+    this.service.updateStock(
+      p.MaSanPham,
+      moi,
+      this.form.controls.LyDoCapNhat.value.trim(),
+      this.form.controls.MaLoHang.value
+    ).subscribe({
+      next: () => {
+        this.busy.set(false);
+        this.target.set(null);
+
+        const canhBao = moi <= Number(p.TonKhoToiThieu ?? 0);
+
+        this.notify(
+          `Đã cập nhật "${p.TenSanPham}": ${cu} → ${moi}.` +
+          (canhBao ? ' Sản phẩm này hiện nằm trong mục Cảnh báo kho.' : ''),
         );
-    });
 
-    constructor() {
         this.load();
-    }
+      },
+      error: (e: HttpErrorResponse) => {
+        this.busy.set(false);
 
-    load() {
-        this.loading.set(true);
-        this.service.getAll().subscribe({
-            next: (data) => {
-                this.products.set(data ?? []);
-                this.loading.set(false);
-            },
-            error: (e: HttpErrorResponse) => {
-                this.loading.set(false);
-                this.error.set(e.error?.message ?? 'Không tải được danh sách sản phẩm.');
-            },
-        });
-    }
+        const errs = e.error?.errors as Record<string, string[]> | undefined;
 
-    private matches(p: Product, f: Filter): boolean {
-        const stock = Number(p.SoLuongHienTai);
-        const min = Number(p.TonKhoToiThieu ?? 0);
-        if (f === 'out') return stock <= 0;
-        if (f === 'low') return stock > 0 && stock <= min;
-        return true;
-    }
+        this.formError.set(
+          errs
+            ? Object.values(errs).flat().join(' ')
+            : (e.error?.message ?? 'Cập nhật tồn kho thất bại.'),
+        );
+      },
+    });
+  }
 
-    count(f: Filter): number {
-        return this.active().filter((p) => this.matches(p, f)).length;
-    }
-
-    status(p: Product): { label: string; severity: Severity } {
-        const stock = Number(p.SoLuongHienTai);
-        if (stock <= 0) return { label: 'Hết hàng', severity: 'danger' };
-        if (stock <= Number(p.TonKhoToiThieu ?? 0)) return { label: 'Sắp hết', severity: 'warn' };
-        return { label: 'Còn hàng', severity: 'success' };
-    }
-
-    open(p: Product) {
-        this.target.set(p);
-        this.formError.set(null);
-        this.form.reset({ SoLuongMoi: Number(p.SoLuongHienTai), LyDoCapNhat: '' });
-    }
-
-    close() {
-        if (!this.busy()) this.target.set(null);
-    }
-
-    private newQty(): number {
-        return Math.floor(Number(this.form.controls.SoLuongMoi.value));
-    }
-
-    diff(p: Product): number {
-        const n = this.newQty();
-        return Number.isFinite(n) ? n - Number(p.SoLuongHienTai) : 0;
-    }
-
-    overMax(p: Product): boolean {
-        const max = Number(p.TonKhoToiDa ?? 0);
-        return max > 0 && this.newQty() > max;
-    }
-
-    cannotSave(): boolean {
-        const p = this.target();
-        return !p || this.form.invalid || this.busy() || this.overMax(p);
-    }
-
-    save() {
-        const p = this.target();
-        if (!p || this.cannotSave()) return;
-
-        const moi = this.newQty();
-        const cu = Number(p.SoLuongHienTai);
-        if (moi === cu) {
-            this.formError.set('Số lượng mới đang bằng số lượng hiện tại.');
-            return;
-        }
-
-        this.busy.set(true);
-        this.formError.set(null);
-        this.service.updateStock(p.MaSanPham, moi, this.form.controls.LyDoCapNhat.value.trim()).subscribe({
-            next: () => {
-                this.busy.set(false);
-                this.target.set(null);
-
-                const canhBao = moi <= Number(p.TonKhoToiThieu ?? 0);
-                this.notify(
-                    `Đã cập nhật "${p.TenSanPham}": ${cu} → ${moi}.` +
-                    (canhBao ? ' Sản phẩm này hiện nằm trong mục Cảnh báo kho.' : ''),
-                );
-                this.load();
-            },
-            error: (e: HttpErrorResponse) => {
-                this.busy.set(false);
-                const errs = e.error?.errors as Record<string, string[]> | undefined;
-                this.formError.set(
-                    errs ? Object.values(errs).flat().join(' ') : (e.error?.message ?? 'Cập nhật tồn kho thất bại.'),
-                );
-            },
-        });
-    }
-
-    private notify(message: string) {
-        this.success.set(message);
-        this.error.set(null);
-        setTimeout(() => this.success.set(null), 5000);
-    }
+  private notify(message: string) {
+    this.success.set(message);
+    this.error.set(null);
+    setTimeout(() => this.success.set(null), 5000);
+  }
 }

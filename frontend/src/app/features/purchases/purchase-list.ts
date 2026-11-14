@@ -10,6 +10,7 @@ import { PurchaseOrder } from './purchase.model';
 import { PurchaseService } from './purchase.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE } from '../../core/auth/roles';
+import { formatDate } from '../shifts/week.util';
 
 type Severity = 'warn' | 'info' | 'danger' | 'success';
 
@@ -95,40 +96,54 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
         <p class="mb-3 text-sm text-slate-500">
           Nhà cung cấp: <b class="text-slate-700">{{ o.nha_cung_cap?.TenNhaCungCap ?? '—' }}</b>
         </p>
-
+        @if (mode() === 'receive') {
+  <p class="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+    Nhập hạn sử dụng in trên bao bì cho từng dòng (để trống nếu hàng không có hạn). Mỗi dòng sẽ tạo một lô hàng riêng.
+  </p>
+}
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b text-left text-slate-500">
+              @if (mode() === 'view') {
+                <th class="pl-4">Lô</th>
+              }
               <th class="py-2">Sản phẩm</th>
               <th class="text-right">SL</th>
               <th class="text-right">Đơn giá</th>
               <th class="text-right">Thành tiền</th>
               @if (mode() === 'receive') {
-                <th class="pl-4">Ngày sản xuất</th>
+                <th class="pl-4">Hạn sử dụng</th>
               }
             </tr>
           </thead>
           <tbody>
-            @for (d of o.chi_tiet_phieu_nhap ?? []; track d.MaChiTietPhieuNhap) {
-              <tr class="border-b border-slate-100">
-                <td class="py-2">{{ d.TenSanPham }}</td>
-                <td class="text-right">{{ d.SoLuong }}</td>
-                <td class="text-right">{{ d.DonGia | number: '1.0-0' }}</td>
-                <td class="text-right">{{ d.TongGia | number: '1.0-0' }}</td>
-                @if (mode() === 'receive') {
-                  <td class="pl-4">
-                    <input
-                      type="date"
-                      class="rounded border border-slate-300 px-2 py-1"
-                      [max]="today"
-                      [value]="dates()[d.MaChiTietPhieuNhap] ?? ''"
-                      (input)="setDate(d.MaChiTietPhieuNhap, $any($event.target).value)"
-                    />
-                  </td>
-                }
-              </tr>
-            }
-          </tbody>
+  @for (d of o.chi_tiet_phieu_nhap ?? []; track d.MaChiTietPhieuNhap) {
+    <tr class="border-b border-slate-100">
+      <td class="py-2">{{ d.TenSanPham }}</td>
+      <td class="text-right">{{ d.SoLuong }}</td>
+      <td class="text-right">{{ d.DonGia | number: '1.0-0' }}</td>
+      <td class="text-right">{{ d.TongGia | number: '1.0-0' }}</td>
+
+      @if (mode() === 'view') {
+        <td class="pl-4">
+          {{ d.lo_hang ? d.lo_hang.MaLo : '—' }}
+        </td>
+      }
+
+      @if (mode() === 'receive') {
+        <td class="pl-4">
+          <input
+            type="date"
+            class="rounded border border-slate-300 px-2 py-1"
+            [min]="today"
+            [value]="dates()[d.MaChiTietPhieuNhap] ?? ''"
+            (input)="setDate(d.MaChiTietPhieuNhap, $any($event.target).value)"
+          />
+        </td>
+      }
+    </tr>
+  }
+</tbody>
         </table>
 
         <div class="mt-3 text-right font-medium text-slate-800">
@@ -202,7 +217,7 @@ export class PurchaseList {
   readonly selected = signal<PurchaseOrder | null>(null);
   readonly mode = signal<'view' | 'receive'>('view');
   readonly dates = signal<Record<number, string>>({});
-  readonly today = new Date().toISOString().slice(0, 10);
+  readonly today = formatDate(new Date());
 
   private page = 1;
 
@@ -214,7 +229,7 @@ export class PurchaseList {
   readonly canConfirm = computed(() => {
     const lines = this.selected()?.chi_tiet_phieu_nhap ?? [];
     const d = this.dates();
-    return lines.length > 0 && lines.every((l) => !!d[l.MaChiTietPhieuNhap]);
+    return lines.length > 0;
   });
 
   status(o: PurchaseOrder) {
@@ -275,7 +290,7 @@ export class PurchaseList {
     if (!o) return;
     const items = (o.chi_tiet_phieu_nhap ?? []).map((l) => ({
       MaChiTietPhieuNhap: l.MaChiTietPhieuNhap,
-      NgaySanXuat: this.dates()[l.MaChiTietPhieuNhap],
+      HanSuDung: this.dates()[l.MaChiTietPhieuNhap] || null,
     }));
     this.run(this.service.receive(o.MaPhieuNhap, items), 'Đã nhận hàng và cộng tồn kho.', () =>
       this.selected.set(null),

@@ -106,11 +106,11 @@ Frontend: chỉnh URL API trong `frontend/src/environments/`.
 
 Được tạo bởi `php artisan migrate --seed`:
 
-| Vai trò | Email | Mật khẩu |
+| Vai trò | User | Mật khẩu |
 |---|---|---|
-| Chủ | owner@example.com | `password` |
-| Quản lý | manager@example.com | `password` |
-| Nhân viên | staff@example.com | `password` |
+| Chủ | admin | 123456 |
+| Quản lý | quanly | 123456 |
+| Nhân viên | nhanvien01| 123456 |
 
 > Đổi hoặc xóa các tài khoản này trước khi đưa lên môi trường thật.
 
@@ -170,6 +170,8 @@ Tóm tắt các bước (chi tiết xem `docs/deploy.md`):
   - Mọi thay đổi tồn kho ghi vào `stock_movements`.
   - Hóa đơn đã chốt không sửa, chỉ tạo phiếu hoàn/hủy.
 
+
+```bash
 Lần đầu
 bash
 git clone <URL-repo>
@@ -207,3 +209,4 @@ bash
 git pull
 cd backend && composer install && php artisan migrate
 cd ../frontend && npm install
+```

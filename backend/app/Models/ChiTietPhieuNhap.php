@@ -17,4 +17,8 @@ class ChiTietPhieuNhap extends Model
     public function sanPham(){
         return $this->belongsTo(SanPham::class, 'MaSanPham', 'MaSanPham');
     }
+    public function loHang()
+    {
+        return $this->hasOne(LoHang::class, 'MaChiTietPhieuNhap', 'MaChiTietPhieuNhap');
+    }
 }

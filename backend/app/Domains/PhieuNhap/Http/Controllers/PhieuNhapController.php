@@ -8,6 +8,7 @@ use App\Models\ChiTietPhieuNhap;
 use App\Models\SanPham;
 use App\Models\NhaCungCap;
 use App\Models\CapNhatTonKho;
+use App\Domains\LoHang\Services\LoHangService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -198,7 +199,7 @@ class PhieuNhapController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = PhieuNhap::with(['nhaCungCap', 'chiTietPhieuNhap'])
+            $query = PhieuNhap::with(['nhaCungCap', 'chiTietPhieuNhap.loHang'])
                 ->orderBy('created_at', 'desc');
 
             // Nhân viên (vai trò 3) chỉ thấy phiếu đã duyệt (2) và đã nhận hàng (4)
@@ -221,101 +222,71 @@ class PhieuNhapController extends Controller
         }
     }
 
-    public function xacNhanNhanHang(Request $request, $id)
+    public function xacNhanNhanHang(Request $request, LoHangService $loHang, $id)
     {
-        // 3. Validate: Yêu cầu truyền danh sách ngày sản xuất cho từng dòng chi tiết
         $validated = $request->validate([
-            'ChiTiet' => 'required|array|min:1',
-            'ChiTiet.*.MaChiTietPhieuNhap' => 'required|exists:chi_tiet_phieu_nhap,MaChiTietPhieuNhap',
-            'ChiTiet.*.NgaySanXuat' => 'required|date',
+            'ChiTiet'                      => 'required|array|min:1',
+            'ChiTiet.*.MaChiTietPhieuNhap' => 'required|integer',
+            'ChiTiet.*.HanSuDung'          => 'nullable|date_format:Y-m-d|after_or_equal:today',
+        ], [
+            'ChiTiet.*.HanSuDung.after_or_equal' => 'Hạn sử dụng không được trước ngày hôm nay (hàng đã hết hạn không thể nhập kho).',
+            'ChiTiet.*.HanSuDung.date_format'    => 'Hạn sử dụng không hợp lệ.',
         ]);
 
-        DB::beginTransaction();
+        $maTaiKhoan = $request->user()->MaTaiKhoan;
+        $han = collect($validated['ChiTiet'])->mapWithKeys(
+            fn ($c) => [(int) $c['MaChiTietPhieuNhap'] => $c['HanSuDung'] ?? null]
+        );
 
         try {
-            // 1 & 2. Tìm phiếu nhập kèm theo chi tiết
-            $phieuNhap = PhieuNhap::with('chiTietPhieuNhap')->findOrFail($id);
-
-            // Kiểm tra trạng thái: Phải đã duyệt (TrangThai == 2) mới được nhận hàng
-            if ($phieuNhap->TrangThai != 2) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Phiếu nhập chưa được duyệt hoặc không ở trạng thái hợp lệ để nhận hàng!',
-                ], 400);
-            }
-
-            // Kiểm tra xem đã nhận hàng trước đó chưa (Tránh nhận 2 lần cộng kho nhầm)
-            if ($phieuNhap->TrangThai == 4) { // 4 = Đã nhận hàng
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Phiếu nhập này đã được xác nhận nhận hàng trước đó rồi!',
-                ], 400);
-            }
-
-            // Lấy thông tin nhân viên đang thực hiện xác nhận
-            $user = $request->user();
-            $maTaiKhoan = $user ? $user->MaTaiKhoan : null;
-
-            // Chuyển mảng dữ liệu ngày sản xuất thành dạng key-value để dễ tra cứu theo MaChiTietPhieuNhap
-            $ngaySanXuatMap = collect($validated['ChiTiet'])->pluck('NgaySanXuat', 'MaChiTietPhieuNhap');
-
-            // 5 & 6. Duyệt qua từng dòng chi tiết để kiểm tra, lưu Ngày sản xuất và cộng tồn kho
-            // 5 & 6. Duyệt qua từng dòng chi tiết để kiểm tra, lưu Ngày sản xuất và cộng tồn kho
-            foreach ($phieuNhap->chiTietPhieuNhap as $chiTiet) {
-                if (!isset($ngaySanXuatMap[$chiTiet->MaChiTietPhieuNhap])) {
-                    throw new \Exception("Thiếu ngày sản xuất cho chi tiết sản phẩm ID: {$chiTiet->MaChiTietPhieuNhap}");
+            $phieu = DB::transaction(function () use ($id, $han, $loHang, $maTaiKhoan) {
+                $phieuNhap = PhieuNhap::with('chiTietPhieuNhap')->where('MaPhieuNhap', $id)->lockForUpdate()->first();
+                if (!$phieuNhap) {
+                    throw new \DomainException('Không tìm thấy phiếu nhập.', 404);
+                }
+                if ($phieuNhap->TrangThai == 4) {
+                    throw new \DomainException('Phiếu nhập này đã được xác nhận nhận hàng trước đó rồi!', 400);
+                }
+                if ($phieuNhap->TrangThai != 2) {
+                    throw new \DomainException('Phiếu nhập chưa được duyệt hoặc không ở trạng thái hợp lệ để nhận hàng!', 400);
                 }
 
-                // DÙNG QUERY BUILDER ĐỂ CẬP NHẬT TRỰC TIẾP CỘT (VIẾT THƯỜNG) TRONG DB
-                DB::table('chi_tiet_phieu_nhap')
-                    ->where('MaChiTietPhieuNhap', $chiTiet->MaChiTietPhieuNhap)
-                    ->update([
-                        'ngay_san_xuat' => $ngaySanXuatMap[$chiTiet->MaChiTietPhieuNhap]
-                    ]);
-
-                // Cộng số lượng vào kho của sản phẩm tương ứng
-                $sanPham = SanPham::where('MaSanPham', $chiTiet->MaSanPham)->lockForUpdate()->first();
-        if ($sanPham) {
-            $truoc = (int) $sanPham->SoLuongHienTai;
-            $sanPham->SoLuongHienTai = $truoc + (int) $chiTiet->SoLuong;
-            $sanPham->save();
-
-            CapNhatTonKho::create([
-                'ThoiGianCapNhat' => now(),
-                'SoLuongMoi'      => $sanPham->SoLuongHienTai,
-                'SoLuongHienTai'  => $truoc,
-                'LyDoCapNhat'     => "Nhận hàng - phiếu nhập #{$phieuNhap->MaPhieuNhap}",
-                'MaTaiKhoan'      => $maTaiKhoan,
-                'MaSanPham'       => $sanPham->MaSanPham,
-            ]);
-        }
+                $ids = $phieuNhap->chiTietPhieuNhap->pluck('MaChiTietPhieuNhap')->map(fn ($v) => (int) $v);
+                if ($han->keys()->diff($ids)->isNotEmpty()) {
+                    throw new \DomainException('Có dòng chi tiết không thuộc phiếu nhập này.', 422);
+                }
+                foreach ($ids as $maCT) {
+                    if (!$han->has($maCT)) {
+                        throw new \DomainException("Thiếu thông tin hạn sử dụng cho dòng chi tiết #{$maCT}.", 422);
                     }
-
-                    // 7. Cập nhật trạng thái phiếu thành "Đã nhận hàng", lưu nhân viên xác nhận và thời gian
-                    $phieuNhap->TrangThai = 4; // 4 = Đã nhận hàng
-                    $phieuNhap->MaTaiKhoan = $maTaiKhoan; // Hoặc tên cột lưu mã nhân viên xác nhận của bạn
-                    $phieuNhap->NgayLap = now();
-                    $phieuNhap->save();
-
-                    DB::commit();
-
-                    // 8. Trả về thông báo thành công
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Xác nhận nhận hàng thành công!',
-                        'data'    => $phieuNhap->load('chiTietPhieuNhap')
-                    ], 200);
-
-                } catch (\Exception $e) 
-                {
-                    DB::rollBack();
-
-                    Log::error('Lỗi xác nhận nhận hàng: ' . $e->getMessage());
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Xác nhận nhận hàng thất bại: ' . $e->getMessage(),
-                    ], 500);
                 }
+
+                // Mỗi dòng nhận hàng tạo một lô riêng
+                foreach ($phieuNhap->chiTietPhieuNhap->sortBy('MaSanPham') as $ct) {
+                    $loHang->nhapLo(
+                        (int) $ct->MaSanPham,
+                        (int) $ct->SoLuong,
+                        $han->get((int) $ct->MaChiTietPhieuNhap),
+                        "Nhận hàng - phiếu nhập #{$phieuNhap->MaPhieuNhap}",
+                        $maTaiKhoan,
+                        (int) $phieuNhap->MaPhieuNhap,
+                        (int) $ct->MaChiTietPhieuNhap
+                    );
+                }
+
+                // Giữ nguyên người lập và ngày lập của phiếu
+                $phieuNhap->TrangThai = 4;
+                $phieuNhap->save();
+
+                return $phieuNhap->load('chiTietPhieuNhap.loHang');
+            });
+        } catch (\DomainException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 400);
+        } catch (\Throwable $e) {
+            Log::error('Lỗi xác nhận nhận hàng: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Xác nhận nhận hàng thất bại: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Xác nhận nhận hàng thành công!', 'data' => $phieu], 200);
     }
 }

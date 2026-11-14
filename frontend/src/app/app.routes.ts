@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { authGuard, roleGuard } from './core/guards/guards';
 import { ROLE } from './core/auth/roles';
+import { inject } from '@angular/core';
+import { AuthService } from './core/auth/auth.service';
 
 export const routes: Routes = [
     {
@@ -16,7 +18,10 @@ export const routes: Routes = [
             {
                 path: '',
                 pathMatch: 'full',
-                loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
+                redirectTo: () =>
+                    inject(AuthService).hasAnyRole([ROLE.OWNER, ROLE.MANAGER])
+                        ? '/admin/timetable'
+                        : '/admin/shift-register',
             },
             {
                 path: 'staff',
@@ -33,7 +38,7 @@ export const routes: Routes = [
                 loadComponent: () => import('./features/purchases/purchase-list').then((m) => m.PurchaseList),
             },
             {
-                path: 'bills', // Hoặc đường dẫn bạn muốn (ví dụ: 'sales')
+                path: 'bills',
                 canActivate: [roleGuard(ROLE.OWNER, ROLE.MANAGER)],
                 loadComponent: () => import('./features/bill/bill-list').then((m) => m.BillList),
             },
@@ -96,6 +101,10 @@ export const routes: Routes = [
                 path: 'categories',
                 canActivate: [roleGuard(ROLE.OWNER, ROLE.MANAGER)],
                 loadComponent: () => import('./features/categories/category-list').then((m) => m.CategoryList),
+            },
+            {
+                path: 'expiry-alerts',
+                loadComponent: () => import('./features/lots/expiry-alerts').then((m) => m.ExpiryAlerts),
             },
         ],
 

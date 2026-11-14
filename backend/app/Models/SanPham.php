@@ -10,7 +10,7 @@ class SanPham extends Model
     protected $primaryKey = 'MaSanPham';
     protected $fillable = ['TenSanPham', 'DonGiaBan', 'DonGiaNhap', 'TonKhoToiThieu', 'TonKhoToiDa', 
     'CanhBaoHSD', 'SoLuongHienTai', 'TenThuongHieu', 'MoTa', 
-    'ThanhPhan', 'TrangThai', 'LoaiSanPham', 'MaNhaCungCap', 'HinhAnh'];
+    'ThanhPhan', 'TrangThai', 'LoaiSanPham', 'MaNhaCungCap', 'HinhAnh', 'TienToLo'];
 
     protected $appends = ['hinh_anh_url'];
     protected $casts = ['TrangThai' => 'boolean'];
@@ -35,5 +35,9 @@ class SanPham extends Model
     public function danhMuc()
     {
         return $this->belongsTo(DanhMuc::class, 'MaDanhMuc', 'MaDanhMuc');
+    }
+    public function loHang()
+    {
+        return $this->hasMany(LoHang::class, 'MaSanPham', 'MaSanPham');
     }
 }

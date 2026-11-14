@@ -35,7 +35,7 @@ export class PurchaseService {
         return this.http.post(`${this.url}/${id}/huy`, {});
     }
 
-    receive(id: number, items: { MaChiTietPhieuNhap: number; NgaySanXuat: string }[]) {
+    receive(id: number, items: { MaChiTietPhieuNhap: number; HanSuDung: string | null }[]) {
         return this.http.put(`${this.url}/${id}/nhan-hang`, { ChiTiet: items });
     }
 }

@@ -5,6 +5,7 @@ export interface PurchaseDetail {
     SoLuong: number;
     DonGia: number | string;
     TongGia: number | string;
+    lo_hang?: { MaLo: string; HanSuDung: string | null } | null;
 }
 
 export interface PurchaseOrder {

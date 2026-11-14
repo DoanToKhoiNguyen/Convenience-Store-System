@@ -13,6 +13,7 @@ use App\Domains\KhuyenMai\Http\Controllers\KhuyenMaiController;
 use App\Domains\BaoCao\Http\Controllers\BaoCaoController;
 use App\Domains\SanPham\Http\Controllers\SanPhamCongKhaiController;
 use App\Domains\DanhMuc\Http\Controllers\DanhMucController;
+use App\Domains\LoHang\Http\Controllers\LoHangController;
 use App\Models\SanPham;
 use Illuminate\Routing\Router;
 
@@ -58,6 +59,7 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
         Route::post('/danh-muc', [DanhMucController::class, 'store']);
         Route::put('/danh-muc/{id}', [DanhMucController::class, 'update']);
         Route::delete('/danh-muc/{id}', [DanhMucController::class, 'destroy']);
+        Route::put('/lo-hang/{id}/han-su-dung', [LoHangController::class, 'capNhatHan']);
     });
 
     Route::middleware(['role:1'])->group(function () {
@@ -88,6 +90,8 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
         Route::get('/san-pham/tra-cuu', [SanPhamController::class, 'search']);
         Route::get('/san-pham/', [SanPhamController::class, 'index']);
         Route::get('/san-pham/{id}', [SanPhamController::class, 'show']);
+        Route::get('/lo-hang/canh-bao', [LoHangController::class, 'canhBao']);
+        Route::post('/lo-hang/{id}/huy', [LoHangController::class, 'huy']);
     });
 });
 #Route::get('/san-pham/tra-cuu', [SanPhamController::class, 'search']);

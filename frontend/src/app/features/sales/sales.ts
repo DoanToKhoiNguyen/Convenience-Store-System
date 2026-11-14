@@ -95,8 +95,8 @@ const normalize = (s: string) =>
                     </div>
                     <div class="text-right text-sm">
                       <div>{{ p.DonGiaBan | number: '1.0-0' }} ₫</div>
-                      <div [class]="p.SoLuongHienTai > 0 ? 'text-slate-500' : 'text-red-600'">
-                        {{ p.SoLuongHienTai > 0 ? 'Còn ' + p.SoLuongHienTai : 'Hết hàng' }}
+                      <div [class]="stockOf(p) > 0 ? 'text-slate-500' : 'text-red-600'">
+                        {{ stockOf(p) > 0 ? 'Còn ' + stockOf(p) : 'Hết hàng' }}
                       </div>
                     </div>
                   </div>
@@ -407,7 +407,9 @@ export class Sales {
   price(p: Product): number {
     return Number(p.DonGiaBan);
   }
-
+  stockOf(p: Product): number {
+    return p.SoLuongBanDuoc ?? p.SoLuongHienTai;
+  }
   search(e: AutoCompleteCompleteEvent) {
     const words = normalize(e.query.trim()).split(/\s+/).filter(Boolean);
     if (words.length === 0) {
@@ -438,8 +440,8 @@ export class Sales {
 
     const existing = this.lines().find((l) => l.product.MaSanPham === p.MaSanPham);
     const newQty = (existing?.qty ?? 0) + qty;
-    if (newQty > p.SoLuongHienTai) {
-      this.error.set(`Chỉ còn ${p.SoLuongHienTai} "${p.TenSanPham}" trong kho.`);
+    if (newQty > this.stockOf(p)) {
+      this.error.set(`Chỉ còn ${this.stockOf(p)} "${p.TenSanPham}" trong kho.`);
       return;
     }
 
@@ -462,8 +464,8 @@ export class Sales {
   change(line: CartLine, delta: number) {
     const q = line.qty + delta;
     if (q < 1) return this.remove(line);
-    if (q > line.product.SoLuongHienTai) {
-      this.error.set(`Chỉ còn ${line.product.SoLuongHienTai} "${line.product.TenSanPham}" trong kho.`);
+    if (q > this.stockOf(line.product)) {
+      this.error.set(`Chỉ còn ${this.stockOf(line.product)} "${line.product.TenSanPham}" trong kho.`);
       return;
     }
     this.error.set(null);

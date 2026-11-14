@@ -11,7 +11,7 @@ interface MenuItem {
 }
 
 const ALL_MENU: MenuItem[] = [
-  { label: 'Tổng quan', icon: 'pi pi-home', link: '/admin' },
+  { label: 'Thời khóa biểu', icon: 'pi pi-calendar', link: '/admin/timetable', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Báo cáo doanh thu', icon: 'pi pi-chart-line', link: '/admin/reports', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Bán hàng (POS)', icon: 'pi pi-shopping-cart', link: '/admin/sales', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
   { label: 'Hóa đơn', icon: 'pi pi-receipt', link: '/admin/invoices', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
@@ -24,7 +24,6 @@ const ALL_MENU: MenuItem[] = [
   { label: 'Nhà cung cấp', icon: 'pi pi-building', link: '/admin/suppliers', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Danh mục', icon: 'pi pi-tags', link: '/admin/categories', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Đăng ký ca làm', icon: 'pi pi-calendar-plus', link: '/admin/shift-register', roles: [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF] },
-  { label: 'Thời khóa biểu', icon: 'pi pi-calendar', link: '/admin/timetable', roles: [ROLE.OWNER, ROLE.MANAGER] },
   { label: 'Nhân viên', icon: 'pi pi-users', link: '/admin/staff', roles: [ROLE.OWNER, ROLE.MANAGER] },
 ];
 
@@ -43,7 +42,6 @@ const ALL_MENU: MenuItem[] = [
             <a
               [routerLink]="item.link"
               routerLinkActive="bg-slate-700 text-white"
-              [routerLinkActiveOptions]="{ exact: item.link === '/admin' }"
               class="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-800"
             >
               <i [class]="item.icon"></i>

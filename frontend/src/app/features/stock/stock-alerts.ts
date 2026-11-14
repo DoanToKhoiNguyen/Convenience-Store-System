@@ -8,6 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { AlertProduct } from './stock.model';
 import { StockService } from './stock.service';
+import { RouterLink } from '@angular/router';
 
 const key = (p: AlertProduct) => String(p.MaSanPham);
 
@@ -26,8 +27,14 @@ interface Group {
 
 @Component({
   selector: 'app-stock-alerts',
-  imports: [TableModule, TagModule, ButtonModule, DialogModule, DecimalPipe],
+  imports: [TableModule, TagModule, ButtonModule, DialogModule, DecimalPipe, RouterLink],
   template: `
+  <div class="mb-4 flex gap-2 border-b border-slate-200">
+  <span class="-mb-px border-b-2 border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700">Sắp hết hàng</span>
+  <a routerLink="/admin/expiry-alerts" class="-mb-px border-b-2 border-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:text-emerald-700">
+    Sắp hết hạn
+  </a>
+</div>
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-2xl font-semibold text-slate-800">Cảnh báo tồn kho</h1>

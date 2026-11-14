@@ -14,6 +14,9 @@ class SanPhamCongKhaiController extends Controller
         $data = SanPham::query()
             ->where(fn ($q) => $q->where('TrangThai', true)->orWhereNull('TrangThai'))
             ->whereNotNull('DonGiaBan')
+            ->withSum(['loHang as ban_duoc' => fn ($q) => $q->where(
+                fn ($w) => $w->whereNull('HanSuDung')->orWhere('HanSuDung', '>=', now()->toDateString())
+            )], 'SoLuongCon')
             ->orderBy('TenSanPham')
             ->limit(2000)
             ->get()
@@ -26,7 +29,7 @@ class SanPhamCongKhaiController extends Controller
                 'MoTa'          => $sp->MoTa,
                 'ThanhPhan'     => $sp->ThanhPhan,
                 'hinh_anh_url'  => $sp->hinh_anh_url,
-                'con_hang'      => (int) $sp->SoLuongHienTai > 0,
+                'con_hang' => (int) ($sp->ban_duoc ?? 0) > 0,
             ])
             ->values();
 

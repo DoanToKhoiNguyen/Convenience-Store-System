@@ -1,3 +1,5 @@
+import { Lot, LotStatus } from '../lots/lot.model';
+
 export interface Product {
     MaSanPham: number | string;
     TenSanPham: string;
@@ -16,6 +18,13 @@ export interface Product {
     HinhAnh?: string | null;
     hinh_anh_url?: string | null;
     MaDanhMuc?: number | null;
+    TienToLo?: string | null;
+    lo_hang?: Lot[];
+    han_gan_nhat?: string | null;
+    so_ngay_hsd?: number | null;
+    trang_thai_hsd?: LotStatus;
+    SoLuongBanDuoc?: number;
+    so_luong_het_han?: number;
 }
 
 export interface ProductPayload {
@@ -30,7 +39,9 @@ export interface ProductPayload {
     CanhBaoHSD: number | null;
     MoTa: string | null;
     ThanhPhan: string | null;
-    SoLuongHienTai?: number; // chỉ dùng khi thêm mới
+    SoLuongHienTai?: number;
+    TienToLo: string | null;
+    HanSuDungBanDau?: string | null;
 }
 
 export interface Supplier {

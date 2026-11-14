@@ -14,6 +14,9 @@ import { ProductService } from './product.service';
 import { Observable, of } from 'rxjs';
 import { Category } from '../categories/category.model';
 import { CategoryService } from '../categories/category.service';
+import { Lot, lotSeverity, lotText } from '../lots/lot.model';
+import { LotService } from '../lots/lot.service';
+import { DatePipe } from '@angular/common';
 
 // Bỏ dấu để gõ "nuoc ngot" vẫn tìm ra "Nước ngọt"
 const normalize = (s: string) =>
@@ -24,7 +27,8 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
 
 @Component({
   selector: 'app-product-list',
-  imports: [ReactiveFormsModule, TableModule, TagModule, ButtonModule, DialogModule, InputTextModule, DecimalPipe],
+  imports: [ReactiveFormsModule, TableModule, TagModule, ButtonModule,
+    DialogModule, InputTextModule, DecimalPipe, DatePipe],
   template: `
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div>
@@ -46,7 +50,17 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
         }
       </div>
     </div>
-
+    <div class="mb-3 flex flex-wrap gap-2">
+  <button type="button" class="rounded-lg px-4 py-1.5 text-sm font-medium"
+    [class]="hsdFilter() === 'all' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'"
+    (click)="hsdFilter.set('all')">Tất cả</button>
+  <button type="button" class="rounded-lg px-4 py-1.5 text-sm font-medium"
+    [class]="hsdFilter() === 'sap_het_han' ? 'bg-amber-500 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'"
+    (click)="hsdFilter.set('sap_het_han')">Sắp hết hạn ({{ hsdCounts().sap }})</button>
+  <button type="button" class="rounded-lg px-4 py-1.5 text-sm font-medium"
+    [class]="hsdFilter() === 'het_han' ? 'bg-red-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'"
+    (click)="hsdFilter.set('het_han')">Đã hết hạn ({{ hsdCounts().het }})</button>
+</div>
     @if (success()) {
       <div class="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ success() }}</div>
     }
@@ -63,6 +77,7 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
         [rowsPerPageOptions]="[10, 20, 50]"
         dataKey="MaSanPham"
         [tableStyle]="{ 'min-width': '50rem' }"
+        [expandedRowKeys]="expanded()"
       >
         <ng-template #header>
           <tr>
@@ -74,6 +89,7 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
             }
             <th class="text-right">Giá bán</th>
             <th class="text-right">Tồn kho</th>
+            <th>Hạn dùng</th>
             <th>Trạng thái</th>
             
             @if (canEdit()) {
@@ -107,6 +123,22 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
             }
             <td class="text-right">{{ p.DonGiaBan | number: '1.0-0' }} ₫</td>
             <td class="text-right">{{ p.SoLuongHienTai }}</td>
+            <td>
+  @if (p.han_gan_nhat) {
+    <div class="flex flex-col items-start gap-0.5">
+      <p-tag [value]="hsdText(p)" [severity]="hsdSeverity(p)" />
+      <span class="text-xs text-slate-500">{{ p.han_gan_nhat | date: 'dd/MM/yyyy' }}</span>
+    </div>
+  } @else {
+    <span class="text-xs text-slate-400">Không có hạn</span>
+  }
+  @if ((p.so_luong_het_han ?? 0) > 0) {
+    <div class="text-xs text-red-600">{{ p.so_luong_het_han }} sản phẩm đã hết hạn</div>
+  }
+  <button type="button" class="mt-1 text-xs text-emerald-600 underline" (click)="toggleLots(p)">
+    {{ expanded()[p.MaSanPham] ? 'Ẩn các lô' : 'Xem ' + (p.lo_hang?.length ?? 0) + ' lô' }}
+  </button>
+</td>
             <td><p-tag [value]="stock(p).label" [severity]="stock(p).severity" /></td>
             @if (canEdit()) {
               <td class="text-right">
@@ -129,7 +161,53 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
             }
           </tr>
         </ng-template>
+        <ng-template #expandedrow let-p>
+  <tr>
+    <td [attr.colspan]="canEdit() ? 9 : 7" class="bg-slate-50 px-6 py-3">
+      <div class="mb-2 text-sm font-medium text-slate-700">
+        Các lô còn hàng của {{ p.TenSanPham }}
+        @if (p.TienToLo) {
+          <span class="font-normal text-slate-400">· tiền tố {{ p.TienToLo }}</span>
+        }
+      </div>
 
+      @if (p.lo_hang?.length) {
+        <table class="w-full max-w-3xl text-sm">
+          <thead>
+            <tr class="border-b text-left text-slate-500">
+              <th class="py-1">Mã lô</th>
+              <th>Ngày nhập</th>
+              <th>Hạn sử dụng</th>
+              <th class="text-right">Còn lại / Nhập</th>
+              <th class="pl-4">Tình trạng</th>
+              @if (canEdit()) {
+                <th></th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of p.lo_hang; track l.MaLoHang) {
+              <tr class="border-b border-slate-100">
+                <td class="py-1 font-medium text-slate-800">{{ l.MaLo }}</td>
+                <td>{{ l.NgayNhap | date: 'dd/MM/yyyy' }}</td>
+                <td>{{ l.HanSuDung ? (l.HanSuDung | date: 'dd/MM/yyyy') : '—' }}</td>
+                <td class="text-right">{{ l.SoLuongCon }} / {{ l.SoLuongNhap }}</td>
+                <td class="pl-4"><p-tag [value]="lotText(l)" [severity]="lotSeverity(l.trang_thai)" /></td>
+                @if (canEdit()) {
+                  <td class="text-right">
+                    <p-button label="Đặt hạn" size="small" [text]="true" (onClick)="openLotExpiry(l)" />
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <p class="text-sm text-slate-500">Chưa có lô nào còn hàng.</p>
+      }
+    </td>
+  </tr>
+</ng-template>
         <ng-template #emptymessage>
           <tr>
             <td colspan="8" class="py-8 text-center text-slate-500">Không có sản phẩm nào.</td>
@@ -154,6 +232,13 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
           <label class="mb-1 block text-sm font-medium text-slate-700">Tên sản phẩm *</label>
           <input pInputText formControlName="TenSanPham" class="w-full" />
         </div>
+        <div>
+  <label class="mb-1 block text-sm font-medium text-slate-700">Tiền tố mã lô</label>
+  <input pInputText formControlName="TienToLo" class="w-full uppercase" maxlength="10" placeholder="Để trống: tự tạo từ tên sản phẩm" />
+  <small class="text-slate-500">
+    Mã lô có dạng <b>{{ form.controls.TienToLo.value || 'A' }}-001</b>, tăng dần mỗi lần nhập hàng. Không đổi được khi sản phẩm đã có lô.
+  </small>
+</div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -219,6 +304,11 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
             <label class="mb-1 block text-sm font-medium text-slate-700">Số lượng ban đầu</label>
             <input pInputText type="number" min="0" formControlName="SoLuongHienTai" class="w-full" />
           </div>
+          <div>
+  <label class="mb-1 block text-sm font-medium text-slate-700">Hạn sử dụng của số lượng ban đầu</label>
+  <input pInputText type="date" formControlName="HanSuDungBanDau" class="w-full" />
+  <small class="text-slate-500">Để trống nếu sản phẩm không có hạn sử dụng.</small>
+</div>
         }
         <div>
   
@@ -283,7 +373,36 @@ const text = (v: string | null | undefined) => (v ?? '').trim() || null;
         />
       </ng-template>
     </p-dialog>
-
+  <p-dialog
+  header="Hạn sử dụng của lô"
+  [modal]="true"
+  [visible]="!!lotTarget()"
+  (visibleChange)="!$event && lotTarget.set(null)"
+  [style]="{ width: '24rem' }"
+>
+  @if (lotTarget(); as l) {
+    <div class="space-y-3">
+      @if (lotError()) {
+        <div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ lotError() }}</div>
+      }
+      <div class="rounded-lg bg-slate-50 px-3 py-2 text-sm">Lô <b>{{ l.MaLo }}</b> · còn {{ l.SoLuongCon }}</div>
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700">Hạn sử dụng</label>
+        <input
+          type="date"
+          class="w-full rounded-md border border-slate-300 px-3 py-2"
+          [value]="lotDate()"
+          (input)="lotDate.set($any($event.target).value)"
+        />
+        <small class="text-slate-500">Để trống nếu hàng không có hạn sử dụng.</small>
+      </div>
+    </div>
+  }
+  <ng-template #footer>
+    <p-button label="Hủy" [text]="true" [disabled]="lotBusy()" (onClick)="lotTarget.set(null)" />
+    <p-button label="Lưu" icon="pi pi-check" [loading]="lotBusy()" [disabled]="lotBusy()" (onClick)="saveLotExpiry()" />
+  </ng-template>
+</p-dialog>
   `,
 })
 export class ProductList {
@@ -311,9 +430,11 @@ export class ProductList {
 
   readonly filtered = computed(() => {
     const k = normalize(this.keyword().trim());
-    if (!k) return this.products();
+    const f = this.hsdFilter();
     return this.products().filter(
-      (p) => normalize(p.TenSanPham).includes(k) || normalize(String(p.MaSanPham)).includes(k),
+      (p) =>
+        (f === 'all' || p.trang_thai_hsd === f) &&
+        (!k || normalize(p.TenSanPham).includes(k) || normalize(String(p.MaSanPham)).includes(k)),
     );
   });
 
@@ -331,6 +452,7 @@ export class ProductList {
       SoLuongHienTai: [0 as number | null, Validators.min(0)],
       MoTa: [''],
       ThanhPhan: [''],
+      TienToLo: [''], HanSuDungBanDau: [''],
     },
     {
       validators: (g) => {
@@ -356,7 +478,67 @@ export class ProductList {
     SoLuongMoi: [0, [Validators.required, Validators.min(0)]],
     LyDoCapNhat: ['', [Validators.required, Validators.maxLength(255)]],
   });
+  private lotService = inject(LotService);
 
+  readonly lotText = lotText;
+  readonly lotSeverity = lotSeverity;
+
+  readonly hsdFilter = signal<'all' | 'sap_het_han' | 'het_han'>('all');
+  readonly expanded = signal<Record<string, boolean>>({});
+
+  readonly lotTarget = signal<Lot | null>(null);
+  readonly lotDate = signal('');
+  readonly lotBusy = signal(false);
+  readonly lotError = signal<string | null>(null);
+
+  readonly hsdCounts = computed(() => ({
+    sap: this.products().filter((p) => p.trang_thai_hsd === 'sap_het_han').length,
+    het: this.products().filter((p) => p.trang_thai_hsd === 'het_han').length,
+  }));
+
+  hsdText(p: Product): string {
+    return lotText({ trang_thai: p.trang_thai_hsd ?? 'khong_han', so_ngay_con_lai: p.so_ngay_hsd ?? null });
+  }
+
+  hsdSeverity(p: Product) {
+    return lotSeverity(p.trang_thai_hsd ?? 'khong_han');
+  }
+
+  toggleLots(p: Product) {
+    const key = String(p.MaSanPham);
+    this.expanded.update((e) => {
+      const next = { ...e };
+      if (next[key]) delete next[key];
+      else next[key] = true;
+      return next;
+    });
+  }
+
+  openLotExpiry(l: Lot) {
+    this.lotTarget.set(l);
+    this.lotDate.set(l.HanSuDung ?? '');
+    this.lotError.set(null);
+  }
+
+  saveLotExpiry() {
+    const l = this.lotTarget();
+    if (!l) return;
+
+    this.lotBusy.set(true);
+    this.lotError.set(null);
+    this.lotService.setExpiry(l.MaLoHang, this.lotDate() || null).subscribe({
+      next: (res) => {
+        this.lotBusy.set(false);
+        this.lotTarget.set(null);
+        this.notify(res.message);
+        this.load();
+      },
+      error: (e: HttpErrorResponse) => {
+        this.lotBusy.set(false);
+        this.lotError.set(this.errorText(e));
+      },
+    });
+  }
   openStock(p: Product) {
     this.stockTarget.set(p);
     this.stockError.set(null);
@@ -532,7 +714,7 @@ export class ProductList {
     this.form.reset({
       TenSanPham: '', MaDanhMuc: null, TenThuongHieu: '', MaNhaCungCap: null,
       DonGiaNhap: null, DonGiaBan: null, TonKhoToiThieu: 0, TonKhoToiDa: null,
-      CanhBaoHSD: null, SoLuongHienTai: 0, MoTa: '', ThanhPhan: '',
+      CanhBaoHSD: null, SoLuongHienTai: 0, MoTa: '', ThanhPhan: '', TienToLo: '', HanSuDungBanDau: ''
     });
     this.dialogOpen.set(true);
   }
@@ -544,6 +726,8 @@ export class ProductList {
       TenSanPham: p.TenSanPham,
       MaDanhMuc: p.MaDanhMuc != null ? Number(p.MaDanhMuc) : null,
       TenThuongHieu: p.TenThuongHieu ?? '',
+      TienToLo: p.TienToLo ?? '',
+      HanSuDungBanDau: '',
       MaNhaCungCap: p.MaNhaCungCap != null ? Number(p.MaNhaCungCap) : null,
       DonGiaNhap: num(p.DonGiaNhap as number | null),
       DonGiaBan: num(p.DonGiaBan as number),
@@ -566,6 +750,7 @@ export class ProductList {
       TenSanPham: (v.TenSanPham ?? '').trim(),
       MaDanhMuc: Number(v.MaDanhMuc),
       TenThuongHieu: text(v.TenThuongHieu),
+      TienToLo: text(v.TienToLo)?.toUpperCase() ?? null,
       MaNhaCungCap: Number(v.MaNhaCungCap),
       DonGiaNhap: Number(v.DonGiaNhap),
       DonGiaBan: Number(v.DonGiaBan),
@@ -577,7 +762,10 @@ export class ProductList {
     };
 
     const current = this.editing();
-    if (!current) body.SoLuongHienTai = Number(v.SoLuongHienTai ?? 0);
+    if (!current) {
+      body.SoLuongHienTai = Number(v.SoLuongHienTai ?? 0);
+      body.HanSuDungBanDau = v.HanSuDungBanDau || null;
+    }
 
     const request = current
       ? this.service.update(current.MaSanPham, body)

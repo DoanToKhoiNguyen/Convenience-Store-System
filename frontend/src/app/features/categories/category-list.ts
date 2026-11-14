@@ -9,12 +9,12 @@ import { CategoryService } from './category.service';
 
 // Bỏ dấu để gõ "do uong" vẫn tìm ra "Đồ uống"
 const normalize = (s: string) =>
-    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase();
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase();
 
 @Component({
-    selector: 'app-category-list',
-    imports: [ReactiveFormsModule, ButtonModule, DialogModule, InputTextModule],
-    template: `
+  selector: 'app-category-list',
+  imports: [ReactiveFormsModule, ButtonModule, DialogModule, InputTextModule],
+  template: `
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-2xl font-semibold text-slate-800">Danh mục sản phẩm</h1>
@@ -42,12 +42,11 @@ const normalize = (s: string) =>
     }
 
     <div class="overflow-x-auto rounded-xl bg-white shadow-sm">
-      <table class="w-full min-w-[40rem] text-left text-sm">
+      <table class="w-full min-w-[32rem] text-left text-sm">
         <thead>
           <tr class="border-b bg-slate-50 text-slate-600">
             <th class="p-3">Mã</th>
-            <th class="p-3">Tên danh mục</th>
-            <th class="p-3">Mô tả</th>
+            <th class="p-3">Tên danh mục</th> 
             <th class="p-3 text-right">Số sản phẩm</th>
             <th class="p-3 text-right">Thao tác</th>
           </tr>
@@ -57,7 +56,6 @@ const normalize = (s: string) =>
             <tr class="border-b border-slate-100 hover:bg-slate-50">
               <td class="p-3">{{ c.MaDanhMuc }}</td>
               <td class="p-3 font-medium text-slate-800">{{ c.TenDanhMuc }}</td>
-              <td class="p-3 text-slate-600">{{ c.MoTa || '—' }}</td>
               <td class="p-3 text-right">{{ c.san_pham_count ?? 0 }}</td>
               <td class="p-3 text-right">
                 <div class="flex justify-end gap-1">
@@ -75,7 +73,7 @@ const normalize = (s: string) =>
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="p-8 text-center text-slate-500">
+              <td colspan="4" class="p-8 text-center text-slate-500">
                 {{ loading() ? 'Đang tải...' : 'Chưa có danh mục nào.' }}
               </td>
             </tr>
@@ -105,10 +103,6 @@ const normalize = (s: string) =>
           <input pInputText formControlName="TenDanhMuc" class="w-full" placeholder="Ví dụ: Đồ uống" />
         </div>
 
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Mô tả</label>
-          <input pInputText formControlName="MoTa" class="w-full" />
-        </div>
 
         @if (editing(); as e) {
           @if ((e.san_pham_count ?? 0) > 0) {
@@ -133,119 +127,118 @@ const normalize = (s: string) =>
   `,
 })
 export class CategoryList {
-    private service = inject(CategoryService);
-    private fb = inject(FormBuilder);
+  private service = inject(CategoryService);
+  private fb = inject(FormBuilder);
 
-    readonly items = signal<Category[]>([]);
-    readonly keyword = signal('');
-    readonly loading = signal(true);
-    readonly busy = signal(false);
-    readonly error = signal<string | null>(null);
-    readonly success = signal<string | null>(null);
+  readonly items = signal<Category[]>([]);
+  readonly keyword = signal('');
+  readonly loading = signal(true);
+  readonly busy = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly success = signal<string | null>(null);
 
-    readonly dialogOpen = signal(false);
-    readonly editing = signal<Category | null>(null);
-    readonly formError = signal<string | null>(null);
+  readonly dialogOpen = signal(false);
+  readonly editing = signal<Category | null>(null);
+  readonly formError = signal<string | null>(null);
 
-    readonly filtered = computed(() => {
-        const k = normalize(this.keyword().trim());
-        if (!k) return this.items();
-        return this.items().filter((c) => normalize(`${c.TenDanhMuc} ${c.MoTa ?? ''}`).includes(k));
+  readonly filtered = computed(() => {
+    const k = normalize(this.keyword().trim());
+    if (!k) return this.items();
+    return this.items().filter((c) => normalize(c.TenDanhMuc).includes(k));
+  });
+
+  readonly form = this.fb.nonNullable.group({
+    TenDanhMuc: ['', [Validators.required, Validators.maxLength(100)]]
+  });
+
+  constructor() {
+    this.load();
+  }
+
+  load() {
+    this.loading.set(true);
+    this.service.list().subscribe({
+      next: (data) => {
+        this.items.set(data);
+        this.loading.set(false);
+      },
+      error: (e: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.error.set(e.error?.message ?? 'Không tải được danh sách danh mục.');
+      },
     });
+  }
 
-    readonly form = this.fb.nonNullable.group({
-        TenDanhMuc: ['', [Validators.required, Validators.maxLength(100)]],
-        MoTa: ['', Validators.maxLength(255)],
-    });
+  openCreate() {
+    this.editing.set(null);
+    this.formError.set(null);
+    this.form.reset({ TenDanhMuc: '' });
+    this.dialogOpen.set(true);
+  }
 
-    constructor() {
+  openEdit(c: Category) {
+    this.editing.set(c);
+    this.formError.set(null);
+    this.form.reset({ TenDanhMuc: c.TenDanhMuc });
+    this.dialogOpen.set(true);
+  }
+
+  save() {
+    if (this.form.invalid || this.busy()) return;
+
+    const v = this.form.getRawValue();
+    const body = { TenDanhMuc: v.TenDanhMuc.trim() };
+
+    const current = this.editing();
+    const request = current
+      ? this.service.update(current.MaDanhMuc, body)
+      : this.service.create(body);
+
+    this.busy.set(true);
+    this.formError.set(null);
+    request.subscribe({
+      next: (res) => {
+        this.busy.set(false);
+        this.dialogOpen.set(false);
+        this.notify(res.message);
         this.load();
-    }
+      },
+      error: (e: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.formError.set(this.errorText(e));
+      },
+    });
+  }
 
-    load() {
-        this.loading.set(true);
-        this.service.list().subscribe({
-            next: (data) => {
-                this.items.set(data);
-                this.loading.set(false);
-            },
-            error: (e: HttpErrorResponse) => {
-                this.loading.set(false);
-                this.error.set(e.error?.message ?? 'Không tải được danh sách danh mục.');
-            },
-        });
-    }
+  remove(c: Category) {
+    if ((c.san_pham_count ?? 0) > 0) return;
+    if (!confirm(`Xóa danh mục "${c.TenDanhMuc}"?`)) return;
 
-    openCreate() {
-        this.editing.set(null);
-        this.formError.set(null);
-        this.form.reset({ TenDanhMuc: '', MoTa: '' });
-        this.dialogOpen.set(true);
-    }
+    this.busy.set(true);
+    this.error.set(null);
+    this.service.remove(c.MaDanhMuc).subscribe({
+      next: (res) => {
+        this.busy.set(false);
+        this.notify(res.message);
+        this.load();
+      },
+      error: (e: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.error.set(this.errorText(e));
+        this.load();
+      },
+    });
+  }
 
-    openEdit(c: Category) {
-        this.editing.set(c);
-        this.formError.set(null);
-        this.form.reset({ TenDanhMuc: c.TenDanhMuc, MoTa: c.MoTa ?? '' });
-        this.dialogOpen.set(true);
-    }
+  private notify(message: string) {
+    this.success.set(message);
+    this.error.set(null);
+    setTimeout(() => this.success.set(null), 4000);
+  }
 
-    save() {
-        if (this.form.invalid || this.busy()) return;
-
-        const v = this.form.getRawValue();
-        const body = { TenDanhMuc: v.TenDanhMuc.trim(), MoTa: v.MoTa.trim() || null };
-
-        const current = this.editing();
-        const request = current
-            ? this.service.update(current.MaDanhMuc, body)
-            : this.service.create(body);
-
-        this.busy.set(true);
-        this.formError.set(null);
-        request.subscribe({
-            next: (res) => {
-                this.busy.set(false);
-                this.dialogOpen.set(false);
-                this.notify(res.message);
-                this.load();
-            },
-            error: (e: HttpErrorResponse) => {
-                this.busy.set(false);
-                this.formError.set(this.errorText(e));
-            },
-        });
-    }
-
-    remove(c: Category) {
-        if ((c.san_pham_count ?? 0) > 0) return;
-        if (!confirm(`Xóa danh mục "${c.TenDanhMuc}"?`)) return;
-
-        this.busy.set(true);
-        this.error.set(null);
-        this.service.remove(c.MaDanhMuc).subscribe({
-            next: (res) => {
-                this.busy.set(false);
-                this.notify(res.message);
-                this.load();
-            },
-            error: (e: HttpErrorResponse) => {
-                this.busy.set(false);
-                this.error.set(this.errorText(e));
-                this.load();
-            },
-        });
-    }
-
-    private notify(message: string) {
-        this.success.set(message);
-        this.error.set(null);
-        setTimeout(() => this.success.set(null), 4000);
-    }
-
-    private errorText(e: HttpErrorResponse): string {
-        const errs = e.error?.errors as Record<string, string[]> | undefined;
-        if (errs) return Object.values(errs).flat().join(' ');
-        return e.error?.message ?? 'Có lỗi xảy ra, vui lòng thử lại.';
-    }
+  private errorText(e: HttpErrorResponse): string {
+    const errs = e.error?.errors as Record<string, string[]> | undefined;
+    if (errs) return Object.values(errs).flat().join(' ');
+    return e.error?.message ?? 'Có lỗi xảy ra, vui lòng thử lại.';
+  }
 }

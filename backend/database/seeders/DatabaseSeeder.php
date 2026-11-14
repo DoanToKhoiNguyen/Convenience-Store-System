@@ -30,5 +30,6 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+        app(\App\Domains\LoHang\Services\LoHangService::class)->dongBoTatCa();
     }
 }
