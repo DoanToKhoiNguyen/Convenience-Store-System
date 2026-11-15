@@ -166,9 +166,9 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
             <td>{{ p.LoaiSanPham ?? '—' }}</td>
 
             @if (canEdit()) {
-              <td class="text-right">{{ p.DonGiaNhap | number: '1.0-0' }} ₫</td>
+              <td class="text-right">{{ p.DonGiaNhap | number: '1.0-0' }}</td>
             }
-            <td class="text-right">{{ p.DonGiaBan | number: '1.0-0' }} ₫</td>
+            <td class="text-right">{{ p.DonGiaBan | number: '1.0-0' }}</td>
             <td class="text-right">{{ p.SoLuongHienTai }}</td>
 
             <td>
@@ -357,11 +357,11 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Giá nhập (₫) *</label>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Giá nhập *</label>
             <input pInputText type="number" min="0" formControlName="DonGiaNhap" class="w-full" />
           </div>
           <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Giá bán (₫) *</label>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Giá bán *</label>
             <input pInputText type="number" min="0" formControlName="DonGiaBan" class="w-full" />
           </div>
         </div>

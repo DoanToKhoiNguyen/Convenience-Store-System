@@ -14,24 +14,24 @@ const OTHER = 'Khác';
 
 // Màu nền cho sản phẩm chưa có ảnh
 const COLORS = [
-    'bg-emerald-100 text-emerald-700',
-    'bg-sky-100 text-sky-700',
-    'bg-amber-100 text-amber-700',
-    'bg-rose-100 text-rose-700',
-    'bg-violet-100 text-violet-700',
-    'bg-teal-100 text-teal-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-sky-100 text-sky-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-violet-100 text-violet-700',
+  'bg-teal-100 text-teal-700',
 ];
 
 // Bỏ dấu để gõ "nuoc ngot" vẫn tìm ra "Nước ngọt"
 const normalize = (s: string) =>
-    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase();
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase();
 
 const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
 
 @Component({
-    selector: 'app-public-home',
-    imports: [DecimalPipe, RouterLink, DialogModule],
-    template: `
+  selector: 'app-public-home',
+  imports: [DecimalPipe, RouterLink, DialogModule],
+  template: `
     <div class="min-h-screen bg-slate-50 text-slate-800">
       <!-- Thanh trên cùng -->
       <header class="sticky top-0 z-20 border-b border-slate-200 bg-white">
@@ -182,23 +182,15 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                       [alt]="p.TenSanPham"
                       loading="lazy"
                       class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                      [class.opacity-50]="!p.con_hang"
-                      [class.grayscale]="!p.con_hang"
                       (error)="markFailed(p)"
                     />
                   } @else {
                     <div
                       class="flex h-full w-full items-center justify-center text-5xl font-bold"
                       [class]="color(p)"
-                      [class.opacity-60]="!p.con_hang"
                     >
                       {{ initial(p) }}
                     </div>
-                  }
-                  @if (!p.con_hang) {
-                    <span class="absolute left-2 top-2 rounded-full bg-slate-800 px-2.5 py-1 text-xs font-medium text-white">
-                      Hết hàng
-                    </span>
                   }
                 </div>
 
@@ -209,9 +201,6 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                   </h3>
                   <div class="mt-2 flex items-end justify-between gap-2">
                     <span class="text-lg font-bold text-emerald-600">{{ price(p) | number: '1.0-0' }} ₫</span>
-                    <span class="text-xs" [class]="p.con_hang ? 'text-emerald-600' : 'text-slate-400'">
-                      {{ p.con_hang ? 'Còn hàng' : 'Hết hàng' }}
-                    </span>
                   </div>
                 </div>
               </button>
@@ -232,16 +221,78 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
         }
       </main>
 
-      <footer class="mt-10 border-t border-slate-200 bg-white">
-        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-slate-500">
-          <span>© {{ year }} Cửa hàng tiện lợi. Giá và tình trạng hàng có thể thay đổi.</span>
-          @if (auth.isLoggedIn()) {
-            <a routerLink="/admin" class="hover:text-emerald-600 hover:underline">Vào trang quản lý</a>
-          } @else {
-            <a routerLink="/login" class="hover:text-emerald-600 hover:underline">Dành cho nhân viên</a>
-          }
+      <footer class="mt-16 border-t border-slate-200 bg-white">
+        <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+
+          <!-- Nội dung chính -->
+          <div class="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+
+            <!-- Thương hiệu -->
+            <div>
+              <h2 class="text-xl font-extrabold text-red-600">
+                Convenience Store
+              </h2>
+              <p class="mt-3 text-sm leading-6 text-slate-500">
+                Mang đến những sản phẩm tiện lợi, chất lượng
+                và trải nghiệm mua sắm tốt nhất mỗi ngày.
+              </p>
+            </div>
+
+            <!-- Danh mục -->
+            <div>
+              <h3 class="font-semibold text-slate-800">
+                Danh mục sản phẩm
+              </h3>
+              <ul class="mt-4 space-y-3 text-sm text-slate-500">
+                <li><a href="#" class="hover:text-red-600">Đồ uống</a></li>
+                <li><a href="#" class="hover:text-red-600">Thực phẩm</a></li>
+                <li><a href="#" class="hover:text-red-600">Bánh kẹo</a></li>
+                <li><a href="#" class="hover:text-red-600">Đồ gia dụng</a></li>
+              </ul>
+            </div>
+
+            <!-- Hỗ trợ -->
+            <div>
+              <h3 class="font-semibold text-slate-800">
+                Hỗ trợ khách hàng
+              </h3>
+              <ul class="mt-4 space-y-3 text-sm text-slate-500">
+                <li><a href="#" class="hover:text-red-600">Chính sách mua hàng</a></li>
+                <li><a href="#" class="hover:text-red-600">Chính sách đổi trả</a></li>
+                <li><a href="#" class="hover:text-red-600">Câu hỏi thường gặp</a></li>
+                <li><a href="#" class="hover:text-red-600">Liên hệ hỗ trợ</a></li>
+              </ul>
+            </div>
+
+            <!-- Liên hệ -->
+            <div>
+              <h3 class="font-semibold text-slate-800">
+                Liên hệ với chúng tôi
+              </h3>
+              <ul class="mt-4 space-y-3 text-sm text-slate-500">
+                <li>📍 Địa chỉ: Việt Nam</li>
+                <li>☎ Hotline: 1900 xxxx</li>
+                <li>✉ Email: support@example.com</li>
+              </ul>
+            </div>
+
+          </div>
+
+          <!-- Copyright -->
+          <div class="mt-10 border-t border-slate-200 pt-5
+                      flex flex-col items-center justify-between gap-3
+                      text-xs text-slate-500 sm:flex-row">
+            <p>
+              © {{ year }} Convenience Store. All rights reserved.
+            </p>
+            <p>
+              Giá và tình trạng hàng có thể thay đổi.
+            </p>
+          </div>
+
         </div>
       </footer>
+
     </div>
 
     <!-- Chi tiết sản phẩm (chỉ xem) -->
@@ -267,12 +318,6 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
 
           <div class="flex items-end justify-between gap-3">
             <div class="text-3xl font-bold text-emerald-600">{{ price(p) | number: '1.0-0' }} ₫</div>
-            <span
-              class="rounded-full px-3 py-1 text-sm font-medium"
-              [class]="p.con_hang ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'"
-            >
-              {{ p.con_hang ? 'Còn hàng' : 'Hết hàng' }}
-            </span>
           </div>
 
           <dl class="grid grid-cols-2 gap-3 text-sm">
@@ -308,142 +353,142 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
   `,
 })
 export class PublicHome {
-    private service = inject(PublicService);
-    protected auth = inject(AuthService);
+  private service = inject(PublicService);
+  protected auth = inject(AuthService);
 
-    readonly year = new Date().getFullYear();
-    readonly skeleton = Array.from({ length: 10 }, (_, i) => i);
-    readonly sortOptions: { key: Sort; label: string }[] = [
-        { key: 'ten', label: 'Tên A → Z' },
-        { key: 'gia_tang', label: 'Giá thấp → cao' },
-        { key: 'gia_giam', label: 'Giá cao → thấp' },
-    ];
+  readonly year = new Date().getFullYear();
+  readonly skeleton = Array.from({ length: 10 }, (_, i) => i);
+  readonly sortOptions: { key: Sort; label: string }[] = [
+    { key: 'ten', label: 'Tên A → Z' },
+    { key: 'gia_tang', label: 'Giá thấp → cao' },
+    { key: 'gia_giam', label: 'Giá cao → thấp' },
+  ];
 
-    readonly products = signal<PublicProduct[]>([]);
-    readonly loading = signal(true);
-    readonly error = signal<string | null>(null);
+  readonly products = signal<PublicProduct[]>([]);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
 
-    readonly keyword = signal('');
-    readonly category = signal<string | null>(null);
-    readonly sort = signal<Sort>('ten');
-    readonly inStockOnly = signal(false);
-    readonly shown = signal(PAGE_SIZE);
-    readonly selected = signal<PublicProduct | null>(null);
-    private readonly failed = signal<Set<number>>(new Set());
+  readonly keyword = signal('');
+  readonly category = signal<string | null>(null);
+  readonly sort = signal<Sort>('ten');
+  readonly inStockOnly = signal(false);
+  readonly shown = signal(PAGE_SIZE);
+  readonly selected = signal<PublicProduct | null>(null);
+  private readonly failed = signal<Set<number>>(new Set());
 
-    // Đã lọc theo từ khóa và tình trạng hàng, chưa lọc theo loại (để đếm số lượng mỗi loại)
-    readonly base = computed(() => {
-        const words = normalize(this.keyword().trim()).split(/\s+/).filter(Boolean);
-        return this.products().filter((p) => {
-            if (this.inStockOnly() && !p.con_hang) return false;
-            if (words.length === 0) return true;
-            const text = normalize(`${p.TenSanPham} ${p.TenThuongHieu ?? ''} ${p.LoaiSanPham ?? ''}`);
-            return words.every((w) => text.includes(w));
-        });
+  // Đã lọc theo từ khóa và tình trạng hàng, chưa lọc theo loại (để đếm số lượng mỗi loại)
+  readonly base = computed(() => {
+    const words = normalize(this.keyword().trim()).split(/\s+/).filter(Boolean);
+    return this.products().filter((p) => {
+      if (this.inStockOnly() && !p.con_hang) return false;
+      if (words.length === 0) return true;
+      const text = normalize(`${p.TenSanPham} ${p.TenThuongHieu ?? ''} ${p.LoaiSanPham ?? ''}`);
+      return words.every((w) => text.includes(w));
     });
+  });
 
-    readonly categories = computed(() => {
-        const counts = new Map<string, number>();
-        for (const p of this.products()) counts.set(categoryOf(p), 0);
-        for (const p of this.base()) counts.set(categoryOf(p), (counts.get(categoryOf(p)) ?? 0) + 1);
+  readonly categories = computed(() => {
+    const counts = new Map<string, number>();
+    for (const p of this.products()) counts.set(categoryOf(p), 0);
+    for (const p of this.base()) counts.set(categoryOf(p), (counts.get(categoryOf(p)) ?? 0) + 1);
 
-        return [...counts.entries()]
-            .map(([name, count]) => ({ name, count }))
-            .sort((a, b) =>
-                a.name === OTHER ? 1 : b.name === OTHER ? -1 : a.name.localeCompare(b.name, 'vi'),
-            );
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) =>
+        a.name === OTHER ? 1 : b.name === OTHER ? -1 : a.name.localeCompare(b.name, 'vi'),
+      );
+  });
+
+  readonly filtered = computed(() => {
+    const cat = this.category();
+    const list = this.base().filter((p) => !cat || categoryOf(p) === cat);
+    const sort = this.sort();
+
+    return [...list].sort((a, b) =>
+      sort === 'gia_tang'
+        ? this.price(a) - this.price(b)
+        : sort === 'gia_giam'
+          ? this.price(b) - this.price(a)
+          : a.TenSanPham.localeCompare(b.TenSanPham, 'vi'),
+    );
+  });
+
+  readonly visible = computed(() => this.filtered().slice(0, this.shown()));
+  readonly hasMore = computed(() => this.filtered().length > this.shown());
+  readonly remaining = computed(() => this.filtered().length - this.shown());
+
+  constructor() {
+    inject(Title).setTitle('Cửa hàng tiện lợi - Sản phẩm');
+    this.load();
+  }
+
+  load() {
+    this.loading.set(true);
+    this.error.set(null);
+    this.service.products().subscribe({
+      next: (data) => {
+        this.products.set(data);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.error.set('Không tải được danh sách sản phẩm. Vui lòng thử lại sau.');
+      },
     });
+  }
 
-    readonly filtered = computed(() => {
-        const cat = this.category();
-        const list = this.base().filter((p) => !cat || categoryOf(p) === cat);
-        const sort = this.sort();
+  price(p: PublicProduct): number {
+    return Number(p.DonGiaBan);
+  }
 
-        return [...list].sort((a, b) =>
-            sort === 'gia_tang'
-                ? this.price(a) - this.price(b)
-                : sort === 'gia_giam'
-                    ? this.price(b) - this.price(a)
-                    : a.TenSanPham.localeCompare(b.TenSanPham, 'vi'),
-        );
-    });
+  categoryName(p: PublicProduct): string {
+    return categoryOf(p);
+  }
 
-    readonly visible = computed(() => this.filtered().slice(0, this.shown()));
-    readonly hasMore = computed(() => this.filtered().length > this.shown());
-    readonly remaining = computed(() => this.filtered().length - this.shown());
+  initial(p: PublicProduct): string {
+    return (p.TenSanPham.trim().charAt(0) || '?').toUpperCase();
+  }
 
-    constructor() {
-        inject(Title).setTitle('Cửa hàng tiện lợi - Sản phẩm');
-        this.load();
-    }
+  color(p: PublicProduct): string {
+    return COLORS[Math.abs(Number(p.MaSanPham) || 0) % COLORS.length];
+  }
 
-    load() {
-        this.loading.set(true);
-        this.error.set(null);
-        this.service.products().subscribe({
-            next: (data) => {
-                this.products.set(data);
-                this.loading.set(false);
-            },
-            error: () => {
-                this.loading.set(false);
-                this.error.set('Không tải được danh sách sản phẩm. Vui lòng thử lại sau.');
-            },
-        });
-    }
+  showImage(p: PublicProduct): boolean {
+    return !!p.hinh_anh_url && !this.failed().has(p.MaSanPham);
+  }
 
-    price(p: PublicProduct): number {
-        return Number(p.DonGiaBan);
-    }
+  markFailed(p: PublicProduct) {
+    this.failed.update((s) => new Set(s).add(p.MaSanPham));
+  }
 
-    categoryName(p: PublicProduct): string {
-        return categoryOf(p);
-    }
+  onSearch(v: string) {
+    this.keyword.set(v);
+    this.shown.set(PAGE_SIZE);
+  }
 
-    initial(p: PublicProduct): string {
-        return (p.TenSanPham.trim().charAt(0) || '?').toUpperCase();
-    }
+  onCategory(name: string | null) {
+    this.category.set(name);
+    this.shown.set(PAGE_SIZE);
+  }
 
-    color(p: PublicProduct): string {
-        return COLORS[Math.abs(Number(p.MaSanPham) || 0) % COLORS.length];
-    }
+  onSort(v: string) {
+    this.sort.set(v as Sort);
+    this.shown.set(PAGE_SIZE);
+  }
 
-    showImage(p: PublicProduct): boolean {
-        return !!p.hinh_anh_url && !this.failed().has(p.MaSanPham);
-    }
+  onStock(checked: boolean) {
+    this.inStockOnly.set(checked);
+    this.shown.set(PAGE_SIZE);
+  }
 
-    markFailed(p: PublicProduct) {
-        this.failed.update((s) => new Set(s).add(p.MaSanPham));
-    }
+  clearFilters() {
+    this.keyword.set('');
+    this.category.set(null);
+    this.inStockOnly.set(false);
+    this.shown.set(PAGE_SIZE);
+  }
 
-    onSearch(v: string) {
-        this.keyword.set(v);
-        this.shown.set(PAGE_SIZE);
-    }
-
-    onCategory(name: string | null) {
-        this.category.set(name);
-        this.shown.set(PAGE_SIZE);
-    }
-
-    onSort(v: string) {
-        this.sort.set(v as Sort);
-        this.shown.set(PAGE_SIZE);
-    }
-
-    onStock(checked: boolean) {
-        this.inStockOnly.set(checked);
-        this.shown.set(PAGE_SIZE);
-    }
-
-    clearFilters() {
-        this.keyword.set('');
-        this.category.set(null);
-        this.inStockOnly.set(false);
-        this.shown.set(PAGE_SIZE);
-    }
-
-    loadMore() {
-        this.shown.update((n) => n + PAGE_SIZE);
-    }
+  loadMore() {
+    this.shown.update((n) => n + PAGE_SIZE);
+  }
 }

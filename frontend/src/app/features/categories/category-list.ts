@@ -42,29 +42,45 @@ const normalize = (s: string) =>
     }
 
     <div class="overflow-x-auto rounded-xl bg-white shadow-sm">
-      <table class="w-full min-w-[32rem] text-left text-sm">
+      <table class="w-full min-w-[32rem] table-fixed text-left text-sm">
         <thead>
           <tr class="border-b bg-slate-50 text-slate-600">
-            <th class="p-3">Mã</th>
-            <th class="p-3">Tên danh mục</th> 
-            <th class="p-3 text-right">Số sản phẩm</th>
-            <th class="p-3 text-right">Thao tác</th>
+            <th class="w-1/4 p-3">Mã</th>
+            <th class="w-1/4 p-3">Tên danh mục</th>
+            <th class="w-1/4 p-3 text-center">Số sản phẩm</th>
+            <th class="w-1/4 p-3 text-left">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           @for (c of filtered(); track c.MaDanhMuc) {
             <tr class="border-b border-slate-100 hover:bg-slate-50">
-              <td class="p-3">{{ c.MaDanhMuc }}</td>
-              <td class="p-3 font-medium text-slate-800">{{ c.TenDanhMuc }}</td>
-              <td class="p-3 text-right">{{ c.san_pham_count ?? 0 }}</td>
-              <td class="p-3 text-right">
-                <div class="flex justify-end gap-1">
-                  <p-button label="Sửa" size="small" [text]="true" (onClick)="openEdit(c)" />
+              <td class="p-3 truncate">{{ c.MaDanhMuc }}</td>
+              <td class="p-3 font-medium text-slate-800 truncate">{{ c.TenDanhMuc }}</td>
+              <td class="p-3 text-center">{{ c.san_pham_count ?? 0 }}</td>
+              <td class="p-3 text-left">
+                <div class="flex justify-start gap-1">
+                  <!-- Nút Sửa -->
                   <p-button
-                    label="Xóa"
+                    icon="pi pi-pencil"
+                    ariaLabel="Sửa danh mục"
+                    pTooltip="Sửa danh mục"
+                    tooltipPosition="top"
+                    size="small"
+                    [text]="true"
+                    [rounded]="true"
+                    (onClick)="openEdit(c)"
+                  />
+
+                  <!-- Nút Xóa -->
+                  <p-button
+                    icon="pi pi-trash"
+                    ariaLabel="Xóa danh mục"
+                    pTooltip="Xóa danh mục"
+                    tooltipPosition="top"
                     size="small"
                     severity="danger"
                     [text]="true"
+                    [rounded]="true"
                     [disabled]="busy() || (c.san_pham_count ?? 0) > 0"
                     (onClick)="remove(c)"
                   />
@@ -144,7 +160,8 @@ export class CategoryList {
   readonly filtered = computed(() => {
     const k = normalize(this.keyword().trim());
     if (!k) return this.items();
-    return this.items().filter((c) => normalize(c.TenDanhMuc).includes(k));
+    //return this.items().filter((c) => normalize(c.TenDanhMuc).includes(k));
+    return this.items().filter((c) => normalize(c.TenDanhMuc).startsWith(k));
   });
 
   readonly form = this.fb.nonNullable.group({

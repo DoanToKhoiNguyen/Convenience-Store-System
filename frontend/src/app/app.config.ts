@@ -27,6 +27,7 @@ export const appConfig: ApplicationConfig = {
     providePrimeNG({
       theme: { preset: Aura, options: { darkModeSelector: false } },
       ripple: true,
+      license: 'eyJpZCI6ImVjMzE3Mzg4LTE2MDQtNDk2Yi1hNzJlLTY4YzMwYTJmYTJkYSIsInByb2R1Y3QiOiJwcmltZXVpIiwidGllciI6ImNvbW11bml0eSIsInR5cGUiOiJkZXYiLCJpYXQiOjE3OTQ3MTY3MzAsImV4cCI6MTgyNjI1MjczMH0.M7qV08nF1qkdPfKKQzczxnO6sCd9fH7oxBR8lDFCa5TM3My2EefoegMsKS08v-OzDFALF4UVzuoNNokZ3z9FBg',
     }),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
