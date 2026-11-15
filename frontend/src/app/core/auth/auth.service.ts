@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap, of, catchError } from 'rxjs';
 import { environment } from '../../../environments/environment';
+
 interface LoginResponse {
     message: string;
     access_token: string;
@@ -11,17 +12,65 @@ interface LoginResponse {
     user: AuthUser;
 }
 
-@Injectable({ providedIn: 'root' })
+const TOKEN_KEY = 'token';
+const USER_KEY = 'user';
 
+// Phiên đăng nhập chỉ lưu theo từng tab (sessionStorage): mở hai tab có thể đăng nhập hai tài khoản khác nhau.
+// Mọi thao tác đều bọc try/catch phòng khi trình duyệt chặn lưu trữ.
+const store = {
+    get(key: string): string | null {
+        try {
+            return sessionStorage.getItem(key);
+        } catch {
+            return null;
+        }
+    },
+    set(key: string, value: string) {
+        try {
+            sessionStorage.setItem(key, value);
+        } catch {
+            // không lưu được thì bỏ qua, phiên vẫn chạy trong bộ nhớ của tab
+        }
+    },
+    remove(key: string) {
+        try {
+            sessionStorage.removeItem(key);
+        } catch {
+            // bỏ qua
+        }
+    },
+};
+
+function readStoredUser(): AuthUser | null {
+    try {
+        return JSON.parse(store.get(USER_KEY) ?? 'null');
+    } catch {
+        return null;
+    }
+}
+
+// Bản cũ lưu phiên trong localStorage (dùng chung mọi tab): xóa đi để không còn token nằm lại
+function cleanLegacy() {
+    try {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+    } catch {
+        // bỏ qua
+    }
+}
+
+@Injectable({ providedIn: 'root' })
 export class AuthService {
     private http = inject(HttpClient);
     private router = inject(Router);
 
-    readonly token = signal<string | null>(localStorage.getItem('token'));
-    readonly user = signal<AuthUser | null>(
-        JSON.parse(localStorage.getItem('user') ?? 'null'),
-    );
+    readonly token = signal<string | null>(store.get(TOKEN_KEY));
+    readonly user = signal<AuthUser | null>(readStoredUser());
     readonly isLoggedIn = computed(() => !!this.token());
+
+    constructor() {
+        cleanLegacy();
+    }
 
     // Gọi lúc khởi động để xác thực lại token với backend
     verify() {
@@ -36,7 +85,7 @@ export class AuthService {
                 if (!role) return; // /me không có vai trò: giữ nguyên thông tin đã lưu
 
                 const user = { ...current, ...fresh, MaVaiTro: role } as AuthUser;
-                localStorage.setItem('user', JSON.stringify(user));
+                store.set(USER_KEY, JSON.stringify(user));
                 this.user.set(user);
             }),
             catchError(() => of(null)),
@@ -59,9 +108,6 @@ export class AuthService {
             );
     }
 
-    // logout() {
-    //     this.http.post(`${environment.apiUrl}/logout`, {}).subscribe({ complete: () => this.clear() });
-    // }
     logout() {
         // Gọi API hủy token (kết quả không quan trọng)
         this.http.post(`${environment.apiUrl}/logout`, {}).subscribe({
@@ -71,18 +117,21 @@ export class AuthService {
         // Đăng xuất ở frontend luôn, không chờ backend
         this.clear();
     }
+
     can(permission: string): boolean {
         return this.user()?.permissions?.includes(permission) ?? false;
     }
+
     hasAnyRole(roles: number[]): boolean {
         const u = this.user();
         if (!u) return false;
         const mine = [u.MaVaiTro, ...(u.roles ?? [])].map(Number);
         return roles.some((r) => mine.includes(r));
     }
+
     clear() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        store.remove(TOKEN_KEY);
+        store.remove(USER_KEY);
         this.token.set(null);
         this.user.set(null);
         this.router.navigate(['/login']);
@@ -100,15 +149,14 @@ export class AuthService {
 
     private setUser(u: AuthUser) {
         const user = { ...u, MaVaiTro: Number(u.MaVaiTro) };
-        localStorage.setItem('user', JSON.stringify(user));
-        this.user.set(user); // tên ở thanh bên cập nhật ngay
+        store.set(USER_KEY, JSON.stringify(user));
+        this.user.set(user); // tên ở thanh trên cùng cập nhật ngay
     }
 
     private save(token: string, user: AuthUser) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
+        store.set(TOKEN_KEY, token);
+        store.set(USER_KEY, JSON.stringify(user));
         this.token.set(token);
         this.user.set(user);
     }
-
 }
