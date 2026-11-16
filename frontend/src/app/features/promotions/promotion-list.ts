@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import {
-    AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators,
+  AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators,
 } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
@@ -11,22 +11,23 @@ import { TagModule } from 'primeng/tag';
 import { formatDate } from '../shifts/week.util';
 import { Promotion, PromotionPayload, PromoType } from './promotion.model';
 import { PromotionService } from './promotion.service';
+import { ConfirmService } from '../../core/ui/confirm.service';
 
 function promoRules(g: AbstractControl): ValidationErrors | null {
-    const errors: ValidationErrors = {};
-    if (g.get('LoaiGiam')?.value === 'phan_tram' && Number(g.get('GiaTriGiam')?.value) > 100) {
-        errors['percentMax'] = true;
-    }
-    const s = g.get('NgayBatDau')?.value;
-    const e = g.get('NgayKetThuc')?.value;
-    if (s && e && e < s) errors['dateRange'] = true;
-    return Object.keys(errors).length ? errors : null;
+  const errors: ValidationErrors = {};
+  if (g.get('LoaiGiam')?.value === 'phan_tram' && Number(g.get('GiaTriGiam')?.value) > 100) {
+    errors['percentMax'] = true;
+  }
+  const s = g.get('NgayBatDau')?.value;
+  const e = g.get('NgayKetThuc')?.value;
+  if (s && e && e < s) errors['dateRange'] = true;
+  return Object.keys(errors).length ? errors : null;
 }
 
 @Component({
-    selector: 'app-promotion-list',
-    imports: [ReactiveFormsModule, DatePipe, DecimalPipe, ButtonModule, DialogModule, InputTextModule, TagModule],
-    template: `
+  selector: 'app-promotion-list',
+  imports: [ReactiveFormsModule, DatePipe, DecimalPipe, ButtonModule, DialogModule, InputTextModule, TagModule],
+  template: `
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-2xl font-semibold text-slate-800">Khuyến mãi</h1>
@@ -180,191 +181,196 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
   `,
 })
 export class PromotionList {
-    private service = inject(PromotionService);
-    private fb = inject(FormBuilder);
+  private service = inject(PromotionService);
+  private fb = inject(FormBuilder);
+  private confirmDialog = inject(ConfirmService);
 
-    readonly promos = signal<Promotion[]>([]);
-    readonly loading = signal(true);
-    readonly busy = signal(false);
-    readonly error = signal<string | null>(null);
-    readonly success = signal<string | null>(null);
+  readonly promos = signal<Promotion[]>([]);
+  readonly loading = signal(true);
+  readonly busy = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly success = signal<string | null>(null);
 
-    readonly dialogOpen = signal(false);
-    readonly editing = signal<Promotion | null>(null);
-    readonly formError = signal<string | null>(null);
+  readonly dialogOpen = signal(false);
+  readonly editing = signal<Promotion | null>(null);
+  readonly formError = signal<string | null>(null);
 
-    readonly form = this.fb.group(
-        {
-            TenChuongTrinh: ['', [Validators.required, Validators.maxLength(255)]],
-            LoaiGiam: ['phan_tram' as PromoType, Validators.required],
-            GiaTriGiam: [null as number | null, [Validators.required, Validators.min(1)]],
-            DieuKienApDung: [0 as number | null, Validators.min(0)],
-            GiamToiDa: [null as number | null, Validators.min(0)],
-            NgayBatDau: ['', Validators.required],
-            NgayKetThuc: ['', Validators.required],
-            TrangThai: [true],
-        },
-        { validators: promoRules },
-    );
+  readonly form = this.fb.group(
+    {
+      TenChuongTrinh: ['', [Validators.required, Validators.maxLength(255)]],
+      LoaiGiam: ['phan_tram' as PromoType, Validators.required],
+      GiaTriGiam: [null as number | null, [Validators.required, Validators.min(1)]],
+      DieuKienApDung: [0 as number | null, Validators.min(0)],
+      GiamToiDa: [null as number | null, Validators.min(0)],
+      NgayBatDau: ['', Validators.required],
+      NgayKetThuc: ['', Validators.required],
+      TrangThai: [true],
+    },
+    { validators: promoRules },
+  );
 
-    constructor() {
+  constructor() {
+    this.load();
+  }
+
+  load() {
+    this.loading.set(true);
+    this.service.list().subscribe({
+      next: (data) => {
+        this.promos.set(data);
+        this.loading.set(false);
+      },
+      error: (e: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.error.set(e.error?.message ?? 'Không tải được danh sách khuyến mãi.');
+      },
+    });
+  }
+
+  isOn(p: Promotion) {
+    return Number(p.TrangThai) === 1;
+  }
+
+  discountText(p: Promotion): string {
+    if (p.LoaiGiam === 'so_tien') {
+      return `${Number(p.GiaTriGiam).toLocaleString('vi-VN')} ₫`;
+    }
+    const cap = Number(p.GiamToiDa ?? 0);
+    return `${Number(p.GiaTriGiam)}%` + (cap > 0 ? ` (tối đa ${cap.toLocaleString('vi-VN')} ₫)` : '');
+  }
+
+  status(p: Promotion): { label: string; severity: 'success' | 'info' | 'warn' | 'secondary' } {
+    switch (p.trang_thai_text) {
+      case 'dang_chay':
+        return { label: 'Đang chạy', severity: 'success' };
+      case 'sap_chay':
+        return { label: 'Sắp diễn ra', severity: 'info' };
+      case 'het_han':
+        return { label: 'Hết hạn', severity: 'secondary' };
+      default:
+        return { label: 'Tạm ngưng', severity: 'warn' };
+    }
+  }
+
+  openCreate() {
+    this.editing.set(null);
+    this.formError.set(null);
+    const today = formatDate(new Date());
+    this.form.reset({
+      TenChuongTrinh: '',
+      LoaiGiam: 'phan_tram',
+      GiaTriGiam: null,
+      DieuKienApDung: 0,
+      GiamToiDa: null,
+      NgayBatDau: today,
+      NgayKetThuc: today,
+      TrangThai: true,
+    });
+    this.dialogOpen.set(true);
+  }
+
+  openEdit(p: Promotion) {
+    this.editing.set(p);
+    this.formError.set(null);
+    this.form.reset({
+      TenChuongTrinh: p.TenChuongTrinh,
+      LoaiGiam: p.LoaiGiam,
+      GiaTriGiam: Number(p.GiaTriGiam),
+      DieuKienApDung: Number(p.DieuKienApDung ?? 0),
+      GiamToiDa: p.GiamToiDa != null ? Number(p.GiamToiDa) : null,
+      NgayBatDau: formatDate(new Date(p.NgayBatDau)),   // đổi sang ngày giờ địa phương
+      NgayKetThuc: formatDate(new Date(p.NgayKetThuc)),
+      TrangThai: this.isOn(p),
+    });
+    this.dialogOpen.set(true);
+  }
+
+  save() {
+    if (this.form.invalid) return;
+    const v = this.form.getRawValue();
+
+    const body: PromotionPayload = {
+      TenChuongTrinh: (v.TenChuongTrinh ?? '').trim(),
+      LoaiGiam: v.LoaiGiam ?? 'phan_tram',
+      GiaTriGiam: Number(v.GiaTriGiam),
+      DieuKienApDung: Number(v.DieuKienApDung ?? 0),
+      GiamToiDa: v.LoaiGiam === 'phan_tram' && v.GiamToiDa ? Number(v.GiamToiDa) : null,
+      NgayBatDau: v.NgayBatDau ?? '',
+      NgayKetThuc: v.NgayKetThuc ?? '',
+      TrangThai: !!v.TrangThai,
+    };
+
+    const current = this.editing();
+    const request = current
+      ? this.service.update(current.MaKhuyenMai, body)
+      : this.service.create(body);
+
+    this.busy.set(true);
+    this.formError.set(null);
+    request.subscribe({
+      next: (res) => {
+        this.busy.set(false);
+        this.dialogOpen.set(false);
+        this.notify(res.message);
         this.load();
-    }
+      },
+      error: (e: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.formError.set(this.errorText(e));
+      },
+    });
+  }
 
-    load() {
-        this.loading.set(true);
-        this.service.list().subscribe({
-            next: (data) => {
-                this.promos.set(data);
-                this.loading.set(false);
-            },
-            error: (e: HttpErrorResponse) => {
-                this.loading.set(false);
-                this.error.set(e.error?.message ?? 'Không tải được danh sách khuyến mãi.');
-            },
-        });
-    }
+  async remove(p: Promotion) {
+    const ok = await this.confirmDialog.ask({
+      title: 'Xóa chương trình khuyến mãi',
+      message:
+        `Bạn có chắc muốn xóa chương trình "${p.TenChuongTrinh}"?\n` +
+        'Nếu đã áp dụng cho hóa đơn, hệ thống chỉ chuyển sang "Tạm ngưng".',
+      confirmLabel: 'Xóa chương trình',
+      tone: 'danger',
+    });
 
-    isOn(p: Promotion) {
-        return Number(p.TrangThai) === 1;
-    }
+    if (!ok) return;
 
-    discountText(p: Promotion): string {
-        if (p.LoaiGiam === 'so_tien') {
-            return `${Number(p.GiaTriGiam).toLocaleString('vi-VN')} ₫`;
-        }
-        const cap = Number(p.GiamToiDa ?? 0);
-        return `${Number(p.GiaTriGiam)}%` + (cap > 0 ? ` (tối đa ${cap.toLocaleString('vi-VN')} ₫)` : '');
-    }
+    this.busy.set(true);
+    this.service.remove(p.MaKhuyenMai).subscribe({
+      next: (res) => {
+        this.busy.set(false);
+        this.notify(res.message);
+        this.load();
+      },
+      error: (e: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.error.set(this.errorText(e));
+      },
+    });
+  }
 
-    status(p: Promotion): { label: string; severity: 'success' | 'info' | 'warn' | 'secondary' } {
-        switch (p.trang_thai_text) {
-            case 'dang_chay':
-                return { label: 'Đang chạy', severity: 'success' };
-            case 'sap_chay':
-                return { label: 'Sắp diễn ra', severity: 'info' };
-            case 'het_han':
-                return { label: 'Hết hạn', severity: 'secondary' };
-            default:
-                return { label: 'Tạm ngưng', severity: 'warn' };
-        }
-    }
+  restore(p: Promotion) {
+    this.busy.set(true);
+    this.service.restore(p.MaKhuyenMai).subscribe({
+      next: (res) => {
+        this.busy.set(false);
+        this.notify(res.message);
+        this.load();
+      },
+      error: (e: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.error.set(this.errorText(e));
+      },
+    });
+  }
 
-    openCreate() {
-        this.editing.set(null);
-        this.formError.set(null);
-        const today = formatDate(new Date());
-        this.form.reset({
-            TenChuongTrinh: '',
-            LoaiGiam: 'phan_tram',
-            GiaTriGiam: null,
-            DieuKienApDung: 0,
-            GiamToiDa: null,
-            NgayBatDau: today,
-            NgayKetThuc: today,
-            TrangThai: true,
-        });
-        this.dialogOpen.set(true);
-    }
+  private notify(message: string) {
+    this.success.set(message);
+    this.error.set(null);
+    setTimeout(() => this.success.set(null), 4000);
+  }
 
-    openEdit(p: Promotion) {
-        this.editing.set(p);
-        this.formError.set(null);
-        this.form.reset({
-            TenChuongTrinh: p.TenChuongTrinh,
-            LoaiGiam: p.LoaiGiam,
-            GiaTriGiam: Number(p.GiaTriGiam),
-            DieuKienApDung: Number(p.DieuKienApDung ?? 0),
-            GiamToiDa: p.GiamToiDa != null ? Number(p.GiamToiDa) : null,
-            NgayBatDau: formatDate(new Date(p.NgayBatDau)),   // đổi sang ngày giờ địa phương
-            NgayKetThuc: formatDate(new Date(p.NgayKetThuc)),
-            TrangThai: this.isOn(p),
-        });
-        this.dialogOpen.set(true);
-    }
-
-    save() {
-        if (this.form.invalid) return;
-        const v = this.form.getRawValue();
-
-        const body: PromotionPayload = {
-            TenChuongTrinh: (v.TenChuongTrinh ?? '').trim(),
-            LoaiGiam: v.LoaiGiam ?? 'phan_tram',
-            GiaTriGiam: Number(v.GiaTriGiam),
-            DieuKienApDung: Number(v.DieuKienApDung ?? 0),
-            GiamToiDa: v.LoaiGiam === 'phan_tram' && v.GiamToiDa ? Number(v.GiamToiDa) : null,
-            NgayBatDau: v.NgayBatDau ?? '',
-            NgayKetThuc: v.NgayKetThuc ?? '',
-            TrangThai: !!v.TrangThai,
-        };
-
-        const current = this.editing();
-        const request = current
-            ? this.service.update(current.MaKhuyenMai, body)
-            : this.service.create(body);
-
-        this.busy.set(true);
-        this.formError.set(null);
-        request.subscribe({
-            next: (res) => {
-                this.busy.set(false);
-                this.dialogOpen.set(false);
-                this.notify(res.message);
-                this.load();
-            },
-            error: (e: HttpErrorResponse) => {
-                this.busy.set(false);
-                this.formError.set(this.errorText(e));
-            },
-        });
-    }
-
-    remove(p: Promotion) {
-        if (
-            !confirm(
-                `Xóa chương trình "${p.TenChuongTrinh}"?\nNếu đã áp dụng cho hóa đơn, hệ thống chỉ chuyển sang "Tạm ngưng".`,
-            )
-        )
-            return;
-
-        this.busy.set(true);
-        this.service.remove(p.MaKhuyenMai).subscribe({
-            next: (res) => {
-                this.busy.set(false);
-                this.notify(res.message);
-                this.load();
-            },
-            error: (e: HttpErrorResponse) => {
-                this.busy.set(false);
-                this.error.set(this.errorText(e));
-            },
-        });
-    }
-
-    restore(p: Promotion) {
-        this.busy.set(true);
-        this.service.restore(p.MaKhuyenMai).subscribe({
-            next: (res) => {
-                this.busy.set(false);
-                this.notify(res.message);
-                this.load();
-            },
-            error: (e: HttpErrorResponse) => {
-                this.busy.set(false);
-                this.error.set(this.errorText(e));
-            },
-        });
-    }
-
-    private notify(message: string) {
-        this.success.set(message);
-        this.error.set(null);
-        setTimeout(() => this.success.set(null), 4000);
-    }
-
-    private errorText(e: HttpErrorResponse): string {
-        const errs = e.error?.errors as Record<string, string[]> | undefined;
-        if (errs) return Object.values(errs).flat().join(' ');
-        return e.error?.message ?? 'Có lỗi xảy ra, vui lòng thử lại.';
-    }
+  private errorText(e: HttpErrorResponse): string {
+    const errs = e.error?.errors as Record<string, string[]> | undefined;
+    if (errs) return Object.values(errs).flat().join(' ');
+    return e.error?.message ?? 'Có lỗi xảy ra, vui lòng thử lại.';
+  }
 }

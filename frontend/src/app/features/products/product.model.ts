@@ -39,13 +39,11 @@ export interface ProductPayload {
     CanhBaoHSD: number | null;
     MoTa: string | null;
     ThanhPhan: string | null;
-    SoLuongHienTai?: number;
-    TienToLo: string | null;
-    HanSuDungBanDau?: string | null;
 }
 
 export interface Supplier {
     MaNhaCungCap: number;
     TenNhaCungCap: string;
     TrangThai?: boolean | number;
+    DanhMucIds?: number[];
 }

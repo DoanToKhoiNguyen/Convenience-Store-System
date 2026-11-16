@@ -31,5 +31,11 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
         ]);
         app(\App\Domains\LoHang\Services\LoHangService::class)->dongBoTatCa();
+        \Illuminate\Support\Facades\DB::statement('
+            INSERT INTO nha_cung_cap_danh_muc ("MaNhaCungCap", "MaDanhMuc")
+            SELECT DISTINCT "MaNhaCungCap", "MaDanhMuc" FROM san_pham
+            WHERE "MaNhaCungCap" IS NOT NULL AND "MaDanhMuc" IS NOT NULL
+            ON CONFLICT DO NOTHING
+        ');
     }
 }

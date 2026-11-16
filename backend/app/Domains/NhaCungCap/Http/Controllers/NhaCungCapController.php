@@ -3,41 +3,55 @@
 namespace App\Domains\NhaCungCap\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\DanhMuc;
 use App\Models\NhaCungCap;
 use App\Models\PhieuNhap;
 use App\Models\SanPham;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Database\QueryException;
 
 class NhaCungCapController extends Controller
 {
-
-    private function rules($ignoreId = null): array
+    private function duLieu(Request $request, $ignoreId = null): array
     {
-        return [
+        return $request->validate([
             'TenNhaCungCap' => ['required', 'string', 'max:255',
                 Rule::unique('nha_cung_cap', 'TenNhaCungCap')->ignore($ignoreId, 'MaNhaCungCap')],
             'DiaChi'        => 'required|string|max:255',
             'SoDienThoai'   => ['required', 'string', 'regex:/^[0-9+\s().-]{8,20}$/'],
-        ];
+            'DanhMuc'       => 'required|array|min:1',
+            'DanhMuc.*'     => 'integer|distinct|exists:danh_muc,MaDanhMuc',
+        ], [
+            'DanhMuc.required' => 'Vui lòng chọn ít nhất một danh mục mà nhà cung cấp này cung cấp.',
+            'DanhMuc.min'      => 'Vui lòng chọn ít nhất một danh mục mà nhà cung cấp này cung cấp.',
+        ]);
     }
 
     public function index(): JsonResponse
     {
         return response()->json([
-            'data' => NhaCungCap::orderBy('TenNhaCungCap')->get()->values(),
+            'data' => NhaCungCap::with('danhMuc')->orderBy('TenNhaCungCap')->get()->values(),
         ]);
     }
 
-     public function store(Request $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $nhaCungCap = NhaCungCap::create($request->validate($this->rules()));
+        $data = $this->duLieu($request);
+
+        $nhaCungCap = DB::transaction(function () use ($data) {
+            $ncc = NhaCungCap::create(Arr::only($data, ['TenNhaCungCap', 'DiaChi', 'SoDienThoai']));
+            $ncc->danhMuc()->sync($data['DanhMuc']);
+
+            return $ncc;
+        });
 
         return response()->json([
             'message' => 'Thêm nhà cung cấp thành công!',
-            'data'    => $nhaCungCap,
+            'data'    => $nhaCungCap->load('danhMuc'),
         ], 201);
     }
 
@@ -48,11 +62,35 @@ class NhaCungCapController extends Controller
             return response()->json(['message' => 'Không tìm thấy nhà cung cấp.'], 404);
         }
 
-        $nhaCungCap->update($request->validate($this->rules($id)));
+        $data = $this->duLieu($request, $id);
+
+        // Không cho bỏ danh mục mà nhà cung cấp này đang có sản phẩm
+        $cu  = DB::table('nha_cung_cap_danh_muc')->where('MaNhaCungCap', $id)->pluck('MaDanhMuc')->map(fn ($v) => (int) $v);
+        $moi = collect($data['DanhMuc'])->map(fn ($v) => (int) $v);
+        $bo  = $cu->diff($moi)->values();
+
+        if ($bo->isNotEmpty()) {
+            $dangDung = DanhMuc::whereIn(
+                'MaDanhMuc',
+                SanPham::where('MaNhaCungCap', $id)->whereIn('MaDanhMuc', $bo)->select('MaDanhMuc')
+            )->pluck('TenDanhMuc');
+
+            if ($dangDung->isNotEmpty()) {
+                $thongBao = 'Không thể bỏ danh mục "' . $dangDung->implode('", "')
+                    . '" vì nhà cung cấp này đang có sản phẩm thuộc danh mục đó.';
+
+                return response()->json(['message' => $thongBao, 'errors' => ['DanhMuc' => [$thongBao]]], 422);
+            }
+        }
+
+        DB::transaction(function () use ($nhaCungCap, $data) {
+            $nhaCungCap->update(Arr::only($data, ['TenNhaCungCap', 'DiaChi', 'SoDienThoai']));
+            $nhaCungCap->danhMuc()->sync($data['DanhMuc']);
+        });
 
         return response()->json([
             'message' => 'Cập nhật nhà cung cấp thành công!',
-            'data'    => $nhaCungCap,
+            'data'    => $nhaCungCap->load('danhMuc'),
         ]);
     }
 
@@ -71,10 +109,7 @@ class NhaCungCapController extends Controller
             try {
                 $nhaCungCap->delete();
 
-                return response()->json([
-                    'message' => 'Đã xóa nhà cung cấp.',
-                    'action'  => 'deleted',
-                ]);
+                return response()->json(['message' => 'Đã xóa nhà cung cấp.', 'action' => 'deleted']);
             } catch (QueryException $e) {
                 // Còn dữ liệu khác tham chiếu tới: chuyển sang ẩn cho an toàn
             }

@@ -37,19 +37,20 @@ class SanPhamController extends Controller
             'CanhBaoHSD'     => 'nullable|integer|min:0',
             'MoTa'           => 'nullable|string',
             'ThanhPhan'      => 'nullable|string',
-            'TienToLo' => ['nullable', 'string', 'regex:/^[A-Z0-9]{1,10}$/',
-            Rule::unique('san_pham', 'TienToLo')->ignore($ignoreId, 'MaSanPham')],
         ];
+    }
+
+    private function nhaCungCapCoDanhMuc(int $maNhaCungCap, int $maDanhMuc): bool
+    {
+        return DB::table('nha_cung_cap_danh_muc')
+            ->where('MaNhaCungCap', $maNhaCungCap)
+            ->where('MaDanhMuc', $maDanhMuc)
+            ->exists();
     }
 
     public function store(Request $request, LoHangService $loHang): JsonResponse
     {
-        $this->chuanHoaTienTo($request);
-
-        $data = $request->validate($this->rules() + [
-            'SoLuongHienTai'  => 'nullable|integer|min:0',
-            'HanSuDungBanDau' => 'nullable|date_format:Y-m-d|after_or_equal:today',
-        ], $this->thongBaoTienTo());
+        $data = $request->validate($this->rules());
 
         if (!NhaCungCap::where('MaNhaCungCap', $data['MaNhaCungCap'])->where('TrangThai', true)->exists()) {
             return response()->json([
@@ -58,33 +59,21 @@ class SanPhamController extends Controller
             ], 422);
         }
 
-        $soLuongBanDau = (int) ($data['SoLuongHienTai'] ?? 0);
-        $hanBanDau = $data['HanSuDungBanDau'] ?? null;
-        unset($data['HanSuDungBanDau']);
-
-        if (!empty($data['TonKhoToiDa']) && $soLuongBanDau > $data['TonKhoToiDa']) {
+        if (!$this->nhaCungCapCoDanhMuc((int) $data['MaNhaCungCap'], (int) $data['MaDanhMuc'])) {
             return response()->json([
-                'message' => 'Số lượng ban đầu vượt quá mức tồn kho tối đa.',
-                'errors'  => ['SoLuongHienTai' => ['Số lượng ban đầu vượt quá mức tồn kho tối đa.']],
+                'message' => 'Nhà cung cấp này không cung cấp danh mục đã chọn.',
+                'errors'  => ['MaNhaCungCap' => ['Nhà cung cấp này không cung cấp danh mục đã chọn.']],
             ], 422);
         }
 
-        $data['SoLuongHienTai'] = 0; // số lượng ban đầu được cộng qua lô, để tồn kho khớp tổng các lô
-        $data['TrangThai'] = true;
-        $data['LoaiSanPham'] = DanhMuc::find($data['MaDanhMuc'])->TenDanhMuc;
-        $data['TienToLo'] = $data['TienToLo'] ?? $loHang->goiYTienTo($data['TenSanPham']);
+        $data['SoLuongHienTai'] = 0; // số lượng và hạn sử dụng được nhập khi nhận hàng
+        $data['TrangThai']      = true;
+        $data['LoaiSanPham']    = DanhMuc::find($data['MaDanhMuc'])->TenDanhMuc;
+        $data['TienToLo']       = $loHang->goiYTienTo($data['TenSanPham']);
 
-        $sanPham = DB::transaction(function () use ($data, $soLuongBanDau, $hanBanDau, $request, $loHang) {
-            $sp = SanPham::create($data);
+        $sanPham = SanPham::create($data);
 
-            if ($soLuongBanDau > 0) {
-                $loHang->nhapLo($sp->MaSanPham, $soLuongBanDau, $hanBanDau, 'Khởi tạo sản phẩm', $request->user()->MaTaiKhoan);
-            }
-
-            return $sp->fresh();
-        });
-
-        return response()->json(['message' => 'Thêm sản phẩm thành công!', 'data' => $sanPham], 201);
+        return response()->json(['message' => 'Thêm sản phẩm thành công!', 'data' => $sanPham->fresh()], 201);
     }
 
     public function update(Request $request, $id, LoHangService $loHang): JsonResponse
@@ -94,10 +83,12 @@ class SanPhamController extends Controller
             return response()->json(['message' => 'Không tìm thấy sản phẩm.'], 404);
         }
 
-        $this->chuanHoaTienTo($request);
-        $data = $request->validate($this->rules($id), $this->thongBaoTienTo());
+        $data = $request->validate($this->rules($id));
 
-        if ((int) $data['MaNhaCungCap'] !== (int) $sanPham->MaNhaCungCap
+        $doiNhaCungCap = (int) $data['MaNhaCungCap'] !== (int) $sanPham->MaNhaCungCap;
+        $doiDanhMuc    = (int) $data['MaDanhMuc'] !== (int) $sanPham->MaDanhMuc;
+
+        if ($doiNhaCungCap
             && !NhaCungCap::where('MaNhaCungCap', $data['MaNhaCungCap'])->where('TrangThai', true)->exists()) {
             return response()->json([
                 'message' => 'Nhà cung cấp đã ngừng hợp tác.',
@@ -105,19 +96,19 @@ class SanPhamController extends Controller
             ], 422);
         }
 
-        $tienTo = $data['TienToLo'] ?? $sanPham->TienToLo
-            ?? $loHang->goiYTienTo($data['TenSanPham'], (int) $sanPham->MaSanPham);
-
-        if ($sanPham->TienToLo !== null && $tienTo !== $sanPham->TienToLo
-            && LoHang::where('MaSanPham', $sanPham->MaSanPham)->exists()) {
+        if (($doiNhaCungCap || $doiDanhMuc)
+            && !$this->nhaCungCapCoDanhMuc((int) $data['MaNhaCungCap'], (int) $data['MaDanhMuc'])) {
             return response()->json([
-                'message' => 'Sản phẩm đã có lô hàng nên không đổi được tiền tố mã lô.',
-                'errors'  => ['TienToLo' => ['Sản phẩm đã có lô hàng nên không đổi được tiền tố mã lô.']],
+                'message' => 'Nhà cung cấp này không cung cấp danh mục đã chọn.',
+                'errors'  => ['MaNhaCungCap' => ['Nhà cung cấp này không cung cấp danh mục đã chọn.']],
             ], 422);
         }
 
-        $data['TienToLo'] = $tienTo;
         $data['LoaiSanPham'] = DanhMuc::find($data['MaDanhMuc'])->TenDanhMuc;
+        // Tiền tố mã lô do hệ thống quản lý, không cho sửa
+        $data['TienToLo'] = $sanPham->TienToLo
+            ?? $loHang->goiYTienTo($data['TenSanPham'], (int) $sanPham->MaSanPham);
+
         $sanPham->update($data);
 
         return response()->json(['success' => true, 'message' => 'Cập nhật sản phẩm thành công!', 'data' => $sanPham], 200);
@@ -353,18 +344,5 @@ class SanPhamController extends Controller
         return response()->json(['message' => 'Đã xóa ảnh sản phẩm.']);
     }
 
-    private function chuanHoaTienTo(Request $request): void
-    {
-        if ($request->filled('TienToLo')) {
-            $request->merge(['TienToLo' => strtoupper(trim((string) $request->input('TienToLo')))]);
-        }
-    }
 
-    private function thongBaoTienTo(): array
-    {
-        return [
-            'TienToLo.regex'  => 'Tiền tố chỉ gồm chữ không dấu và số, tối đa 10 ký tự.',
-            'TienToLo.unique' => 'Tiền tố này đã được sản phẩm khác dùng.',
-        ];
-    }
 }

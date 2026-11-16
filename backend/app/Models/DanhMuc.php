@@ -14,4 +14,8 @@ class DanhMuc extends Model
     {
         return $this->hasMany(SanPham::class, 'MaDanhMuc', 'MaDanhMuc');
     }
+    public function nhaCungCap()
+    {
+        return $this->belongsToMany(NhaCungCap::class, 'nha_cung_cap_danh_muc', 'MaDanhMuc', 'MaNhaCungCap', 'MaDanhMuc', 'MaNhaCungCap');
+    }
 }

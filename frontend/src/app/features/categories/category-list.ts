@@ -6,6 +6,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { Category } from './category.model';
 import { CategoryService } from './category.service';
+import { ConfirmService } from '../../core/ui/confirm.service';
 
 // Bỏ dấu để gõ "do uong" vẫn tìm ra "Đồ uống"
 const normalize = (s: string) =>
@@ -145,6 +146,7 @@ const normalize = (s: string) =>
 export class CategoryList {
   private service = inject(CategoryService);
   private fb = inject(FormBuilder);
+  private confirmDialog = inject(ConfirmService);
 
   readonly items = signal<Category[]>([]);
   readonly keyword = signal('');
@@ -227,9 +229,16 @@ export class CategoryList {
     });
   }
 
-  remove(c: Category) {
+  async remove(c: Category) {
     if ((c.san_pham_count ?? 0) > 0) return;
-    if (!confirm(`Xóa danh mục "${c.TenDanhMuc}"?`)) return;
+
+    const ok = await this.confirmDialog.ask({
+      title: 'Xóa danh mục',
+      message: `Bạn có chắc muốn xóa danh mục "${c.TenDanhMuc}"?`,
+      confirmLabel: 'Xóa danh mục',
+      tone: 'danger',
+    });
+    if (!ok) return;
 
     this.busy.set(true);
     this.error.set(null);

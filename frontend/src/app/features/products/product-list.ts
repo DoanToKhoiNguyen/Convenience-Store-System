@@ -1,8 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { RouterLink } from '@angular/router';
+import { Observable, of, startWith } from 'rxjs';
 import { TableModule, TablePageEvent } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
@@ -11,6 +13,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE } from '../../core/auth/roles';
+import { ConfirmService } from '../../core/ui/confirm.service';
 import { Product, ProductPayload, Supplier } from './product.model';
 import { ProductService } from './product.service';
 import { Category } from '../categories/category.model';
@@ -33,7 +36,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
 @Component({
   selector: 'app-product-list',
   imports: [
-    ReactiveFormsModule, TableModule, TagModule, ButtonModule,
+    ReactiveFormsModule, RouterLink, TableModule, TagModule, ButtonModule,
     DialogModule, InputTextModule, TooltipModule, DecimalPipe, DatePipe,
   ],
   template: `
@@ -321,14 +324,6 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
           <input pInputText formControlName="TenSanPham" class="w-full" />
         </div>
 
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Tiền tố mã lô</label>
-          <input pInputText formControlName="TienToLo" class="w-full uppercase" maxlength="10" placeholder="Để trống: tự tạo từ tên sản phẩm" />
-          <small class="text-slate-500">
-            Mã lô có dạng <b>{{ form.controls.TienToLo.value || 'A' }}-001</b>, tăng dần mỗi lần nhập hàng. Không đổi được khi sản phẩm đã có lô.
-          </small>
-        </div>
-
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">Danh mục *</label>
@@ -347,12 +342,24 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
 
         <div>
           <label class="mb-1 block text-sm font-medium text-slate-700">Nhà cung cấp *</label>
-          <select formControlName="MaNhaCungCap" class="w-full rounded-md border border-slate-300 px-3 py-2">
-            <option [ngValue]="null" disabled>-- Chọn nhà cung cấp --</option>
+          <select
+            formControlName="MaNhaCungCap"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100 disabled:text-slate-400"
+            [attr.disabled]="formCategory() == null ? '' : null"
+          >
+            <option [ngValue]="null" disabled>
+              {{ formCategory() == null ? '-- Chọn danh mục trước --' : '-- Chọn nhà cung cấp --' }}
+            </option>
             @for (s of supplierOptions(); track s.MaNhaCungCap) {
               <option [ngValue]="s.MaNhaCungCap">{{ s.TenNhaCungCap }}</option>
             }
           </select>
+          @if (formCategory() != null && supplierOptions().length === 0) {
+            <small class="text-amber-700">
+              Chưa có nhà cung cấp nào cung cấp danh mục này. Hãy thêm hoặc cập nhật ở trang
+              <a routerLink="/admin/suppliers" class="underline">Nhà cung cấp</a>.
+            </small>
+          }
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -389,17 +396,10 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
             Tồn kho hiện tại: <b>{{ e.SoLuongHienTai }}</b>. Muốn đổi số lượng, dùng trang "Cập nhật tồn kho" để có lịch sử.
           </div>
         } @else {
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">Số lượng ban đầu</label>
-              <input pInputText type="number" min="0" formControlName="SoLuongHienTai" class="w-full" />
-            </div>
-            <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">Hạn sử dụng của số lượng ban đầu</label>
-              <input pInputText type="date" formControlName="HanSuDungBanDau" class="w-full" />
-            </div>
+          <div class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            Sản phẩm mới có tồn kho 0. Số lượng và hạn sử dụng được nhập khi nhập hàng
+            (Cảnh báo kho → Lập phiếu nhập → Nhận hàng). Mã lô do hệ thống tự tạo.
           </div>
-          <small class="block text-slate-500">Để trống hạn sử dụng nếu sản phẩm không có hạn.</small>
         }
 
         <div>
@@ -501,6 +501,7 @@ export class ProductList {
   private fb = inject(FormBuilder);
   private categoryService = inject(CategoryService);
   private lotService = inject(LotService);
+  private confirmDialog = inject(ConfirmService);
 
   readonly lotText = lotText;
   readonly lotSeverity = lotSeverity;
@@ -536,6 +537,51 @@ export class ProductList {
 
   // Chỉ chủ và quản lý được thêm / sửa (khớp route role:1,2 ở backend)
   readonly canEdit = computed(() => this.auth.hasAnyRole([ROLE.OWNER, ROLE.MANAGER]));
+
+  readonly form = this.fb.group(
+    {
+      TenSanPham: ['', Validators.required],
+      MaDanhMuc: [null as number | null, Validators.required],
+      TenThuongHieu: [''],
+      MaNhaCungCap: [null as number | null, Validators.required],
+      DonGiaNhap: [null as number | null, [Validators.required, Validators.min(0)]],
+      DonGiaBan: [null as number | null, [Validators.required, Validators.min(0)]],
+      TonKhoToiThieu: [0 as number | null, [Validators.required, Validators.min(0)]],
+      TonKhoToiDa: [null as number | null],
+      CanhBaoHSD: [null as number | null],
+      MoTa: [''],
+      ThanhPhan: [''],
+    },
+    {
+      validators: (g) => {
+        const min = g.get('TonKhoToiThieu')?.value;
+        const max = g.get('TonKhoToiDa')?.value;
+        return max != null && min != null && Number(max) < Number(min) ? { maxLtMin: true } : null;
+      },
+    },
+  );
+
+  // Danh mục đang chọn trong form (dạng signal để lọc nhà cung cấp theo danh mục)
+  readonly formCategory = toSignal(
+    this.form.controls.MaDanhMuc.valueChanges.pipe(startWith(this.form.controls.MaDanhMuc.value)),
+    { requireSync: true },
+  );
+
+  // Chỉ hiện nhà cung cấp đang hợp tác và cung cấp danh mục đã chọn.
+  // Khi sửa mà chưa đổi danh mục thì vẫn giữ nhà cung cấp hiện tại của sản phẩm.
+  readonly supplierOptions = computed(() => {
+    const cat = this.formCategory();
+    if (cat == null) return [];
+
+    const e = this.editing();
+    const keepId = e && Number(e.MaDanhMuc) === Number(cat) ? Number(e.MaNhaCungCap ?? 0) : 0;
+
+    return this.suppliers().filter(
+      (s) =>
+        s.MaNhaCungCap === keepId ||
+        (Number(s.TrangThai ?? 1) === 1 && (s.DanhMucIds ?? []).includes(Number(cat))),
+    );
+  });
 
   // Đã lọc theo từ khóa và hạn dùng, chưa lọc theo danh mục (để đếm số lượng mỗi danh mục)
   readonly base = computed(() => {
@@ -576,41 +622,18 @@ export class ProductList {
     het: this.products().filter((p) => p.trang_thai_hsd === 'het_han').length,
   }));
 
-  readonly supplierOptions = computed(() => {
-    const current = Number(this.editing()?.MaNhaCungCap ?? 0);
-    return this.suppliers().filter(
-      (s) => Number(s.TrangThai ?? 1) === 1 || s.MaNhaCungCap === current,
-    );
-  });
-
-  readonly form = this.fb.group(
-    {
-      TenSanPham: ['', Validators.required],
-      MaDanhMuc: [null as number | null, Validators.required],
-      TenThuongHieu: [''],
-      TienToLo: [''],
-      MaNhaCungCap: [null as number | null, Validators.required],
-      DonGiaNhap: [null as number | null, [Validators.required, Validators.min(0)]],
-      DonGiaBan: [null as number | null, [Validators.required, Validators.min(0)]],
-      TonKhoToiThieu: [0 as number | null, [Validators.required, Validators.min(0)]],
-      TonKhoToiDa: [null as number | null],
-      CanhBaoHSD: [null as number | null],
-      SoLuongHienTai: [0 as number | null, Validators.min(0)],
-      HanSuDungBanDau: [''],
-      MoTa: [''],
-      ThanhPhan: [''],
-    },
-    {
-      validators: (g) => {
-        const min = g.get('TonKhoToiThieu')?.value;
-        const max = g.get('TonKhoToiDa')?.value;
-        return max != null && min != null && Number(max) < Number(min) ? { maxLtMin: true } : null;
-      },
-    },
-  );
-
   constructor() {
     this.load();
+
+    // Đổi danh mục thì bỏ nhà cung cấp đã chọn nếu nó không còn nằm trong danh sách hợp lệ
+    this.form.controls.MaDanhMuc.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
+      const supplier = this.form.controls.MaNhaCungCap;
+      const id = supplier.value;
+      if (id != null && !this.supplierOptions().some((s) => s.MaNhaCungCap === id)) {
+        supplier.setValue(null, { emitEvent: false });
+      }
+    });
+
     if (this.canEdit()) {
       this.service.suppliers().subscribe({
         next: (s) => this.suppliers.set(s ?? []),
@@ -733,13 +756,16 @@ export class ProductList {
 
   // ---------- Xóa, hiện lại ----------
 
-  remove(p: Product) {
-    if (
-      !confirm(
-        `Xóa sản phẩm "${p.TenSanPham}"?\nNếu sản phẩm đã có trong hóa đơn hoặc phiếu nhập, hệ thống chỉ ẩn nó.`,
-      )
-    )
-      return;
+  async remove(p: Product) {
+    const ok = await this.confirmDialog.ask({
+      title: 'Xóa sản phẩm',
+      message:
+        `Bạn có chắc muốn xóa "${p.TenSanPham}"?\n` +
+        'Nếu sản phẩm đã có trong hóa đơn hoặc phiếu nhập, hệ thống chỉ ẩn sản phẩm này thay vì xóa.',
+      confirmLabel: 'Xóa sản phẩm',
+      tone: 'danger',
+    });
+    if (!ok) return;
 
     this.busy.set(true);
     this.service.remove(p.MaSanPham).subscribe({
@@ -777,9 +803,9 @@ export class ProductList {
     this.formError.set(null);
     this.resetImage(null);
     this.form.reset({
-      TenSanPham: '', MaDanhMuc: null, TenThuongHieu: '', TienToLo: '', MaNhaCungCap: null,
+      TenSanPham: '', MaDanhMuc: null, TenThuongHieu: '', MaNhaCungCap: null,
       DonGiaNhap: null, DonGiaBan: null, TonKhoToiThieu: 0, TonKhoToiDa: null,
-      CanhBaoHSD: null, SoLuongHienTai: 0, HanSuDungBanDau: '', MoTa: '', ThanhPhan: '',
+      CanhBaoHSD: null, MoTa: '', ThanhPhan: '',
     });
     this.dialogOpen.set(true);
   }
@@ -792,15 +818,12 @@ export class ProductList {
       TenSanPham: p.TenSanPham,
       MaDanhMuc: p.MaDanhMuc != null ? Number(p.MaDanhMuc) : null,
       TenThuongHieu: p.TenThuongHieu ?? '',
-      TienToLo: p.TienToLo ?? '',
       MaNhaCungCap: p.MaNhaCungCap != null ? Number(p.MaNhaCungCap) : null,
       DonGiaNhap: num(p.DonGiaNhap as number | null),
       DonGiaBan: num(p.DonGiaBan as number),
       TonKhoToiThieu: p.TonKhoToiThieu,
       TonKhoToiDa: p.TonKhoToiDa ?? null,
       CanhBaoHSD: p.CanhBaoHSD ?? null,
-      SoLuongHienTai: p.SoLuongHienTai,
-      HanSuDungBanDau: '',
       MoTa: p.MoTa ?? '',
       ThanhPhan: p.ThanhPhan ?? '',
     });
@@ -815,7 +838,6 @@ export class ProductList {
       TenSanPham: (v.TenSanPham ?? '').trim(),
       MaDanhMuc: Number(v.MaDanhMuc),
       TenThuongHieu: text(v.TenThuongHieu),
-      TienToLo: text(v.TienToLo)?.toUpperCase() ?? null,
       MaNhaCungCap: Number(v.MaNhaCungCap),
       DonGiaNhap: Number(v.DonGiaNhap),
       DonGiaBan: Number(v.DonGiaBan),
@@ -827,11 +849,6 @@ export class ProductList {
     };
 
     const current = this.editing();
-    if (!current) {
-      body.SoLuongHienTai = Number(v.SoLuongHienTai ?? 0);
-      body.HanSuDungBanDau = v.HanSuDungBanDau || null;
-    }
-
     const request = current
       ? this.service.update(current.MaSanPham, body)
       : this.service.create(body);

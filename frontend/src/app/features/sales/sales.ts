@@ -10,6 +10,7 @@ import { Product } from '../products/product.model';
 import { ProductService } from '../products/product.service';
 import { PromotionService } from '../promotions/promotion.service';
 import { Draft, SalesService } from './sales.service';
+import { ConfirmService } from '../../core/ui/confirm.service';
 
 interface CartLine {
   product: Product;
@@ -439,6 +440,7 @@ export class Sales {
   private productService = inject(ProductService);
   private promoService = inject(PromotionService);
   private sales = inject(SalesService);
+  private confirmDialog = inject(ConfirmService);
 
   readonly methods = [
     { name: 'Tiền mặt', icon: 'pi pi-money-bill' },
@@ -716,9 +718,16 @@ export class Sales {
     this.refreshEstimate();
   }
 
-  clearCart() {
+  async clearCart() {
     if (this.lines().length === 0) return;
-    if (!confirm('Xóa tất cả sản phẩm trong hóa đơn?')) return;
+    const ok = await this.confirmDialog.ask({
+      title: 'Xóa hết sản phẩm',
+      message: 'Xóa tất cả sản phẩm trong hóa đơn hiện tại?',
+      confirmLabel: 'Xóa hết',
+      tone: 'warn',
+    });
+    if (!ok) return;
+
     this.lines.set([]);
     this.error.set(null);
     this.refreshEstimate();

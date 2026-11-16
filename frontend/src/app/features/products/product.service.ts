@@ -39,6 +39,7 @@ export class ProductService {
                     MaNhaCungCap: s.MaNhaCungCap,
                     TenNhaCungCap: s.TenNhaCungCap ?? `Nhà cung cấp #${s.MaNhaCungCap}`,
                     TrangThai: s.TrangThai ?? 1,
+                    DanhMucIds: (s.danh_muc ?? []).map((d: any) => Number(d.MaDanhMuc)),
                 })) as Supplier[];
             }),
         );
