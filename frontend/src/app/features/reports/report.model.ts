@@ -64,3 +64,55 @@ export interface RevenueReport {
     ban_cham: SlowProduct[];
     dang_cho: { so_hoa_don: number; tong_tien: number };
 }
+export interface ImportSummary {
+    so_phieu: number;
+    so_luong: number;
+    gia_tri: number;
+    so_san_pham: number;
+    trung_binh: number;
+}
+
+export interface ImportPoint {
+    k: string;
+    nhan: string;
+    gia_tri: number;
+    so_phieu: number;
+}
+
+export interface ImportSupplier {
+    MaNhaCungCap: number;
+    TenNhaCungCap: string;
+    so_phieu: number;
+    gia_tri: number;
+}
+
+export interface ImportProduct {
+    MaSanPham: number;
+    TenSanPham: string;
+    so_luong: number;
+    gia_tri: number;
+    gia_trung_binh: number;
+    gia_thap: number;
+    gia_cao: number;
+}
+
+export interface ImportReceipt {
+    MaPhieuNhap: number;
+    TenNhaCungCap: string | null;
+    ngay_nhan: string;
+    so_dong: number;
+    so_luong: number;
+    gia_tri: number;
+}
+
+export interface ImportReport {
+    ky: { tu_ngay: string; den_ngay: string; nhom: Group };
+    ky_truoc: { tu_ngay: string; den_ngay: string };
+    tong_hop: ImportSummary;
+    tong_hop_truoc: ImportSummary;
+    chuoi: ImportPoint[];
+    nha_cung_cap: ImportSupplier[];
+    san_pham: ImportProduct[];
+    phieu_nhap: ImportReceipt[];
+    dang_cho: { so_phieu: number; gia_tri: number };
+}

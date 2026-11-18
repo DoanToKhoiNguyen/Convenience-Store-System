@@ -66,6 +66,7 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
         Route::post('/nhan-vien', [NhanVienController::class, 'store']);  
         Route::put('/nhan-vien/{id}', [NhanVienController::class, 'update']);     
         Route::delete('/nhan-vien/{id}', [NhanVienController::class, 'destroy']); 
+        Route::get('/bao-cao/nhap-hang', [BaoCaoController::class, 'nhapHang']);
     });
 
     Route::middleware(['role:1,2,3'])->group(function () {

@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class BaoCaoController extends Controller
 {
+    private const NGAY_NHAN = 'COALESCE(lo."NgayNhap", pn."NgayLap")';
+
     public function doanhThu(Request $request): JsonResponse
     {
         $request->validate([
@@ -53,7 +55,6 @@ class BaoCaoController extends Controller
             'tong_hop_truoc' => $this->tongHop($kyTruocTu, $tu, $laChu),
             'chuoi'          => $this->chuoi($tu, $den, $denTruoc, $nhom, $laChu),
             'phuong_thuc'    => $this->phuongThuc($tu, $denTruoc),
-            'nhan_vien'      => $this->nhanVien($tu, $denTruoc),
             'dang_cho'       => $this->dangCho(),
         ];
 
@@ -194,26 +195,6 @@ class BaoCaoController extends Controller
             ->all();
     }
 
-    private function nhanVien(Carbon $tu, Carbon $denTruoc): array
-    {
-        return $this->hoaDonHopLe(
-            DB::table('hoa_don as hd')->join('tai__khoan as tk', 'tk.MaTaiKhoan', '=', 'hd.MaTaiKhoan'),
-            $tu,
-            $denTruoc
-        )
-            ->selectRaw('tk."MaTaiKhoan", tk."HoTen", COUNT(*) as so_hoa_don, COALESCE(SUM(hd."TongTien"), 0) as doanh_thu')
-            ->groupBy('tk.MaTaiKhoan', 'tk.HoTen')
-            ->orderByDesc('doanh_thu')
-            ->limit(20)
-            ->get()
-            ->map(fn ($r) => [
-                'MaTaiKhoan' => (int) $r->MaTaiKhoan,
-                'HoTen'      => $r->HoTen,
-                'so_hoa_don' => (int) $r->so_hoa_don,
-                'doanh_thu'  => (float) $r->doanh_thu,
-            ])
-            ->all();
-    }
 
     /** Hóa đơn đang chờ thanh toán (đang giữ hàng), không phụ thuộc kỳ báo cáo. */
     private function dangCho(): array
@@ -299,5 +280,215 @@ class BaoCaoController extends Controller
                 return $m;
             })
             ->all();
+    }
+
+    /** Báo cáo nhập hàng: chỉ chủ xem (route nằm trong nhóm role:1). */
+    public function nhapHang(Request $request): JsonResponse
+    {
+        $request->validate([
+            'tu_ngay'  => 'required|date_format:Y-m-d',
+            'den_ngay' => 'required|date_format:Y-m-d|after_or_equal:tu_ngay',
+            'nhom'     => 'nullable|in:gio,ngay,thang',
+        ]);
+
+        $tu  = Carbon::parse($request->input('tu_ngay'))->startOfDay();
+        $den = Carbon::parse($request->input('den_ngay'))->startOfDay();
+        $soNgay = (int) $tu->diffInDays($den, true) + 1;
+
+        if ($soNgay > 1830) {
+            return response()->json(['message' => 'Chỉ xem được tối đa 5 năm mỗi lần.'], 422);
+        }
+
+        $nhom = $request->input('nhom');
+        if ($soNgay === 1) {
+            $nhom = 'gio';
+        } elseif (!in_array($nhom, ['ngay', 'thang'], true)) {
+            $nhom = $soNgay <= 62 ? 'ngay' : 'thang';
+        } elseif ($nhom === 'ngay' && $soNgay > 400) {
+            $nhom = 'thang';
+        }
+
+        $denTruoc  = $den->copy()->addDay();
+        $kyTruocTu = $tu->copy()->subDays($soNgay);
+
+        return response()->json([
+            'ky'             => ['tu_ngay' => $tu->toDateString(), 'den_ngay' => $den->toDateString(), 'nhom' => $nhom],
+            'ky_truoc'       => ['tu_ngay' => $kyTruocTu->toDateString(), 'den_ngay' => $tu->copy()->subDay()->toDateString()],
+            'tong_hop'       => $this->tongHopNhap($tu, $denTruoc),
+            'tong_hop_truoc' => $this->tongHopNhap($kyTruocTu, $tu),
+            'chuoi'          => $this->chuoiNhap($tu, $den, $denTruoc, $nhom),
+            'nha_cung_cap'   => $this->nhapTheoNhaCungCap($tu, $denTruoc),
+            'san_pham'       => $this->nhapTheoSanPham($tu, $denTruoc),
+            'phieu_nhap'     => $this->phieuNhapTrongKy($tu, $denTruoc),
+            'dang_cho'       => $this->phieuChuaNhan(),
+        ]);
+    }
+
+    /** Các dòng chi tiết của phiếu ĐÃ NHẬN HÀNG, tính theo ngày nhận (alias: ct, pn, lo). */
+    private function dongNhap(Carbon $tu, Carbon $denTruoc)
+    {
+        return DB::table('chi_tiet_phieu_nhap as ct')
+            ->join('phieu_nhap as pn', 'pn.MaPhieuNhap', '=', 'ct.MaPhieuNhap')
+            ->leftJoin('lo_hang as lo', 'lo.MaChiTietPhieuNhap', '=', 'ct.MaChiTietPhieuNhap')
+            ->where('pn.TrangThai', 4)
+            ->whereRaw(self::NGAY_NHAN . ' >= ?', [$tu->toDateTimeString()])
+            ->whereRaw(self::NGAY_NHAN . ' < ?', [$denTruoc->toDateTimeString()]);
+    }
+
+    private function tongHopNhap(Carbon $tu, Carbon $denTruoc): array
+    {
+        $r = $this->dongNhap($tu, $denTruoc)
+            ->selectRaw('COUNT(DISTINCT pn."MaPhieuNhap") as so_phieu,
+                        COALESCE(SUM(ct."SoLuong"), 0) as so_luong,
+                        COALESCE(SUM(ct."SoLuong" * ct."DonGia"), 0) as gia_tri,
+                        COUNT(DISTINCT ct."MaSanPham") as so_san_pham')
+            ->first();
+
+        $soPhieu = (int) $r->so_phieu;
+        $giaTri  = (float) $r->gia_tri;
+
+        return [
+            'so_phieu'    => $soPhieu,
+            'so_luong'    => (int) $r->so_luong,
+            'gia_tri'     => $giaTri,
+            'so_san_pham' => (int) $r->so_san_pham,
+            'trung_binh'  => $soPhieu > 0 ? round($giaTri / $soPhieu) : 0,
+        ];
+    }
+
+    private function chuoiNhap(Carbon $tu, Carbon $den, Carbon $denTruoc, string $nhom): array
+    {
+        $ngay = self::NGAY_NHAN;
+        $expr = match ($nhom) {
+            'gio'   => "to_char($ngay, 'HH24')",
+            'thang' => "to_char($ngay, 'YYYY-MM')",
+            default => "to_char($ngay, 'YYYY-MM-DD')",
+        };
+
+        $rows = $this->dongNhap($tu, $denTruoc)
+            ->selectRaw("$expr as k,
+                        COUNT(DISTINCT pn.\"MaPhieuNhap\") as so_phieu,
+                        COALESCE(SUM(ct.\"SoLuong\" * ct.\"DonGia\"), 0) as gia_tri")
+            ->groupByRaw($expr)
+            ->get()
+            ->keyBy('k');
+
+        // Điền đủ các mốc (kể cả mốc không có phiếu nhập) để biểu đồ liên tục
+        $keys = [];
+        if ($nhom === 'gio') {
+            for ($h = 0; $h < 24; $h++) {
+                $keys[] = sprintf('%02d', $h);
+            }
+        } elseif ($nhom === 'ngay') {
+            for ($d = $tu->copy(); $d->lte($den); $d->addDay()) {
+                $keys[] = $d->format('Y-m-d');
+            }
+        } else {
+            for ($d = $tu->copy()->startOfMonth(); $d->lte($den); $d->addMonth()) {
+                $keys[] = $d->format('Y-m');
+            }
+        }
+
+        $chuoi = [];
+        foreach ($keys as $k) {
+            $r = $rows->get($k);
+            $chuoi[] = [
+                'k'        => $k,
+                'nhan'     => match ($nhom) {
+                    'gio'   => $k . 'h',
+                    'thang' => substr($k, 5, 2) . '/' . substr($k, 0, 4),
+                    default => substr($k, 8, 2) . '/' . substr($k, 5, 2),
+                },
+                'gia_tri'  => (float) ($r->gia_tri ?? 0),
+                'so_phieu' => (int) ($r->so_phieu ?? 0),
+            ];
+        }
+
+        return $chuoi;
+    }
+
+    private function nhapTheoNhaCungCap(Carbon $tu, Carbon $denTruoc): array
+    {
+        return $this->dongNhap($tu, $denTruoc)
+            ->join('nha_cung_cap as ncc', 'ncc.MaNhaCungCap', '=', 'pn.MaNhaCungCap')
+            ->selectRaw('ncc."MaNhaCungCap", ncc."TenNhaCungCap",
+                        COUNT(DISTINCT pn."MaPhieuNhap") as so_phieu,
+                        SUM(ct."SoLuong" * ct."DonGia") as gia_tri')
+            ->groupBy('ncc.MaNhaCungCap', 'ncc.TenNhaCungCap')
+            ->orderByDesc('gia_tri')
+            ->limit(20)
+            ->get()
+            ->map(fn ($r) => [
+                'MaNhaCungCap'  => (int) $r->MaNhaCungCap,
+                'TenNhaCungCap' => $r->TenNhaCungCap,
+                'so_phieu'      => (int) $r->so_phieu,
+                'gia_tri'       => (float) $r->gia_tri,
+            ])
+            ->all();
+    }
+
+    private function nhapTheoSanPham(Carbon $tu, Carbon $denTruoc): array
+    {
+        return $this->dongNhap($tu, $denTruoc)
+            ->join('san_pham as sp', 'sp.MaSanPham', '=', 'ct.MaSanPham')
+            ->selectRaw('sp."MaSanPham", sp."TenSanPham",
+                        SUM(ct."SoLuong") as so_luong,
+                        SUM(ct."SoLuong" * ct."DonGia") as gia_tri,
+                        MIN(ct."DonGia") as gia_thap,
+                        MAX(ct."DonGia") as gia_cao')
+            ->groupBy('sp.MaSanPham', 'sp.TenSanPham')
+            ->orderByDesc('gia_tri')
+            ->limit(15)
+            ->get()
+            ->map(function ($r) {
+                $soLuong = (int) $r->so_luong;
+                $giaTri  = (float) $r->gia_tri;
+
+                return [
+                    'MaSanPham'      => (int) $r->MaSanPham,
+                    'TenSanPham'     => $r->TenSanPham,
+                    'so_luong'       => $soLuong,
+                    'gia_tri'        => $giaTri,
+                    'gia_trung_binh' => $soLuong > 0 ? round($giaTri / $soLuong) : 0,
+                    'gia_thap'       => (float) $r->gia_thap,
+                    'gia_cao'        => (float) $r->gia_cao,
+                ];
+            })
+            ->all();
+    }
+
+    private function phieuNhapTrongKy(Carbon $tu, Carbon $denTruoc): array
+    {
+        return $this->dongNhap($tu, $denTruoc)
+            ->join('nha_cung_cap as ncc', 'ncc.MaNhaCungCap', '=', 'pn.MaNhaCungCap')
+            ->selectRaw('pn."MaPhieuNhap", ncc."TenNhaCungCap",
+                        MIN(' . self::NGAY_NHAN . ') as ngay_nhan,
+                        COUNT(*) as so_dong,
+                        SUM(ct."SoLuong") as so_luong,
+                        SUM(ct."SoLuong" * ct."DonGia") as gia_tri')
+            ->groupBy('pn.MaPhieuNhap', 'ncc.TenNhaCungCap')
+            ->orderByDesc('ngay_nhan')
+            ->limit(30)
+            ->get()
+            ->map(fn ($r) => [
+                'MaPhieuNhap'   => (int) $r->MaPhieuNhap,
+                'TenNhaCungCap' => $r->TenNhaCungCap,
+                'ngay_nhan'     => Carbon::parse($r->ngay_nhan)->format('Y-m-d\TH:i:s'),
+                'so_dong'       => (int) $r->so_dong,
+                'so_luong'      => (int) $r->so_luong,
+                'gia_tri'       => (float) $r->gia_tri,
+            ])
+            ->all();
+    }
+
+    /** Phiếu nhập chưa nhận hàng (chờ duyệt hoặc đã duyệt), không phụ thuộc kỳ báo cáo. */
+    private function phieuChuaNhan(): array
+    {
+        $r = DB::table('phieu_nhap')
+            ->whereIn('TrangThai', [1, 2])
+            ->selectRaw('COUNT(*) as so_phieu, COALESCE(SUM("TongGiaTri"), 0) as gia_tri')
+            ->first();
+
+        return ['so_phieu' => (int) $r->so_phieu, 'gia_tri' => (float) $r->gia_tri];
     }
 }
