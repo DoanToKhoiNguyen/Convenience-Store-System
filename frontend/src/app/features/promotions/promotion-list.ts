@@ -8,6 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { formatDate } from '../shifts/week.util';
 import { Promotion, PromotionPayload, PromoType } from './promotion.model';
 import { PromotionService } from './promotion.service';
@@ -26,68 +27,166 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
 
 @Component({
   selector: 'app-promotion-list',
-  imports: [ReactiveFormsModule, DatePipe, DecimalPipe, ButtonModule, DialogModule, InputTextModule, TagModule],
+  imports: [ReactiveFormsModule, DatePipe, DecimalPipe, ButtonModule, DialogModule, InputTextModule, TagModule, TooltipModule],
   template: `
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-semibold text-slate-800">Khuyến mãi</h1>
-        <p class="text-sm text-slate-500">
-          Hóa đơn đủ điều kiện sẽ tự động được giảm giá. Nhiều chương trình cùng đủ điều kiện thì chỉ áp dụng một chương trình có lợi nhất.
-        </p>
+    <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+      <div class="flex items-start gap-3">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+          <i class="pi pi-tag text-lg"></i>
+        </span>
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-800">Khuyến mãi</h1>
+          <p class="mt-0.5 max-w-3xl text-sm text-slate-500">
+            Hóa đơn đủ điều kiện sẽ tự động được giảm giá. Nhiều chương trình cùng đủ điều kiện thì chỉ áp dụng một chương trình có lợi nhất.
+          </p>
+        </div>
       </div>
-      <p-button label="Thêm chương trình" icon="pi pi-plus" (onClick)="openCreate()" />
+
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-600 hover:to-teal-700 hover:shadow-emerald-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 active:scale-[0.98]"
+        (click)="openCreate()"
+      >
+        <i class="pi pi-plus text-xs"></i>
+        Thêm chương trình
+      </button>
     </div>
 
     @if (success()) {
-      <div class="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ success() }}</div>
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <i class="pi pi-check-circle mt-0.5 text-emerald-500"></i>
+        <span>{{ success() }}</span>
+      </div>
     }
     @if (error()) {
-      <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <i class="pi pi-exclamation-circle mt-0.5 text-red-500"></i>
+        <span>{{ error() }}</span>
+      </div>
     }
 
-    <div class="overflow-x-auto rounded-xl bg-white shadow-sm">
-      <table class="w-full min-w-[56rem] text-left text-sm">
-        <thead>
-          <tr class="border-b bg-slate-50 text-slate-600">
-            <th class="p-3">Chương trình</th>
-            <th class="p-3">Mức giảm</th>
-            <th class="p-3 text-right">Đơn tối thiểu</th>
-            <th class="p-3">Thời gian</th>
-            <th class="p-3">Trạng thái</th>
-            <th class="p-3 text-right">Đã dùng</th>
-            <th class="p-3 text-right">Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (p of promos(); track p.MaKhuyenMai) {
-            <tr class="border-b border-slate-100 hover:bg-slate-50">
-              <td class="p-3 font-medium text-slate-800">{{ p.TenChuongTrinh }}</td>
-              <td class="p-3">{{ discountText(p) }}</td>
-              <td class="p-3 text-right">{{ p.DieuKienApDung | number: '1.0-0' }} ₫</td>
-              <td class="p-3">
-                {{ p.NgayBatDau | date: 'dd/MM/yyyy' }} – {{ p.NgayKetThuc | date: 'dd/MM/yyyy' }}
-              </td>
-              <td class="p-3"><p-tag [value]="status(p).label" [severity]="status(p).severity" /></td>
-              <td class="p-3 text-right">{{ p.hoa_don_count ?? 0 }} hóa đơn</td>
-              <td class="p-3 text-right">
-                <div class="flex justify-end gap-1">
-                  <p-button label="Sửa" size="small" [text]="true" (onClick)="openEdit(p)" />
-                  @if (!isOn(p)) {
-                    <p-button label="Bật lại" size="small" severity="success" [text]="true" [disabled]="busy()" (onClick)="restore(p)" />
+    <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
+        <div class="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <i class="pi pi-list text-emerald-500"></i>
+          Danh sách chương trình
+        </div>
+        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+          {{ promos().length }} chương trình
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[56rem] text-left text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50/80 text-[11px] uppercase tracking-wider text-slate-500">
+              <th class="px-4 py-3 font-semibold">Chương trình</th>
+              <th class="px-4 py-3 font-semibold">Mức giảm</th>
+              <th class="px-4 py-3 text-right font-semibold">Đơn tối thiểu</th>
+              <th class="px-4 py-3 font-semibold">Thời gian</th>
+              <th class="px-4 py-3 font-semibold">Trạng thái</th>
+              <th class="px-4 py-3 text-right font-semibold">Đã dùng</th>
+              <th class="w-28 px-4 py-3 text-right font-semibold">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (p of promos(); track p.MaKhuyenMai) {
+              <tr class="transition-colors hover:bg-emerald-100/60">
+                <td class="px-4 py-3.5">
+                  <div class="flex items-center gap-2.5">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+                      <i class="pi pi-ticket text-xs"></i>
+                    </span>
+                    <span class="font-medium text-slate-800">{{ p.TenChuongTrinh }}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3.5">
+                  <span class="inline-flex items-center rounded-lg bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
+                    {{ discountText(p) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 text-right tabular-nums text-slate-700">
+                  {{ p.DieuKienApDung | number: '1.0-0' }} ₫
+                </td>
+                <td class="px-4 py-3.5">
+                  <div class="flex items-center gap-1.5 whitespace-nowrap text-slate-600">
+                    <i class="pi pi-calendar text-xs text-slate-400"></i>
+                    <span>{{ p.NgayBatDau | date: 'dd/MM/yyyy' }}</span>
+                    <i class="pi pi-arrow-right text-[9px] text-slate-300"></i>
+                    <span>{{ p.NgayKetThuc | date: 'dd/MM/yyyy' }}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3.5">
+                  <p-tag [value]="status(p).label" [severity]="status(p).severity" />
+                </td>
+                <td class="px-4 py-3.5 text-right">
+                  <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                    {{ p.hoa_don_count ?? 0 }} hóa đơn
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 text-right">
+                  <div class="flex justify-end gap-0.5">
+                    <p-button
+                      icon="pi pi-pencil"
+                      ariaLabel="Sửa chương trình"
+                      pTooltip="Sửa"
+                      tooltipPosition="top"
+                      size="small"
+                      [text]="true"
+                      [rounded]="true"
+                      (onClick)="openEdit(p)"
+                    />
+                    @if (!isOn(p)) {
+                      <p-button
+                        icon="pi pi-refresh"
+                        ariaLabel="Bật lại chương trình"
+                        pTooltip="Bật lại"
+                        tooltipPosition="top"
+                        size="small"
+                        severity="success"
+                        [text]="true"
+                        [rounded]="true"
+                        [disabled]="busy()"
+                        (onClick)="restore(p)"
+                      />
+                    }
+                    <p-button
+                      icon="pi pi-trash"
+                      ariaLabel="Xóa chương trình"
+                      pTooltip="Xóa"
+                      tooltipPosition="top"
+                      size="small"
+                      severity="danger"
+                      [text]="true"
+                      [rounded]="true"
+                      [disabled]="busy()"
+                      (onClick)="remove(p)"
+                    />
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="px-4 py-16 text-center">
+                  @if (loading()) {
+                    <div class="flex flex-col items-center gap-3 text-slate-500">
+                      <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                      <span class="text-sm">Đang tải chương trình...</span>
+                    </div>
+                  } @else {
+                    <div class="flex flex-col items-center gap-3 text-slate-500">
+                      <span class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                        <i class="pi pi-inbox text-xl"></i>
+                      </span>
+                      <span class="text-sm">Chưa có chương trình khuyến mãi nào.</span>
+                    </div>
                   }
-                  <p-button label="Xóa" size="small" severity="danger" [text]="true" [disabled]="busy()" (onClick)="remove(p)" />
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="7" class="p-8 text-center text-slate-500">
-                {{ loading() ? 'Đang tải...' : 'Chưa có chương trình khuyến mãi nào.' }}
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <p-dialog
@@ -95,73 +194,174 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
       [modal]="true"
       [visible]="dialogOpen()"
       (visibleChange)="dialogOpen.set($event)"
-      [style]="{ width: '34rem' }"
+      [style]="{ width: '36rem', maxWidth: '94vw' }"
     >
-      <form [formGroup]="form" class="space-y-3">
+      <form [formGroup]="form" class="space-y-4">
         @if (formError()) {
-          <div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ formError() }}</div>
+          <div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <i class="pi pi-exclamation-circle mt-0.5 text-red-500"></i>
+            <span>{{ formError() }}</span>
+          </div>
         }
 
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Tên chương trình *</label>
-          <input pInputText formControlName="TenChuongTrinh" class="w-full" />
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Loại giảm *</label>
-            <select formControlName="LoaiGiam" class="w-full rounded-md border border-slate-300 px-3 py-2">
-              <option value="phan_tram">Giảm theo phần trăm (%)</option>
-              <option value="so_tien">Giảm số tiền cố định (₫)</option>
-            </select>
+        <!-- Thông tin chương trình -->
+        <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <i class="pi pi-ticket text-emerald-500"></i>
+            Thông tin chương trình
           </div>
+
           <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">
-              Mức giảm * ({{ form.controls.LoaiGiam.value === 'phan_tram' ? '%' : '₫' }})
+            <label class="mb-1.5 block text-sm font-medium text-slate-700">
+              Tên chương trình <span class="text-red-500">*</span>
             </label>
-            <input pInputText type="number" min="1" formControlName="GiaTriGiam" class="w-full" />
+            <input
+              pInputText
+              formControlName="TenChuongTrinh"
+              class="w-full"
+              placeholder="Ví dụ: Giảm giá cuối tuần"
+            />
           </div>
-        </div>
-        @if (form.hasError('percentMax')) {
-          <small class="text-red-600">Giảm theo phần trăm không được vượt quá 100.</small>
-        }
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Đơn tối thiểu (₫)</label>
-            <input pInputText type="number" min="0" formControlName="DieuKienApDung" class="w-full" />
-          </div>
-          @if (form.controls.LoaiGiam.value === 'phan_tram') {
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">Giảm tối đa (₫)</label>
-              <input pInputText type="number" min="0" formControlName="GiamToiDa" class="w-full" placeholder="Không giới hạn" />
+              <label class="mb-1.5 block text-sm font-medium text-slate-700">
+                Loại giảm <span class="text-red-500">*</span>
+              </label>
+              <select
+                formControlName="LoaiGiam"
+                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              >
+                <option value="phan_tram">Giảm theo phần trăm</option>
+                <option value="so_tien">Giảm số tiền cố định</option>
+              </select>
             </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-slate-700">
+                Mức giảm <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <input
+                  pInputText
+                  type="number"
+                  min="1"
+                  formControlName="GiaTriGiam"
+                  class="w-full pr-10!"
+                />
+                <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
+                  {{ form.controls.LoaiGiam.value === 'phan_tram' ? '%' : '₫' }}
+                </span>
+              </div>
+            </div>
+          </div>
+          @if (form.hasError('percentMax')) {
+            <small class="flex items-center gap-1.5 text-red-600">
+              <i class="pi pi-exclamation-circle text-xs"></i>
+              Giảm theo phần trăm không được vượt quá 100.
+            </small>
           }
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Từ ngày *</label>
-            <input pInputText type="date" formControlName="NgayBatDau" class="w-full" />
+        <!-- Điều kiện áp dụng -->
+        <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <i class="pi pi-shopping-bag text-emerald-500"></i>
+            Điều kiện áp dụng
           </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Đến hết ngày *</label>
-            <input pInputText type="date" formControlName="NgayKetThuc" class="w-full" />
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-slate-700">Đơn tối thiểu</label>
+              <div class="relative">
+                <input
+                  pInputText
+                  type="number"
+                  min="0"
+                  formControlName="DieuKienApDung"
+                  class="w-full pr-10!"
+                />
+                <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₫</span>
+              </div>
+            </div>
+            @if (form.controls.LoaiGiam.value === 'phan_tram') {
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-slate-700">Giảm tối đa</label>
+                <div class="relative">
+                  <input
+                    pInputText
+                    type="number"
+                    min="0"
+                    formControlName="GiamToiDa"
+                    class="w-full pr-10!"
+                    placeholder="Không giới hạn"
+                  />
+                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">₫</span>
+                </div>
+              </div>
+            }
           </div>
         </div>
-        @if (form.hasError('dateRange')) {
-          <small class="text-red-600">Ngày kết thúc phải từ ngày bắt đầu trở đi.</small>
-        }
 
-        <label class="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" formControlName="TrangThai" class="h-4 w-4" />
-          Bật chương trình này
+        <!-- Thời gian áp dụng -->
+        <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <i class="pi pi-calendar text-emerald-500"></i>
+            Thời gian áp dụng
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-slate-700">
+                Từ ngày <span class="text-red-500">*</span>
+              </label>
+              <input pInputText type="date" formControlName="NgayBatDau" class="w-full" />
+            </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-slate-700">
+                Đến hết ngày <span class="text-red-500">*</span>
+              </label>
+              <input pInputText type="date" formControlName="NgayKetThuc" class="w-full" />
+            </div>
+          </div>
+          @if (form.hasError('dateRange')) {
+            <small class="flex items-center gap-1.5 text-red-600">
+              <i class="pi pi-exclamation-circle text-xs"></i>
+              Ngày kết thúc phải từ ngày bắt đầu trở đi.
+            </small>
+          }
+        </div>
+
+        <!-- Bật chương trình -->
+        <label
+          class="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition"
+          [class]="form.controls.TrangThai.value
+            ? 'border-emerald-200 bg-emerald-50/70'
+            : 'border-slate-200 bg-slate-50 hover:border-slate-300'"
+        >
+          <span class="flex items-center gap-3">
+            <span
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition"
+              [class]="form.controls.TrangThai.value
+                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/30'
+                : 'bg-slate-200 text-slate-500'"
+            >
+              <i class="pi pi-power-off text-xs"></i>
+            </span>
+            <span>
+              <span class="block text-sm font-medium text-slate-800">Bật chương trình này</span>
+              <span class="block text-xs text-slate-500">Chương trình chỉ áp dụng cho hóa đơn mới khi được bật.</span>
+            </span>
+          </span>
+          <input type="checkbox" formControlName="TrangThai" class="h-5 w-5 shrink-0 rounded accent-emerald-600" />
         </label>
 
         @if (editing(); as e) {
           @if ((e.hoa_don_count ?? 0) > 0) {
-            <p class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              Chương trình đã áp dụng cho {{ e.hoa_don_count }} hóa đơn. Thay đổi chỉ ảnh hưởng hóa đơn lập sau này.
+            <p class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <i class="pi pi-info-circle mt-px shrink-0 text-amber-500"></i>
+              <span>
+                Chương trình đã áp dụng cho {{ e.hoa_don_count }} hóa đơn. Thay đổi chỉ ảnh hưởng hóa đơn lập sau này.
+              </span>
             </p>
           }
         }

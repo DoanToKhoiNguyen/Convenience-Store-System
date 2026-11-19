@@ -16,20 +16,38 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
   selector: 'app-invoice-list',
   imports: [DatePipe, DecimalPipe, ButtonModule, DialogModule, TagModule, InputTextModule],
   template: `
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-semibold text-slate-800">Hóa đơn</h1>
-        <p class="text-sm text-slate-500">{{ total() }} hóa đơn</p>
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+          <i class="pi pi-receipt text-lg"></i>
+        </span>
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-800">Hóa đơn</h1>
+          <p class="text-sm text-slate-500">{{ total() }} hóa đơn</p>
+        </div>
       </div>
       <p-button label="Tải lại" icon="pi pi-refresh" [outlined]="true" [loading]="loading()" (onClick)="load()" />
     </div>
 
-    <div class="mb-4 flex flex-wrap gap-2">
+    @if (success()) {
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <i class="pi pi-check-circle mt-0.5 text-emerald-500"></i>
+        <span>{{ success() }}</span>
+      </div>
+    }
+    @if (error()) {
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <i class="pi pi-exclamation-circle mt-0.5 text-red-500"></i>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    <div class="mb-4 flex w-full flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm sm:inline-flex sm:w-auto">
       @for (t of tabs; track t.key) {
         <button
           type="button"
-          class="rounded-lg px-4 py-2 text-sm font-medium"
-          [class]="tab() === t.key ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'"
+          class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition sm:flex-none"
+          [class]="tab() === t.key ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'"
           (click)="setTab(t.key)"
         >
           {{ t.label }}
@@ -37,71 +55,136 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
       }
     </div>
 
-    @if (success()) {
-      <div class="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ success() }}</div>
-    }
-    @if (error()) {
-      <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
-    }
     @if (tab() === 'cho_thanh_toan') {
-      <p class="mb-3 text-sm text-slate-500">
-        Hàng trong các hóa đơn này đang được giữ. Quá 1 giờ chưa thanh toán, hóa đơn tự hủy và tồn kho được hoàn lại.
-      </p>
+      <div class="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <i class="pi pi-clock mt-0.5 text-amber-500"></i>
+        <span>
+          Hàng trong các hóa đơn này đang được giữ. Quá 1 giờ chưa thanh toán, hóa đơn tự hủy và tồn kho được hoàn lại.
+        </span>
+      </div>
     }
 
-    <div class="overflow-x-auto rounded-xl bg-white shadow-sm">
-      <table class="w-full min-w-[44rem] text-left text-sm">
-        <thead>
-          <tr class="border-b bg-slate-50 text-slate-600">
-            <th class="p-3">Mã</th>
-            <th class="p-3">Ngày lập</th>
-            <th class="p-3">Nhân viên</th>
-            <th class="p-3 text-right">Tổng tiền</th>
-            <th class="p-3">Trạng thái</th>
-            <th class="p-3 text-right">Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (inv of items(); track inv.MaHoaDon) {
-            <tr class="border-b border-slate-100 hover:bg-slate-50">
-              <td class="p-3 font-medium text-slate-800">#{{ inv.MaHoaDon }}</td>
-              <td class="p-3">{{ inv.NgayLap | date: 'dd/MM/yyyy HH:mm' }}</td>
-              <td class="p-3">{{ inv.tai_khoan?.HoTen ?? '—' }}</td>
-              <td class="p-3 text-right">{{ inv.TongTien | number: '1.0-0' }} ₫</td>
-              <td class="p-3">
-                <p-tag [value]="status(inv).label" [severity]="status(inv).severity" />
-                @if (inv.trang_thai_text === 'cho_thanh_toan') {
-                  <div class="mt-1 text-xs" [class]="isUrgent(inv) ? 'text-red-600' : 'text-slate-500'">
-                    {{ remaining(inv) }}
+    <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
+        <div class="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <i class="pi pi-list text-emerald-500"></i>
+          Danh sách hóa đơn
+        </div>
+        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+          {{ items().length }} hóa đơn
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[46rem] text-left text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50/80 text-[11px] uppercase tracking-wider text-slate-500">
+              <th class="px-4 py-3 font-semibold">Mã</th>
+              <th class="px-4 py-3 font-semibold">Ngày lập</th>
+              <th class="px-4 py-3 font-semibold">Nhân viên</th>
+              <th class="px-4 py-3 text-right font-semibold">Tổng tiền</th>
+              <th class="px-4 py-3 font-semibold">Trạng thái</th>
+              <th class="px-4 py-3 text-right font-semibold">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (inv of items(); track inv.MaHoaDon) {
+              <tr class="transition-colors hover:bg-emerald-100/60">
+                <td class="px-4 py-3.5">
+                  <span class="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-700">
+                    #{{ inv.MaHoaDon }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 text-slate-600">{{ inv.NgayLap | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td class="px-4 py-3.5">
+                  <div class="flex items-center gap-2 text-slate-700">
+                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                      <i class="pi pi-user text-[11px]"></i>
+                    </span>
+                    <span class="truncate">{{ inv.tai_khoan?.HoTen ?? '—' }}</span>
                   </div>
-                }
-              </td>
-              <td class="p-3 text-right">
-                <div class="flex justify-end gap-1">
-                  <p-button label="Xem" size="small" [text]="true" (onClick)="selected.set(inv)" />
+                </td>
+                <td class="px-4 py-3.5 text-right font-semibold tabular-nums text-slate-800">
+                  {{ inv.TongTien | number: '1.0-0' }} ₫
+                </td>
+                <td class="px-4 py-3.5">
+                  <p-tag [value]="status(inv).label" [severity]="status(inv).severity" />
                   @if (inv.trang_thai_text === 'cho_thanh_toan') {
-                    <p-button label="Thanh toán" size="small" severity="success" [disabled]="busy()" (onClick)="openPay(inv)" />
-                    <p-button label="Hủy" size="small" severity="danger" [text]="true" [disabled]="busy()" (onClick)="cancel(inv)" />
+                    <div class="mt-1 flex items-center gap-1 text-xs" [class]="isUrgent(inv) ? 'text-red-600' : 'text-slate-500'">
+                      <i class="pi pi-clock text-[10px]"></i>
+                      {{ remaining(inv) }}
+                    </div>
                   }
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="6" class="p-8 text-center text-slate-500">
-                {{ loading() ? 'Đang tải...' : 'Không có hóa đơn nào.' }}
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+                </td>
+                <td class="px-4 py-3.5 text-right">
+                  <div class="flex justify-end gap-1">
+                    <p-button label="Xem" icon="pi pi-eye" size="small" [outlined]="true" (onClick)="selected.set(inv)" />
+                    @if (inv.trang_thai_text === 'cho_thanh_toan') {
+                      <p-button
+                        label="Thanh toán"
+                        icon="pi pi-check"
+                        size="small"
+                        severity="success"
+                        [disabled]="busy()"
+                        (onClick)="openPay(inv)"
+                      />
+                      <p-button
+                        label="Hủy"
+                        icon="pi pi-times"
+                        size="small"
+                        severity="danger"
+                        [text]="true"
+                        [disabled]="busy()"
+                        (onClick)="cancel(inv)"
+                      />
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="px-4 py-16 text-center">
+                  @if (loading()) {
+                    <div class="flex flex-col items-center gap-3 text-slate-500">
+                      <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                      <span class="text-sm">Đang tải hóa đơn...</span>
+                    </div>
+                  } @else {
+                    <div class="flex flex-col items-center gap-3 text-slate-500">
+                      <span class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                        <i class="pi pi-inbox text-xl"></i>
+                      </span>
+                      <span class="text-sm">Không có hóa đơn nào.</span>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
 
     @if (lastPage() > 1) {
-      <div class="mt-3 flex items-center justify-center gap-3 text-sm">
-        <p-button label="Trước" size="small" [outlined]="true" [disabled]="page() <= 1 || loading()" (onClick)="go(page() - 1)" />
-        <span>Trang {{ page() }} / {{ lastPage() }}</span>
-        <p-button label="Sau" size="small" [outlined]="true" [disabled]="page() >= lastPage() || loading()" (onClick)="go(page() + 1)" />
+      <div class="mt-4 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">
+        <p-button
+          label="Trước"
+          icon="pi pi-angle-left"
+          size="small"
+          [outlined]="true"
+          [disabled]="page() <= 1 || loading()"
+          (onClick)="go(page() - 1)"
+        />
+        <span class="text-slate-600">Trang <b class="text-slate-800">{{ page() }}</b> / {{ lastPage() }}</span>
+        <p-button
+          label="Sau"
+          icon="pi pi-angle-right"
+          iconPos="right"
+          size="small"
+          [outlined]="true"
+          [disabled]="page() >= lastPage() || loading()"
+          (onClick)="go(page() + 1)"
+        />
       </div>
     }
 
@@ -111,59 +194,86 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
       [modal]="true"
       [visible]="!!selected()"
       (visibleChange)="!$event && selected.set(null)"
-      [style]="{ width: '36rem' }"
-      >
+      [style]="{ width: '36rem', maxWidth: '94vw' }"
+    >
       @if (selected(); as inv) {
-        <div class="mb-3 flex flex-wrap items-center gap-2">
+        <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3">
           <p-tag [value]="status(inv).label" [severity]="status(inv).severity" />
-          <span class="text-sm text-slate-500">
-            {{ inv.NgayLap | date: 'dd/MM/yyyy HH:mm' }} · {{ inv.tai_khoan?.HoTen ?? '—' }}
+          <span class="inline-flex items-center gap-1.5 text-sm text-slate-600">
+            <i class="pi pi-clock text-xs text-slate-400"></i>
+            {{ inv.NgayLap | date: 'dd/MM/yyyy HH:mm' }}
+          </span>
+          <span class="text-slate-300">·</span>
+          <span class="inline-flex items-center gap-1.5 text-sm text-slate-600">
+            <i class="pi pi-user text-xs text-slate-400"></i>
+            {{ inv.tai_khoan?.HoTen ?? '—' }}
           </span>
         </div>
 
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b text-left text-slate-500">
-              <th class="py-2">Sản phẩm</th>
-              <th class="text-right">SL</th>
-              <th class="text-right">Thành tiền</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (l of inv.chi_tiet_hoa_don ?? []; track l.MaChiTietHoaDon) {
-              <tr class="border-b border-slate-100">
-                <td class="py-2">{{ l.TenSanPham }}</td>
-                <td class="text-right">{{ l.SoLuong }}</td>
-                <td class="text-right">{{ l.ThanhTien | number: '1.0-0' }}</td>
+        <div class="overflow-hidden rounded-xl border border-slate-200">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
+                <th class="px-3 py-2.5 text-left font-semibold">Sản phẩm</th>
+                <th class="px-3 py-2.5 text-right font-semibold">SL</th>
+                <th class="px-3 py-2.5 text-right font-semibold">Thành tiền</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (l of inv.chi_tiet_hoa_don ?? []; track l.MaChiTietHoaDon) {
+                <tr class="transition-colors hover:bg-emerald-50/70">
+                  <td class="px-3 py-2.5 text-slate-700">{{ l.TenSanPham }}</td>
+                  <td class="px-3 py-2.5 text-right tabular-nums text-slate-600">{{ l.SoLuong }}</td>
+                  <td class="px-3 py-2.5 text-right font-medium tabular-nums text-slate-800">
+                    {{ l.ThanhTien | number: '1.0-0' }} ₫
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
 
-        <div class="mt-3 space-y-1 text-right text-sm">
-  @if (discount(inv) > 0) {
-    <div class="text-slate-600">Tiền hàng: {{ subtotal(inv) | number: '1.0-0' }} ₫</div>
-    <div class="text-emerald-700">
-      Giảm giá{{ inv.khuyen_mai ? ' (' + inv.khuyen_mai.TenChuongTrinh + ')' : '' }}:
-      -{{ discount(inv) | number: '1.0-0' }} ₫
-    </div>
-  }
-  <div class="text-base font-medium text-slate-800">Tổng thanh toán: {{ inv.TongTien | number: '1.0-0' }} ₫</div>
-</div>
+        <div class="mt-3 rounded-xl bg-slate-50 p-4 text-sm">
+          <div class="ml-auto w-full space-y-1.5 sm:w-72">
+            @if (discount(inv) > 0) {
+              <div class="flex items-center justify-between text-slate-600">
+                <span>Tiền hàng</span>
+                <span class="tabular-nums">{{ subtotal(inv) | number: '1.0-0' }} ₫</span>
+              </div>
+              <div class="flex items-start justify-between gap-3 text-emerald-700">
+                <span>
+                  Giảm giá{{ inv.khuyen_mai ? ' (' + inv.khuyen_mai.TenChuongTrinh + ')' : '' }}
+                </span>
+                <span class="shrink-0 font-medium tabular-nums">-{{ discount(inv) | number: '1.0-0' }} ₫</span>
+              </div>
+            }
+            <div class="flex items-center justify-between border-t border-slate-200 pt-2 text-base font-semibold text-slate-800">
+              <span>Tổng thanh toán</span>
+              <span class="tabular-nums text-emerald-700">{{ inv.TongTien | number: '1.0-0' }} ₫</span>
+            </div>
+          </div>
+        </div>
 
         @if (inv.trang_thai_text === 'da_thanh_toan') {
-          <div class="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">
-            Thanh toán lúc {{ (inv.NgayThanhToan ?? inv.NgayLap) | date: 'dd/MM/yyyy HH:mm' }}
-            · {{ inv.TenGiaoDich ?? '—' }}
-            @if (inv.MaGiaoDich) { · Mã giao dịch: {{ inv.MaGiaoDich }} }
+          <div class="mt-3 flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <i class="pi pi-check-circle mt-0.5 text-emerald-500"></i>
+            <span>
+              Thanh toán lúc {{ (inv.NgayThanhToan ?? inv.NgayLap) | date: 'dd/MM/yyyy HH:mm' }}
+              · {{ inv.TenGiaoDich ?? '—' }}
+              @if (inv.MaGiaoDich) { · Mã giao dịch: {{ inv.MaGiaoDich }} }
+            </span>
           </div>
         }
         @if (inv.trang_thai_text === 'da_huy') {
-          <div class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">Lý do hủy: {{ inv.LyDoHuy ?? '—' }}</div>
+          <div class="mt-3 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <i class="pi pi-times-circle mt-0.5 text-red-500"></i>
+            <span>Lý do hủy: {{ inv.LyDoHuy ?? '—' }}</span>
+          </div>
         }
         @if (inv.trang_thai_text === 'cho_thanh_toan') {
-          <div class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-            Hạn thanh toán: {{ inv.HanThanhToan | date: 'HH:mm dd/MM/yyyy' }} ({{ remaining(inv) }})
+          <div class="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <i class="pi pi-clock mt-0.5 text-amber-500"></i>
+            <span>Hạn thanh toán: {{ inv.HanThanhToan | date: 'HH:mm dd/MM/yyyy' }} ({{ remaining(inv) }})</span>
           </div>
         }
       }
@@ -180,13 +290,18 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
       [closable]="!busy()"
       [visible]="!!paying()"
       (visibleChange)="!$event && closePay()"
-      [style]="{ width: '26rem' }"
+      [style]="{ width: '26rem', maxWidth: '92vw' }"
     >
       @if (paying(); as inv) {
-        <div class="space-y-3">
-          <div class="text-center">
-            <div class="text-sm text-slate-500">Hóa đơn #{{ inv.MaHoaDon }}</div>
-            <div class="text-3xl font-semibold text-slate-800">{{ inv.TongTien | number: '1.0-0' }} ₫</div>
+        <div class="space-y-4">
+          <div class="rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 px-5 py-4 text-white shadow-lg shadow-emerald-600/20">
+            <div class="flex items-center justify-between text-xs text-emerald-100">
+              <span>Hóa đơn #{{ inv.MaHoaDon }}</span>
+              <i class="pi pi-credit-card"></i>
+            </div>
+            <div class="mt-1 text-center text-3xl font-semibold tracking-tight tabular-nums">
+              {{ inv.TongTien | number: '1.0-0' }} ₫
+            </div>
           </div>
 
           <div class="flex justify-center gap-2">
@@ -196,15 +311,23 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
           </div>
 
           @if (method() === 'Chuyển khoản') {
-            <div class="space-y-3 text-center">
+            <div class="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 text-center">
               @if (qrFailed()) {
-                <div class="rounded-lg bg-red-50 px-3 py-6 text-sm text-red-700">Không tải được mã QR.</div>
+                <div class="flex flex-col items-center gap-2 rounded-xl bg-red-50 px-3 py-6 text-sm text-red-700">
+                  <i class="pi pi-exclamation-circle text-xl text-red-500"></i>
+                  Không tải được mã QR.
+                </div>
               } @else {
-                <img [src]="qrUrl()" alt="Mã QR" class="mx-auto w-56 rounded-lg border border-slate-200" (error)="qrFailed.set(true)" />
+                <img
+                  [src]="qrUrl()"
+                  alt="Mã QR"
+                  class="mx-auto w-56 rounded-xl border border-slate-200 shadow-sm"
+                  (error)="qrFailed.set(true)"
+                />
               }
-              <div class="text-sm text-slate-600">
-                {{ bank.bankId }} · {{ bank.accountNo }}<br />
-                Nội dung: <b>HD{{ inv.MaHoaDon }}</b>
+              <div class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                <div>{{ bank.bankId }} · {{ bank.accountNo }}</div>
+                <div class="mt-0.5">Nội dung: <b class="text-slate-800">HD{{ inv.MaHoaDon }}</b></div>
               </div>
               <input
                 pInputText
@@ -213,13 +336,14 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
                 [value]="txCode()"
                 (input)="txCode.set($any($event.target).value)"
               />
-              <p class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                Chỉ xác nhận khi đã thấy tiền về tài khoản.
+              <p class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs text-amber-800">
+                <i class="pi pi-info-circle mt-px shrink-0 text-amber-500"></i>
+                <span>Chỉ xác nhận khi đã thấy tiền về tài khoản.</span>
               </p>
             </div>
           } @else {
-            <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">Khách đưa (₫)</label>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-700">Khách đưa (₫)</label>
               <input
                 pInputText
                 type="number"
@@ -229,10 +353,16 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
                 (input)="given.set($any($event.target).value === '' ? null : +$any($event.target).value)"
               />
               @if (given() !== null && given()! >= amount(inv)) {
-                <div class="mt-1 text-sm text-slate-600">Tiền thừa: <b>{{ given()! - amount(inv) | number: '1.0-0' }} ₫</b></div>
+                <div class="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                  <span>Tiền thừa</span>
+                  <b class="tabular-nums">{{ given()! - amount(inv) | number: '1.0-0' }} ₫</b>
+                </div>
               }
               @if (given() !== null && given()! < amount(inv)) {
-                <div class="mt-1 text-sm text-red-600">Khách đưa chưa đủ.</div>
+                <div class="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <i class="pi pi-exclamation-circle text-red-500"></i>
+                  <span>Khách đưa chưa đủ.</span>
+                </div>
               }
             </div>
           }

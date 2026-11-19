@@ -74,69 +74,81 @@ function readCollapsed(): boolean {
     '(document:keydown.escape)': 'closeAll()',
   },
   template: `
-    <div class="flex h-screen bg-slate-100">
+    <div class="flex h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-emerald-50/40">
       <!-- Lớp phủ khi mở menu trên điện thoại -->
       @if (mobileOpen()) {
-        <div class="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm lg:hidden" (click)="mobileOpen.set(false)"></div>
+        <div class="fixed inset-0 z-30 bg-slate-950/50 backdrop-blur-sm lg:hidden" (click)="mobileOpen.set(false)"></div>
       }
 
       <!-- Thanh bên -->
       <aside [class]="asideClass()">
-        <div class="flex h-14 shrink-0 items-center gap-3 border-b border-white/10 px-4">
-          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
-            <i class="pi pi-shop"></i>
-          </span>
-          <div [class]="collapsed() ? 'min-w-0 lg:hidden' : 'min-w-0'">
-            <div class="truncate text-sm font-semibold leading-4 text-white">Cửa hàng tiện lợi</div>
-            <div class="truncate text-xs text-slate-400">Quản lý cửa hàng</div>
+        <div class="relative flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-emerald-950">
+          <!-- Ánh sáng trang trí -->
+          <div class="pointer-events-none absolute inset-0">
+            <div class="absolute -left-12 top-8 h-44 w-44 rounded-full bg-emerald-500/15 blur-3xl"></div>
+            <div class="absolute -right-16 bottom-12 h-52 w-52 rounded-full bg-teal-400/10 blur-3xl"></div>
           </div>
-          <button
-            type="button"
-            class="ml-auto rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden"
-            aria-label="Đóng menu"
-            (click)="mobileOpen.set(false)"
-          >
-            <i class="pi pi-times"></i>
-          </button>
-        </div>
 
-        <nav class="flex-1 overflow-y-auto px-2 pb-4 text-slate-300 [scrollbar-color:#334155_transparent] [scrollbar-width:thin]">
-          @for (g of groups(); track g.title; let first = $first) {
-            @if (!first) {
-              <div [class]="collapsed() ? 'mx-3 my-3 hidden border-t border-white/10 lg:block' : 'hidden'"></div>
-            }
-            <div
-              [class]="'px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500 ' + (collapsed() ? 'lg:hidden' : '')"
-            >
-              {{ g.title }}
+          <div class="relative flex h-16 shrink-0 items-center gap-3 border-b border-white/5 px-4">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-white/20">
+              <i class="pi pi-shop text-lg"></i>
+            </span>
+            <div [class]="collapsed() ? 'min-w-0 lg:hidden' : 'min-w-0'">
+              <div class="truncate text-sm font-semibold leading-4 text-white">Cửa hàng tiện lợi</div>
+              <div class="truncate text-xs text-slate-400">Quản lý cửa hàng</div>
             </div>
+            <button
+              type="button"
+              class="ml-auto rounded-xl p-2 text-slate-400 transition hover:bg-white/10 hover:text-white lg:hidden"
+              aria-label="Đóng menu"
+              (click)="mobileOpen.set(false)"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
 
-            @for (item of g.items; track item.link) {
-              <a
-                [routerLink]="item.link"
-                routerLinkActive="bg-emerald-500/15 text-white"
-                #rla="routerLinkActive"
-                [title]="item.label"
-                class="group relative my-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition hover:bg-white/5 hover:text-white"
+          <nav class="relative flex-1 overflow-y-auto px-2.5 pb-5 text-slate-300 [scrollbar-color:#334155_transparent] [scrollbar-width:thin]">
+            @for (g of groups(); track g.title; let first = $first) {
+              @if (!first) {
+                <div [class]="collapsed() ? 'mx-3 my-3 hidden border-t border-white/10 lg:block' : 'hidden'"></div>
+              }
+              <div
+                [class]="'px-3 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 ' + (collapsed() ? 'lg:hidden' : '')"
               >
-                <span
-                  class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-emerald-400"
-                  [class.hidden]="!rla.isActive"
-                ></span>
-                <i [class]="item.icon + ' w-5 shrink-0 text-center text-base'" [class.text-emerald-400]="rla.isActive"></i>
-                <span [class]="collapsed() ? 'truncate lg:hidden' : 'truncate'">{{ item.label }}</span>
-              </a>
+                {{ g.title }}
+              </div>
+
+              @for (item of g.items; track item.link) {
+                <a
+                  [routerLink]="item.link"
+                  routerLinkActive="bg-gradient-to-r from-emerald-500/25 via-emerald-500/10 to-transparent text-white ring-1 ring-emerald-400/20"
+                  #rla="routerLinkActive"
+                  [title]="item.label"
+                  [class]="'group relative my-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150 hover:bg-white/5 hover:text-white' + (collapsed() ? ' lg:justify-center lg:px-0' : '')"
+                >
+                  <span
+                    class="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]"
+                    [class.hidden]="!rla.isActive"
+                  ></span>
+                  <i
+                    [class]="item.icon + ' w-5 shrink-0 text-center text-[15px] transition-colors'"
+                    [class.text-emerald-300]="rla.isActive"
+                    [class.text-slate-400]="!rla.isActive"
+                  ></i>
+                  <span [class]="collapsed() ? 'truncate lg:hidden' : 'truncate'">{{ item.label }}</span>
+                </a>
+              }
             }
-          }
-        </nav>
+          </nav>
+        </div>
       </aside>
 
       <!-- Phần bên phải -->
       <div class="flex min-w-0 flex-1 flex-col">
-        <header class="z-20 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 sm:px-5">
+        <header class="z-20 flex h-16 shrink-0 items-center gap-2 border-b border-slate-200/70 bg-white/80 px-3 backdrop-blur sm:px-5">
           <button
             type="button"
-            class="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+            class="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:hidden"
             aria-label="Mở menu"
             (click)="mobileOpen.set(true)"
           >
@@ -144,7 +156,7 @@ function readCollapsed(): boolean {
           </button>
           <button
             type="button"
-            class="hidden rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:inline-flex"
+            class="hidden rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:inline-flex"
             [attr.aria-label]="collapsed() ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'"
             [title]="collapsed() ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'"
             (click)="toggleCollapsed()"
@@ -152,11 +164,14 @@ function readCollapsed(): boolean {
             <i class="pi pi-bars"></i>
           </button>
 
-          <nav class="min-w-0 truncate text-sm text-slate-500" aria-label="Vị trí hiện tại">
+          <nav class="ml-1 min-w-0 truncate text-sm text-slate-500" aria-label="Vị trí hiện tại">
             @if (current(); as c) {
-              <span class="hidden sm:inline">{{ c.group }}</span>
-              <i class="pi pi-angle-right mx-1 hidden text-xs sm:inline"></i>
-              <span class="font-medium text-slate-800">{{ c.label }}</span>
+              <span class="hidden items-center gap-1.5 sm:inline-flex">
+                <i class="pi pi-home text-[11px] text-slate-400"></i>
+                <span>{{ c.group }}</span>
+              </span>
+              <i class="pi pi-angle-right mx-1.5 hidden text-[10px] text-slate-300 sm:inline"></i>
+              <span class="font-semibold text-slate-800">{{ c.label }}</span>
             }
           </nav>
 
@@ -164,63 +179,85 @@ function readCollapsed(): boolean {
             <a
               routerLink="/"
               target="_blank"
-              class="hidden items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 hover:text-emerald-700 sm:inline-flex"
+              class="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 sm:inline-flex"
               title="Mở trang khách xem sản phẩm"
             >
               <i class="pi pi-external-link text-xs"></i> Trang khách
             </a>
 
+            <span class="mx-1 hidden h-6 w-px bg-slate-200 sm:block"></span>
+
             <div class="relative">
               <button
                 type="button"
-                class="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 hover:bg-slate-100 sm:pr-3"
+                class="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-1.5 transition hover:bg-slate-100 sm:pr-3"
                 aria-haspopup="menu"
                 [attr.aria-expanded]="userMenuOpen()"
                 (click)="toggleUserMenu($event)"
               >
-                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-xs font-semibold text-white">
+                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-semibold text-white shadow-md shadow-emerald-500/20 ring-2 ring-white">
                   {{ initials() }}
                 </span>
                 <span class="hidden text-left sm:block">
                   <span class="block text-sm font-medium leading-4 text-slate-800">{{ auth.user()?.HoTen }}</span>
                   <span class="block text-xs text-slate-500">{{ roleName() }}</span>
                 </span>
-                <i class="pi pi-angle-down hidden text-xs text-slate-400 sm:inline"></i>
+                <i class="pi pi-angle-down hidden text-xs text-slate-400 transition-transform sm:inline" [class.rotate-180]="userMenuOpen()"></i>
               </button>
 
               @if (userMenuOpen()) {
                 <div
-                  class="absolute right-0 mt-2 w-60 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+                  class="absolute right-0 z-30 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl shadow-slate-900/10 ring-1 ring-slate-900/5"
                   role="menu"
                   (click)="$event.stopPropagation()"
                 >
-                  <div class="border-b border-slate-100 px-4 py-3">
-                    <div class="truncate text-sm font-medium text-slate-800">{{ auth.user()?.HoTen }}</div>
-                    <div class="truncate text-xs text-slate-500">{{ roleName() }}</div>
+                  <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-br from-emerald-50 to-white px-4 py-3.5">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-semibold text-white">
+                      {{ initials() }}
+                    </span>
+                    <div class="min-w-0">
+                      <div class="truncate text-sm font-semibold text-slate-800">{{ auth.user()?.HoTen }}</div>
+                      <div class="truncate text-xs text-slate-500">{{ roleName() }}</div>
+                    </div>
                   </div>
-                  <a
-                    routerLink="/admin/profile"
-                    role="menuitem"
-                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    <i class="pi pi-user-edit text-slate-400"></i> Thông tin cá nhân
-                  </a>
-                  <a
-                    routerLink="/"
-                    target="_blank"
-                    role="menuitem"
-                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 sm:hidden"
-                  >
-                    <i class="pi pi-external-link text-slate-400"></i> Trang khách
-                  </a>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    class="flex w-full items-center gap-3 border-t border-slate-100 px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
-                    (click)="auth.logout()"
-                  >
-                    <i class="pi pi-sign-out"></i> Đăng xuất
-                  </button>
+
+                  <div class="p-1.5">
+                    <a
+                      routerLink="/admin/profile"
+                      role="menuitem"
+                      class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-emerald-100 group-hover:text-emerald-600">
+                        <i class="pi pi-user-edit text-xs"></i>
+                      </span>
+                      Thông tin cá nhân
+                    </a>
+                    <a
+                      routerLink="/"
+                      target="_blank"
+                      role="menuitem"
+                      class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50 sm:hidden"
+                    >
+                      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-emerald-100 group-hover:text-emerald-600">
+                        <i class="pi pi-external-link text-xs"></i>
+                      </span>
+                      Trang khách
+                    </a>
+                  </div>
+
+                  <div class="border-t border-slate-100 p-1.5">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      class="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+                      (click)="auth.logout()"
+                    >
+                      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500">
+                        <i class="pi pi-sign-out text-xs"></i>
+                      </span>
+                      Đăng xuất
+                    </button>
+                  </div>
                 </div>
               }
             </div>
@@ -228,7 +265,7 @@ function readCollapsed(): boolean {
         </header>
 
         <main class="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div class="mx-auto w-full max-w-[90rem]">
+          <div class="w-full">
             <router-outlet />
           </div>
         </main>

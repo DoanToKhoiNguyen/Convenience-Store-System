@@ -6,6 +6,7 @@ import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE, ROLE_LABEL } from '../../core/auth/roles';
 import { Staff, StaffPayload } from './staff.model';
@@ -13,12 +14,17 @@ import { StaffService } from './staff.service';
 
 @Component({
   selector: 'app-staff-list',
-  imports: [ReactiveFormsModule, TableModule, TagModule, ButtonModule, DialogModule, InputTextModule],
+  imports: [ReactiveFormsModule, TableModule, TagModule, ButtonModule, DialogModule, InputTextModule, TooltipModule],
   template: `
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-semibold text-slate-800">Nhân viên</h1>
-        <p class="text-sm text-slate-500">{{ staff().length }} tài khoản</p>
+    <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div class="flex items-start gap-3">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+          <i class="pi pi-users text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-800">Nhân viên</h1>
+          <p class="text-sm text-slate-500">{{ staff().length }} tài khoản</p>
+        </div>
       </div>
       @if (canEdit()) {
         <p-button label="Thêm nhân viên" icon="pi pi-plus" (onClick)="openCreate()" />
@@ -26,59 +32,105 @@ import { StaffService } from './staff.service';
     </div>
 
     @if (success()) {
-      <div class="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ success() }}</div>
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <i class="pi pi-check-circle mt-0.5"></i>
+        <span>{{ success() }}</span>
+      </div>
     }
     @if (error()) {
-      <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <i class="pi pi-exclamation-circle mt-0.5"></i>
+        <span>{{ error() }}</span>
+      </div>
     }
 
-    <div class="rounded-xl bg-white p-2 shadow-sm">
+    <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
+        <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <i class="pi pi-list text-emerald-500"></i>
+          Danh sách tài khoản
+          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ staff().length }}</span>
+        </div>
+      </div>
+
       <p-table
         [value]="staff()"
         [loading]="loading()"
         [paginator]="true"
         [rows]="10"
         dataKey="MaTaiKhoan"
-        [tableStyle]="{ 'min-width': '50rem' }"
+        [tableStyle]="{ 'min-width': '52rem' }"
       >
         <ng-template #header>
-          <tr>
-            <th>Họ tên</th>
-            <th>Tên đăng nhập</th>
-            <th>Email</th>
-            <th>Số điện thoại</th>
-            <th>Vai trò</th>
-            <th>Trạng thái</th>
+          <tr class="bg-slate-50/80">
+            <th class="min-w-[14rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Họ tên</th>
+            <th class="min-w-[9rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tên đăng nhập</th>
+            <th class="min-w-[14rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Email</th>
+            <th class="min-w-[9rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Số điện thoại</th>
+            <th class="min-w-[8rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Vai trò</th>
+            <th class="min-w-[8rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Trạng thái</th>
             @if (canEdit()) {
-              <th class="text-right">Thao tác</th>
+              <th class="w-28 px-4 py-3 text-right! text-[11px] font-semibold uppercase tracking-wider text-slate-500">Thao tác</th>
             }
           </tr>
         </ng-template>
 
         <ng-template #body let-s>
-          <tr>
-            <td class="font-medium text-slate-800">{{ s.HoTen }}</td>
-            <td>{{ s.TenDangNhap }}</td>
-            <td>{{ s.Email }}</td>
-            <td>{{ s.SoDienThoai ?? '—' }}</td>
-            <td>{{ roleName(s) }}</td>
-            <td>
+          <tr class="transition-colors hover:bg-emerald-100/60!">
+            <td class="whitespace-normal! px-4 py-3">
+              <div class="flex items-start gap-2.5">
+                <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                  <i class="pi pi-user text-xs"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="font-medium text-slate-800">{{ s.HoTen }}</span>
+                    @if (isMe(s)) {
+                      <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-200">Bạn</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-600">{{ s.TenDangNhap }}</td>
+            <td class="whitespace-normal! px-4 py-3 text-slate-600">{{ s.Email }}</td>
+            <td class="whitespace-nowrap px-4 py-3 tabular-nums text-slate-600">{{ s.SoDienThoai ?? '—' }}</td>
+            <td class="whitespace-nowrap px-4 py-3">
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                <i class="pi pi-shield text-[10px]"></i>
+                {{ roleName(s) }}
+              </span>
+            </td>
+            <td class="whitespace-nowrap px-4 py-3">
               <p-tag
                 [value]="isActive(s) ? 'Hoạt động' : 'Đã khóa'"
                 [severity]="isActive(s) ? 'success' : 'danger'"
               />
             </td>
             @if (canEdit()) {
-              <td class="text-right">
+              <td class="px-4 py-3 text-right">
                 <div class="flex justify-end gap-1">
-                  <p-button label="Sửa" size="small" [text]="true" (onClick)="openEdit(s)" />
+                  <p-button
+                    icon="pi pi-pencil"
+                    size="small"
+                    [text]="true"
+                    [rounded]="true"
+                    ariaLabel="Sửa nhân viên"
+                    pTooltip="Sửa"
+                    tooltipPosition="top"
+                    (onClick)="openEdit(s)"
+                  />
                   @if (!isMe(s)) {
                     <p-button
-                      [label]="isActive(s) ? 'Khóa' : 'Mở khóa'"
+                      [icon]="isActive(s) ? 'pi pi-lock' : 'pi pi-lock-open'"
                       size="small"
                       [severity]="isActive(s) ? 'danger' : 'success'"
                       [text]="true"
+                      [rounded]="true"
                       [disabled]="busy()"
+                      [ariaLabel]="isActive(s) ? 'Khóa tài khoản' : 'Mở khóa tài khoản'"
+                      [pTooltip]="isActive(s) ? 'Khóa' : 'Mở khóa'"
+                      tooltipPosition="top"
                       (onClick)="toggleLock(s)"
                     />
                   }
@@ -89,7 +141,23 @@ import { StaffService } from './staff.service';
         </ng-template>
 
         <ng-template #emptymessage>
-          <tr><td colspan="7" class="py-8 text-center text-slate-500">Chưa có nhân viên nào.</td></tr>
+          <tr>
+            <td [attr.colspan]="canEdit() ? 7 : 6" class="px-4 py-12">
+              @if (loading()) {
+                <div class="flex flex-col items-center gap-2 text-slate-400">
+                  <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                  <span class="text-sm">Đang tải...</span>
+                </div>
+              } @else {
+                <div class="flex flex-col items-center gap-2 text-slate-400">
+                  <div class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                    <i class="pi pi-inbox text-xl"></i>
+                  </div>
+                  <span class="text-sm text-slate-500">Chưa có nhân viên nào.</span>
+                </div>
+              }
+            </td>
+          </tr>
         </ng-template>
       </p-table>
     </div>
@@ -99,70 +167,97 @@ import { StaffService } from './staff.service';
       [modal]="true"
       [visible]="dialogOpen()"
       (visibleChange)="dialogOpen.set($event)"
-      [style]="{ width: '30rem' }"
+      [style]="{ width: '32rem', maxWidth: '94vw' }"
     >
-      <form [formGroup]="form" class="space-y-3">
+      <form [formGroup]="form" class="space-y-4">
         @if (formError()) {
-          <div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ formError() }}</div>
+          <div class="flex items-start gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+            <i class="pi pi-exclamation-circle mt-0.5 text-sm"></i>
+            <span>{{ formError() }}</span>
+          </div>
         }
 
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Họ tên</label>
-          <input pInputText formControlName="HoTen" class="w-full" />
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Tên đăng nhập</label>
-            <input pInputText formControlName="TenDangNhap" class="w-full" />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Số điện thoại</label>
-            <input pInputText formControlName="SoDienThoai" class="w-full" />
-          </div>
-        </div>
-
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Email</label>
-          <input pInputText type="email" formControlName="Email" class="w-full" />
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Vai trò</label>
-            <select formControlName="MaVaiTro" class="w-full rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100">
-              @for (r of roles; track r.value) {
-                <option [ngValue]="r.value">{{ r.label }}</option>
-              }
-            </select>
+        <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <i class="pi pi-id-card text-emerald-500"></i>
+            Thông tin tài khoản
           </div>
 
-          @if (editing()) {
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Họ tên</label>
+            <input pInputText formControlName="HoTen" class="w-full" />
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">Trạng thái</label>
-              <select formControlName="TrangThai" class="w-full rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100">
-                <option [ngValue]="true">Hoạt động</option>
-                <option [ngValue]="false">Đã khóa</option>
-              </select>
+              <label class="mb-1 block text-sm font-medium text-slate-700">Tên đăng nhập</label>
+              <input pInputText formControlName="TenDangNhap" class="w-full" />
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-medium text-slate-700">Số điện thoại</label>
+              <input pInputText formControlName="SoDienThoai" class="w-full" />
+            </div>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+            <input pInputText type="email" formControlName="Email" class="w-full" />
+          </div>
+
+          @if (!editing()) {
+            <div>
+              <label class="mb-1 block text-sm font-medium text-slate-700">Mật khẩu</label>
+              <input pInputText type="password" formControlName="MatKhau" class="w-full" autocomplete="new-password" />
             </div>
           }
         </div>
 
-        @if (editing() && isMe(editing()!)) {
-          <p class="text-xs text-slate-500">Bạn không thể tự đổi vai trò hoặc tự khóa tài khoản của mình.</p>
-        }
-        @if (editing()) {
-          <p class="text-xs text-slate-500">
-            Tên đăng nhập và mật khẩu không được sửa tại đây. Tài khoản bị khóa sẽ bị đăng xuất và không làm được thao tác nào.
-          </p>
-        }
-
-        @if (!editing()) {
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Mật khẩu</label>
-            <input pInputText type="password" formControlName="MatKhau" class="w-full" autocomplete="new-password" />
+        <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <i class="pi pi-shield text-emerald-500"></i>
+            Phân quyền &amp; trạng thái
           </div>
-        }
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label class="mb-1 block text-sm font-medium text-slate-700">Vai trò</label>
+              <select
+                formControlName="MaVaiTro"
+                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100 disabled:text-slate-400"
+              >
+                @for (r of roles; track r.value) {
+                  <option [ngValue]="r.value">{{ r.label }}</option>
+                }
+              </select>
+            </div>
+
+            @if (editing()) {
+              <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Trạng thái</label>
+                <select
+                  formControlName="TrangThai"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option [ngValue]="true">Hoạt động</option>
+                  <option [ngValue]="false">Đã khóa</option>
+                </select>
+              </div>
+            }
+          </div>
+
+          @if (editing() && isMe(editing()!)) {
+            <p class="flex items-start gap-1.5 text-xs text-slate-500">
+              <i class="pi pi-info-circle mt-0.5 text-[11px] text-slate-400"></i>
+              Bạn không thể tự đổi vai trò hoặc tự khóa tài khoản của mình.
+            </p>
+          }
+          @if (editing()) {
+            <p class="flex items-start gap-1.5 text-xs text-slate-500">
+              <i class="pi pi-info-circle mt-0.5 text-[11px] text-slate-400"></i>
+              Tên đăng nhập và mật khẩu không được sửa tại đây. Tài khoản bị khóa sẽ bị đăng xuất và không làm được thao tác nào.
+            </p>
+          }
+        </div>
       </form>
 
       <ng-template #footer>

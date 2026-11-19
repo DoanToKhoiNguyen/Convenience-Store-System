@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
+import { TooltipModule } from 'primeng/tooltip';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -18,60 +19,94 @@ const normalize = (s: string) =>
 
 @Component({
   selector: 'app-supplier-list',
-  imports: [ReactiveFormsModule, RouterLink, TableModule, ButtonModule, DialogModule, InputTextModule, TagModule],
+  imports: [ReactiveFormsModule, RouterLink, TableModule, ButtonModule, DialogModule, InputTextModule, TagModule, TooltipModule],
   template: `
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-semibold text-slate-800">Nhà cung cấp</h1>
-        <p class="text-sm text-slate-500">{{ filtered().length }} / {{ suppliers().length }} nhà cung cấp</p>
+    <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div class="flex items-start gap-3">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+          <i class="pi pi-building text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-800">Nhà cung cấp</h1>
+          <p class="text-sm text-slate-500">{{ filtered().length }} / {{ suppliers().length }} nhà cung cấp</p>
+        </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-3">
-        <input
-          pInputText
-          type="text"
-          placeholder="Tìm theo tên, địa chỉ, số điện thoại, danh mục..."
-          class="w-80"
-          [value]="keyword()"
-          (input)="keyword.set($any($event.target).value)"
-        />
-        <p-button label="Thêm nhà cung cấp" icon="pi pi-plus" (onClick)="openCreate()" />
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="relative w-full sm:w-80">
+          <i class="pi pi-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
+          <input
+            pInputText
+            type="text"
+            placeholder="Tìm theo tên, địa chỉ, số điện thoại, danh mục..."
+            class="w-full pl-9"
+            [value]="keyword()"
+            (input)="keyword.set($any($event.target).value)"
+          />
+        </div>
+        <button
+          type="button"
+          class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-600 hover:to-teal-700 hover:shadow-emerald-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 active:scale-[0.98]"
+          (click)="openCreate()"
+        >
+          <i class="pi pi-plus text-xs"></i>
+          Thêm nhà cung cấp
+        </button>
       </div>
     </div>
 
     @if (success()) {
-      <div class="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ success() }}</div>
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <i class="pi pi-check-circle mt-0.5"></i>
+        <span>{{ success() }}</span>
+      </div>
     }
     @if (error()) {
-      <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <i class="pi pi-exclamation-circle mt-0.5"></i>
+        <span>{{ error() }}</span>
+      </div>
     }
 
-    <div class="rounded-xl bg-white p-2 shadow-sm">
+    <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
+        <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <i class="pi pi-list text-emerald-500"></i>
+          Danh sách nhà cung cấp
+          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ filtered().length }}</span>
+        </div>
+      </div>
+
       <p-table
         [value]="filtered()"
         [loading]="loading()"
         [paginator]="true"
         [rows]="10"
         dataKey="MaNhaCungCap"
-        [tableStyle]="{ 'min-width': '56rem' }"
+        [tableStyle]="{ 'min-width': '64rem' }"
       >
         <ng-template #header>
-          <tr>
-            <th>Mã</th>
-            <th>Tên nhà cung cấp</th>
-            <th>Danh mục cung cấp</th>
-            <th>Địa chỉ</th>
-            <th>Số điện thoại</th>
-            <th>Trạng thái</th>
-            <th class="text-right">Thao tác</th>
+          <tr class="bg-slate-50/80">
+            <th class="min-w-[15rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tên nhà cung cấp</th>
+            <th class="min-w-[13rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Danh mục cung cấp</th>
+            <th class="min-w-[16rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Địa chỉ</th>
+            <th class="min-w-[10rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Số điện thoại</th>
+            <th class="min-w-[9rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Trạng thái</th>
+            <th class="w-28 px-4 py-3 text-right! text-[11px] font-semibold uppercase tracking-wider text-slate-500">Thao tác</th>
           </tr>
         </ng-template>
 
         <ng-template #body let-s>
-          <tr>
-            <td>{{ s.MaNhaCungCap }}</td>
-            <td class="font-medium text-slate-800">{{ s.TenNhaCungCap }}</td>
-            <td>
+          <tr class="transition-colors hover:bg-emerald-100/60!">
+            <td class="whitespace-normal! px-4 py-3">
+              <div class="flex items-start gap-2.5">
+                <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                  <i class="pi pi-building text-xs"></i>
+                </div>
+                <span class="font-medium text-slate-800">{{ s.TenNhaCungCap }}</span>
+              </div>
+            </td>
+            <td class="whitespace-normal! px-4 py-3">
               <div class="flex flex-wrap gap-1">
                 @for (c of s.danh_muc ?? []; track c.MaDanhMuc) {
                   <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
@@ -82,21 +117,62 @@ const normalize = (s: string) =>
                 }
               </div>
             </td>
-            <td>{{ s.DiaChi }}</td>
-            <td>{{ s.SoDienThoai }}</td>
-            <td>
+            <td class="whitespace-normal! px-4 py-3">
+              <div class="flex items-start gap-1.5 text-slate-600">
+                <i class="pi pi-map-marker mt-0.5 shrink-0 text-[11px] text-slate-400"></i>
+                <span>{{ s.DiaChi }}</span>
+              </div>
+            </td>
+            <td class="whitespace-nowrap px-4 py-3">
+              <div class="flex items-center gap-1.5 tabular-nums text-slate-600">
+                <i class="pi pi-phone shrink-0 text-[11px] text-slate-400"></i>
+                <span>{{ s.SoDienThoai }}</span>
+              </div>
+            </td>
+            <td class="whitespace-nowrap px-4 py-3">
               <p-tag
                 [value]="isHidden(s) ? 'Ngừng hợp tác' : 'Đang hợp tác'"
                 [severity]="isHidden(s) ? 'secondary' : 'success'"
               />
             </td>
-            <td class="text-right">
+            <td class="px-4 py-3 text-right">
               <div class="flex justify-end gap-1">
-                <p-button label="Sửa" size="small" [text]="true" (onClick)="openEdit(s)" />
+                <p-button
+                  icon="pi pi-pencil"
+                  size="small"
+                  [text]="true"
+                  [rounded]="true"
+                  ariaLabel="Sửa nhà cung cấp"
+                  pTooltip="Sửa"
+                  tooltipPosition="top"
+                  (onClick)="openEdit(s)"
+                />
                 @if (isHidden(s)) {
-                  <p-button label="Hợp tác lại" size="small" severity="success" [text]="true" [disabled]="busy()" (onClick)="restore(s)" />
+                  <p-button
+                    icon="pi pi-replay"
+                    size="small"
+                    severity="success"
+                    [text]="true"
+                    [rounded]="true"
+                    [disabled]="busy()"
+                    ariaLabel="Hợp tác lại"
+                    pTooltip="Hợp tác lại"
+                    tooltipPosition="top"
+                    (onClick)="restore(s)"
+                  />
                 } @else {
-                  <p-button label="Xóa" size="small" severity="danger" [text]="true" [disabled]="busy()" (onClick)="remove(s)" />
+                  <p-button
+                    icon="pi pi-trash"
+                    size="small"
+                    severity="danger"
+                    [text]="true"
+                    [rounded]="true"
+                    [disabled]="busy()"
+                    ariaLabel="Xóa nhà cung cấp"
+                    pTooltip="Xóa"
+                    tooltipPosition="top"
+                    (onClick)="remove(s)"
+                  />
                 }
               </div>
             </td>
@@ -104,7 +180,23 @@ const normalize = (s: string) =>
         </ng-template>
 
         <ng-template #emptymessage>
-          <tr><td colspan="7" class="py-8 text-center text-slate-500">Chưa có nhà cung cấp nào.</td></tr>
+          <tr>
+            <td colspan="6" class="px-4 py-12">
+              @if (loading()) {
+                <div class="flex flex-col items-center gap-2 text-slate-400">
+                  <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                  <span class="text-sm">Đang tải...</span>
+                </div>
+              } @else {
+                <div class="flex flex-col items-center gap-2 text-slate-400">
+                  <div class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                    <i class="pi pi-inbox text-xl"></i>
+                  </div>
+                  <span class="text-sm text-slate-500">Chưa có nhà cung cấp nào.</span>
+                </div>
+              }
+            </td>
+          </tr>
         </ng-template>
       </p-table>
     </div>
@@ -114,39 +206,94 @@ const normalize = (s: string) =>
       [modal]="true"
       [visible]="dialogOpen()"
       (visibleChange)="dialogOpen.set($event)"
-      [style]="{ width: '34rem' }"
+      [style]="{ width: '34rem', maxWidth: '94vw' }"
     >
-      <form [formGroup]="form" class="space-y-3">
+      <form [formGroup]="form" class="space-y-4">
         @if (formError()) {
-          <div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ formError() }}</div>
+          <div class="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <i class="pi pi-exclamation-circle mt-0.5 text-red-500"></i>
+            <span>{{ formError() }}</span>
+          </div>
         }
 
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Tên nhà cung cấp *</label>
-          <input pInputText formControlName="TenNhaCungCap" class="w-full" />
+        <!-- Thông tin nhà cung cấp -->
+        <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <i class="pi pi-building text-emerald-500"></i>
+            Thông tin nhà cung cấp
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-slate-700">
+              Tên nhà cung cấp <span class="text-red-500">*</span>
+            </label>
+            <input
+              pInputText
+              formControlName="TenNhaCungCap"
+              class="w-full"
+              placeholder="Ví dụ: Công ty TNHH Thực phẩm ABC"
+            />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-slate-700">
+              Địa chỉ <span class="text-red-500">*</span>
+            </label>
+            <input
+              pInputText
+              formControlName="DiaChi"
+              class="w-full"
+              placeholder="Số nhà, đường, phường/xã, quận/huyện"
+            />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-slate-700">
+              Số điện thoại <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <i class="pi pi-phone pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
+              <input
+                pInputText
+                formControlName="SoDienThoai"
+                class="w-full pl-9!"
+                placeholder="Ví dụ: 0901 234 567"
+              />
+            </div>
+            @if (form.controls.SoDienThoai.touched && form.controls.SoDienThoai.hasError('pattern')) {
+              <small class="mt-1 flex items-center gap-1.5 text-red-600">
+                <i class="pi pi-exclamation-circle text-xs"></i>
+                Số điện thoại không hợp lệ.
+              </small>
+            }
+          </div>
         </div>
 
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Địa chỉ *</label>
-          <input pInputText formControlName="DiaChi" class="w-full" />
-        </div>
-
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Số điện thoại *</label>
-          <input pInputText formControlName="SoDienThoai" class="w-full" />
-          @if (form.controls.SoDienThoai.touched && form.controls.SoDienThoai.hasError('pattern')) {
-            <small class="text-red-600">Số điện thoại không hợp lệ.</small>
-          }
-        </div>
-
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Cung cấp cho danh mục *</label>
+        <!-- Danh mục cung cấp -->
+        <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <i class="pi pi-tags text-emerald-500"></i>
+              Danh mục cung cấp <span class="text-red-500">*</span>
+            </div>
+            <span
+              class="rounded-full px-2.5 py-0.5 text-xs font-medium transition"
+              [class]="picked().length > 0
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-slate-200 text-slate-600'"
+            >
+              {{ picked().length }} đã chọn
+            </span>
+          </div>
 
           @if (categories().length === 0) {
-            <p class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              Chưa có danh mục nào. Hãy tạo danh mục ở trang
-              <a routerLink="/admin/categories" class="underline">Danh mục</a> trước.
-            </p>
+            <div class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <i class="pi pi-exclamation-triangle mt-0.5 text-[11px] text-amber-500"></i>
+              <span>
+                Chưa có danh mục nào. Hãy tạo danh mục ở trang
+                <a routerLink="/admin/categories" class="font-medium underline">Danh mục</a> trước.
+              </span>
+            </div>
           } @else {
             <div class="flex flex-wrap gap-2">
               @for (c of categories(); track c.MaDanhMuc) {
@@ -154,10 +301,10 @@ const normalize = (s: string) =>
                   type="button"
                   role="checkbox"
                   [attr.aria-checked]="isPicked(c.MaDanhMuc)"
-                  class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition"
+                  class="inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm font-medium transition"
                   [class]="isPicked(c.MaDanhMuc)
-                    ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300'"
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/40'"
                   (click)="togglePick(c.MaDanhMuc)"
                 >
                   <i [class]="isPicked(c.MaDanhMuc) ? 'pi pi-check-circle' : 'pi pi-circle'"></i>
@@ -166,7 +313,10 @@ const normalize = (s: string) =>
               }
             </div>
             @if (picked().length === 0) {
-              <small class="text-red-600">Chọn ít nhất một danh mục.</small>
+              <small class="flex items-center gap-1.5 text-red-600">
+                <i class="pi pi-exclamation-circle text-xs"></i>
+                Chọn ít nhất một danh mục.
+              </small>
             }
           }
         </div>

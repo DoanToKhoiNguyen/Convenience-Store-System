@@ -29,18 +29,17 @@ interface Group {
   selector: 'app-stock-alerts',
   imports: [TableModule, TagModule, ButtonModule, DialogModule, DecimalPipe, RouterLink],
   template: `
-  <div class="mb-4 flex gap-2 border-b border-slate-200">
-  <span class="-mb-px border-b-2 border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700">Sắp hết hàng</span>
-  <a routerLink="/admin/expiry-alerts" class="-mb-px border-b-2 border-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:text-emerald-700">
-    Sắp hết hạn
-  </a>
-</div>
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-semibold text-slate-800">Cảnh báo tồn kho</h1>
-        <p class="text-sm text-slate-500">Sản phẩm có số lượng thấp hơn hoặc bằng mức tồn tối thiểu</p>
+    <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div class="flex items-start gap-3">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+          <i class="pi pi-exclamation-triangle text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-800">Cảnh báo tồn kho</h1>
+          <p class="text-sm text-slate-500">Sản phẩm có số lượng thấp hơn hoặc bằng mức tồn tối thiểu</p>
+        </div>
       </div>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <p-button label="Tải lại" icon="pi pi-refresh" [outlined]="true" [loading]="loading()" (onClick)="load()" />
         <p-button
           [label]="'Lập phiếu nhập hàng (' + selectedItems().length + ')'"
@@ -51,36 +50,84 @@ interface Group {
       </div>
     </div>
 
+    <div class="mb-4 inline-flex items-center gap-1 rounded-xl border border-slate-200/70 bg-white p-1 shadow-sm">
+      <span class="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
+        <i class="pi pi-exclamation-circle text-xs"></i>
+        Sắp hết hàng
+      </span>
+      <a
+        routerLink="/admin/expiry-alerts"
+        class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-emerald-700"
+      >
+        <i class="pi pi-clock text-xs"></i>
+        Sắp hết hạn
+      </a>
+    </div>
+
     <div class="mb-4 grid gap-3 sm:grid-cols-3">
-      <div class="rounded-xl bg-white p-4 shadow-sm">
-        <div class="text-sm text-slate-500">Hết hàng</div>
-        <div class="text-2xl font-semibold text-red-600">{{ outOfStock() }}</div>
+      <div class="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+          <i class="pi pi-times-circle"></i>
+        </div>
+        <div>
+          <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Hết hàng</div>
+          <div class="text-2xl font-semibold tabular-nums text-red-600">{{ outOfStock() }}</div>
+        </div>
       </div>
-      <div class="rounded-xl bg-white p-4 shadow-sm">
-        <div class="text-sm text-slate-500">Sắp hết</div>
-        <div class="text-2xl font-semibold text-amber-600">{{ items().length - outOfStock() }}</div>
+      <div class="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+          <i class="pi pi-exclamation-circle"></i>
+        </div>
+        <div>
+          <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Sắp hết</div>
+          <div class="text-2xl font-semibold tabular-nums text-amber-600">{{ items().length - outOfStock() }}</div>
+        </div>
       </div>
-      <div class="rounded-xl bg-white p-4 shadow-sm">
-        <div class="text-sm text-slate-500">Đã chọn để nhập</div>
-        <div class="text-2xl font-semibold text-slate-800">{{ selectedItems().length }}</div>
+      <div class="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+          <i class="pi pi-shopping-cart"></i>
+        </div>
+        <div>
+          <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Đã chọn để nhập</div>
+          <div class="text-2xl font-semibold tabular-nums text-slate-800">{{ selectedItems().length }}</div>
+        </div>
       </div>
     </div>
 
     @if (success().length) {
-      <div class="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-        <div class="font-medium">Đã lập phiếu nhập (đang chờ quản lý duyệt):</div>
-        <ul class="ml-5 list-disc">
-          @for (m of success(); track m) {
-            <li>{{ m }}</li>
-          }
-        </ul>
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <i class="pi pi-check-circle mt-0.5"></i>
+        <div>
+          <div class="font-medium">Đã lập phiếu nhập (đang chờ quản lý duyệt):</div>
+          <ul class="ml-5 list-disc">
+            @for (m of success(); track m) {
+              <li>{{ m }}</li>
+            }
+          </ul>
+        </div>
       </div>
     }
     @if (error()) {
-      <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <i class="pi pi-exclamation-circle mt-0.5"></i>
+        <span>{{ error() }}</span>
+      </div>
     }
 
-    <div class="rounded-xl bg-white p-2 shadow-sm">
+    <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
+        <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <i class="pi pi-list text-emerald-500"></i>
+          Danh sách sản phẩm
+          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ items().length }}</span>
+        </div>
+        @if (selectedItems().length > 0) {
+          <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+            Đã chọn {{ selectedItems().length }} sản phẩm
+          </span>
+        }
+      </div>
+
       <p-table
         [value]="items()"
         [loading]="loading()"
@@ -88,55 +135,70 @@ interface Group {
         [tableStyle]="{ 'min-width': '56rem' }"
       >
         <ng-template #header>
-          <tr>
-            <th class="w-12">
+          <tr class="bg-slate-50/80">
+            <th class="w-12 px-4 py-3">
               <input
                 type="checkbox"
-                class="h-4 w-4"
+                class="h-4 w-4 rounded border-slate-300 accent-emerald-600"
                 [checked]="allSelected()"
                 [disabled]="selectable().length === 0"
                 (change)="toggleAll()"
               />
             </th>
-            <th>Sản phẩm</th>
-            <th>Nhà cung cấp</th>
-            <th class="text-right">Tồn hiện tại</th>
-            <th class="text-right">Tối thiểu</th>
-            <th>Trạng thái</th>
-            <th class="text-right">Số lượng cần nhập</th>
+            <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Sản phẩm</th>
+            <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Nhà cung cấp</th>
+            <th class="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tồn hiện tại</th>
+            <th class="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tối thiểu</th>
+            <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Trạng thái</th>
+            <th class="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">Số lượng cần nhập</th>
           </tr>
         </ng-template>
 
         <ng-template #body let-p>
-          <tr>
-            <td>
+          <tr class="transition-colors hover:bg-emerald-50/40">
+            <td class="px-4 py-3">
               <input
                 type="checkbox"
-                class="h-4 w-4"
+                class="h-4 w-4 rounded border-slate-300 accent-emerald-600"
                 [checked]="isSelected(p)"
                 [disabled]="!canSelect(p)"
                 (change)="toggle(p)"
               />
             </td>
-            <td>
-              <div class="font-medium text-slate-800">{{ p.TenSanPham }}</div>
-              @if (p.TenThuongHieu) {
-                <div class="text-xs text-slate-500">{{ p.TenThuongHieu }}</div>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2.5">
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                  <i class="pi pi-box text-xs"></i>
+                </div>
+                <div>
+                  <div class="font-medium text-slate-800">{{ p.TenSanPham }}</div>
+                  @if (p.TenThuongHieu) {
+                    <div class="text-xs text-slate-500">{{ p.TenThuongHieu }}</div>
+                  }
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              @if (!p.nha_cung_cap) {
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
+                  <i class="pi pi-exclamation-circle text-[10px]"></i>
+                  Chưa có nhà cung cấp
+                </span>
+              } @else {
+                <div class="text-slate-700">{{ p.nha_cung_cap.TenNhaCungCap }}</div>
+                @if (!supplierActive(p)) {
+                  <div class="mt-0.5 text-xs text-red-600">Đã ngừng hợp tác</div>
+                }
               }
             </td>
-            <td>
-  @if (!p.nha_cung_cap) {
-    <span class="text-red-600">Chưa có nhà cung cấp</span>
-  } @else {
-    {{ p.nha_cung_cap.TenNhaCungCap }}
-    @if (!supplierActive(p)) {
-      <div class="text-xs text-red-600">Đã ngừng hợp tác</div>
-    }
-  }
-</td>
-            <td class="text-right font-medium">{{ p.SoLuongHienTai }}</td>
-            <td class="text-right">{{ p.TonKhoToiThieu }}</td>
-            <td>
+            <td class="px-4 py-3 text-right">
+              <span
+                class="font-semibold tabular-nums"
+                [class]="p.SoLuongHienTai <= 0 ? 'text-red-600' : 'text-slate-800'"
+              >{{ p.SoLuongHienTai }}</span>
+            </td>
+            <td class="px-4 py-3 text-right tabular-nums text-slate-500">{{ p.TonKhoToiThieu }}</td>
+            <td class="px-4 py-3">
               <div class="flex flex-wrap gap-1">
                 <p-tag
                   [value]="p.SoLuongHienTai <= 0 ? 'Hết hàng' : 'Sắp hết'"
@@ -147,65 +209,92 @@ interface Group {
                 }
               </div>
             </td>
-            <td class="text-right">
-              <input
-                type="number"
-                min="1"
-                class="w-24 rounded border px-2 py-1 text-right disabled:bg-slate-100"
-                [class.border-slate-300]="!(isSelected(p) && qtyOf(p) < 1)"
-                [class.border-red-500]="isSelected(p) && qtyOf(p) < 1"
-                [value]="qtyOf(p)"
-                [disabled]="!isSelected(p)"
-                (input)="setQty(p, $any($event.target).value)"
-              />
+            <td class="px-4 py-3">
+              <div class="flex justify-end">
+                <input
+                  type="number"
+                  min="1"
+                  class="w-24 rounded-lg border px-2.5 py-1.5 text-right text-sm tabular-nums outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  [class]="isSelected(p) && qtyOf(p) < 1 ? 'border-red-400 bg-red-50/40' : 'border-slate-300'"
+                  [value]="qtyOf(p)"
+                  [disabled]="!isSelected(p)"
+                  (input)="setQty(p, $any($event.target).value)"
+                />
+              </div>
             </td>
           </tr>
         </ng-template>
 
         <ng-template #emptymessage>
           <tr>
-            <td colspan="7" class="py-8 text-center text-slate-500">
-              Không có sản phẩm nào sắp hết hàng.
+            <td colspan="7" class="px-4 py-12">
+              @if (loading()) {
+                <div class="flex flex-col items-center gap-2 text-slate-400">
+                  <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                  <span class="text-sm">Đang tải...</span>
+                </div>
+              } @else {
+                <div class="flex flex-col items-center gap-2 text-slate-400">
+                  <div class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                    <i class="pi pi-check-circle text-xl text-emerald-500"></i>
+                  </div>
+                  <span class="text-sm text-slate-500">Không có sản phẩm nào sắp hết hàng.</span>
+                </div>
+              }
             </td>
           </tr>
         </ng-template>
       </p-table>
     </div>
 
-    <p class="mt-3 text-xs text-slate-500">
-      Số lượng cần nhập được gợi ý để đưa tồn kho lên mức tối đa (hoặc gấp đôi mức tối thiểu nếu chưa đặt mức tối đa), bạn có thể sửa.
-      Sản phẩm chưa có nhà cung cấp cần được cập nhật trước khi lập phiếu.
-    </p>
+    <div class="mt-3 flex items-start gap-2.5 rounded-xl border border-slate-200/70 bg-white px-4 py-3 text-xs text-slate-500 shadow-sm">
+      <i class="pi pi-info-circle mt-0.5 text-emerald-500"></i>
+      <p>
+        Số lượng cần nhập được gợi ý để đưa tồn kho lên mức tối đa (hoặc gấp đôi mức tối thiểu nếu chưa đặt mức tối đa), bạn có thể sửa.
+        Sản phẩm chưa có nhà cung cấp cần được cập nhật trước khi lập phiếu.
+      </p>
+    </div>
 
     <p-dialog
       header="Xác nhận lập phiếu nhập"
       [modal]="true"
       [visible]="dialogOpen()"
       (visibleChange)="dialogOpen.set($event)"
-      [style]="{ width: '40rem' }"
+      [style]="{ width: '40rem', maxWidth: '94vw' }"
     >
-      <p class="mb-3 text-sm text-slate-600">
-        Hệ thống sẽ tạo <b>{{ groups().length }}</b> phiếu nhập (mỗi nhà cung cấp một phiếu) ở trạng thái
-        <b>Chờ duyệt</b>. Đơn giá nhập do hệ thống tự lấy từ dữ liệu sản phẩm.
-      </p>
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <i class="pi pi-info-circle mt-0.5"></i>
+        <p>
+          Hệ thống sẽ tạo <b>{{ groups().length }}</b> phiếu nhập (mỗi nhà cung cấp một phiếu) ở trạng thái
+          <b>Chờ duyệt</b>. Đơn giá nhập do hệ thống tự lấy từ dữ liệu sản phẩm.
+        </p>
+      </div>
 
       @for (g of groups(); track g.supplierId) {
-        <div class="mb-3 rounded-lg border border-slate-200 p-3">
-          <div class="mb-2 font-medium text-slate-800">{{ g.supplierName }}</div>
+        <div class="mb-3 overflow-hidden rounded-xl border border-slate-200/70">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/60 px-4 py-2.5">
+            <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <i class="pi pi-truck text-xs text-emerald-500"></i>
+              {{ g.supplierName }}
+            </div>
+            <span class="rounded-full bg-slate-200/70 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+              {{ g.lines.length }} sản phẩm
+            </span>
+          </div>
           <table class="w-full text-sm">
             <thead>
-              <tr class="border-b text-left text-slate-500">
-                <th class="py-1">Sản phẩm</th>
-                <th class="text-right">Số lượng</th>
-                <th class="text-right">Ước tính</th>
+              <tr class="border-b border-slate-100 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                <th class="px-4 py-2 font-semibold">Sản phẩm</th>
+                <th class="px-4 py-2 text-right font-semibold">Số lượng</th>
+                <th class="px-4 py-2 text-right font-semibold">Ước tính</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-slate-100">
               @for (l of g.lines; track l.product.MaSanPham) {
-                <tr class="border-b border-slate-100">
-                  <td class="py-1">{{ l.product.TenSanPham }}</td>
-                  <td class="text-right">{{ l.qty }}</td>
-                  <td class="text-right">
+                <tr>
+                  <td class="px-4 py-2 text-slate-700">{{ l.product.TenSanPham }}</td>
+                  <td class="px-4 py-2 text-right tabular-nums text-slate-800">{{ l.qty }}</td>
+                  <td class="px-4 py-2 text-right tabular-nums text-slate-700">
                     @if (l.cost !== null) {
                       {{ l.cost | number: '1.0-0' }} ₫
                     } @else {
@@ -217,8 +306,9 @@ interface Group {
             </tbody>
           </table>
           @if (g.total !== null) {
-            <div class="mt-2 text-right text-sm">
-              Tổng ước tính: <b>{{ g.total | number: '1.0-0' }} ₫</b>
+            <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-2 text-sm">
+              <span class="text-slate-500">Tổng ước tính:</span>
+              <b class="tabular-nums text-emerald-700">{{ g.total | number: '1.0-0' }} ₫</b>
             </div>
           }
         </div>

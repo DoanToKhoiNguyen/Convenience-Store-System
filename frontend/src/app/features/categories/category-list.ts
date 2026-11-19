@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 import { Category } from './category.model';
 import { CategoryService } from './category.service';
 import { ConfirmService } from '../../core/ui/confirm.service';
@@ -14,93 +15,150 @@ const normalize = (s: string) =>
 
 @Component({
   selector: 'app-category-list',
-  imports: [ReactiveFormsModule, ButtonModule, DialogModule, InputTextModule],
+  imports: [ReactiveFormsModule, ButtonModule, DialogModule, InputTextModule, TooltipModule],
   template: `
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-semibold text-slate-800">Danh mục sản phẩm</h1>
-        <p class="text-sm text-slate-500">{{ filtered().length }} / {{ items().length }} danh mục</p>
+    <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div class="flex items-start gap-3">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+          <i class="pi pi-tags text-lg"></i>
+        </span>
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-800">Danh mục sản phẩm</h1>
+          <p class="text-sm text-slate-500">{{ filtered().length }} / {{ items().length }} danh mục</p>
+        </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-3">
-        <input
-          pInputText
-          type="text"
-          placeholder="Tìm danh mục..."
-          class="w-64"
-          [value]="keyword()"
-          (input)="keyword.set($any($event.target).value)"
-        />
-        <p-button label="Thêm danh mục" icon="pi pi-plus" (onClick)="openCreate()" />
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="relative w-full sm:w-72">
+          <input
+            pInputText
+            type="search"
+            placeholder="Tìm danh mục..."
+            class="w-full pl-9"
+            [value]="keyword()"
+            (input)="keyword.set($any($event.target).value)"
+          />
+        </div>
+        <button
+          type="button"
+          class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-600 hover:to-teal-700 hover:shadow-emerald-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 active:scale-[0.98]"
+          (click)="openCreate()"
+        >
+          <i class="pi pi-plus text-xs"></i>
+          Thêm danh mục
+        </button>
       </div>
     </div>
 
     @if (success()) {
-      <div class="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ success() }}</div>
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <i class="pi pi-check-circle mt-0.5 text-emerald-500"></i>
+        <span>{{ success() }}</span>
+      </div>
     }
     @if (error()) {
-      <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
+      <div class="mb-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <i class="pi pi-exclamation-circle mt-0.5 text-red-500"></i>
+        <span>{{ error() }}</span>
+      </div>
     }
 
-    <div class="overflow-x-auto rounded-xl bg-white shadow-sm">
-      <table class="w-full min-w-[32rem] table-fixed text-left text-sm">
-        <thead>
-          <tr class="border-b bg-slate-50 text-slate-600">
-            <th class="w-1/4 p-3">Mã</th>
-            <th class="w-1/4 p-3">Tên danh mục</th>
-            <th class="w-1/4 p-3 text-center">Số sản phẩm</th>
-            <th class="w-1/4 p-3 text-left">Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (c of filtered(); track c.MaDanhMuc) {
-            <tr class="border-b border-slate-100 hover:bg-slate-50">
-              <td class="p-3 truncate">{{ c.MaDanhMuc }}</td>
-              <td class="p-3 font-medium text-slate-800 truncate">{{ c.TenDanhMuc }}</td>
-              <td class="p-3 text-center">{{ c.san_pham_count ?? 0 }}</td>
-              <td class="p-3 text-left">
-                <div class="flex justify-start gap-1">
-                  <!-- Nút Sửa -->
-                  <p-button
-                    icon="pi pi-pencil"
-                    ariaLabel="Sửa danh mục"
-                    pTooltip="Sửa danh mục"
-                    tooltipPosition="top"
-                    size="small"
-                    [text]="true"
-                    [rounded]="true"
-                    (onClick)="openEdit(c)"
-                  />
+    <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-3.5">
+        <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <i class="pi pi-list text-emerald-500"></i>
+          Danh sách danh mục
+          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ filtered().length }}</span>
+        </div>
+      </div>
 
-                  <!-- Nút Xóa -->
-                  <p-button
-                    icon="pi pi-trash"
-                    ariaLabel="Xóa danh mục"
-                    pTooltip="Xóa danh mục"
-                    tooltipPosition="top"
-                    size="small"
-                    severity="danger"
-                    [text]="true"
-                    [rounded]="true"
-                    [disabled]="busy() || (c.san_pham_count ?? 0) > 0"
-                    (onClick)="remove(c)"
-                  />
-                </div>
-              </td>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[36rem] text-left text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50/80 text-[11px] uppercase tracking-wider text-slate-500">
+              <th class="px-5 py-3 font-semibold">Tên danh mục</th>
+              <th class="px-5 py-3 text-center font-semibold">Số sản phẩm</th>
+              <th class="w-28 px-5 py-3 text-right font-semibold">Thao tác</th>
             </tr>
-          } @empty {
-            <tr>
-              <td colspan="4" class="p-8 text-center text-slate-500">
-                {{ loading() ? 'Đang tải...' : 'Chưa có danh mục nào.' }}
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (c of filtered(); track c.MaDanhMuc) {
+              <tr class="transition-colors hover:bg-emerald-100/60">
+                <td class="px-5 py-3.5">
+                  <div class="flex items-center gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                      <i class="pi pi-tag text-sm"></i>
+                    </span>
+                    <span class="font-medium text-slate-800">{{ c.TenDanhMuc }}</span>
+                  </div>
+                </td>
+                <td class="px-5 py-3.5 text-center">
+                  @if ((c.san_pham_count ?? 0) > 0) {
+                    <span class="inline-flex min-w-8 items-center justify-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                      {{ c.san_pham_count }}
+                    </span>
+                  } @else {
+                    <span class="inline-flex min-w-8 items-center justify-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                      0
+                    </span>
+                  }
+                </td>
+                <td class="px-5 py-3.5">
+                  <div class="flex justify-end gap-1">
+                    <p-button
+                      icon="pi pi-pencil"
+                      ariaLabel="Sửa danh mục"
+                      pTooltip="Sửa danh mục"
+                      tooltipPosition="top"
+                      size="small"
+                      [text]="true"
+                      [rounded]="true"
+                      (onClick)="openEdit(c)"
+                    />
+                    <p-button
+                      icon="pi pi-trash"
+                      ariaLabel="Xóa danh mục"
+                      [pTooltip]="canDelete(c) ? 'Xóa danh mục' : 'Đang có ' + c.san_pham_count + ' sản phẩm, chưa thể xóa'"
+                      tooltipPosition="top"
+                      size="small"
+                      [severity]="canDelete(c) ? 'danger' : 'secondary'"
+                      [text]="true"
+                      [rounded]="true"
+                      [disabled]="busy()"
+                      (onClick)="remove(c)"
+                    />
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="px-5 py-16 text-center">
+                  @if (loading()) {
+                    <div class="flex flex-col items-center gap-3 text-slate-400">
+                      <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                      <span class="text-sm">Đang tải danh mục...</span>
+                    </div>
+                  } @else {
+                    <div class="flex flex-col items-center gap-3 text-slate-400">
+                      <span class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                        <i class="pi pi-inbox text-xl"></i>
+                      </span>
+                      <span class="text-sm text-slate-500">Chưa có danh mục nào.</span>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <p class="mt-3 text-xs text-slate-500">
-      Danh mục đang có sản phẩm thì không xóa được. Hãy chuyển các sản phẩm sang danh mục khác (ở trang Sản phẩm) trước.
+    <p class="mt-3 flex items-start gap-2 text-xs text-slate-500">
+      <i class="pi pi-info-circle mt-px shrink-0 text-slate-400"></i>
+      <span>
+        Danh mục đang có sản phẩm thì không xóa được. Hãy chuyển các sản phẩm sang danh mục khác (ở trang Sản phẩm) trước.
+      </span>
     </p>
 
     <p-dialog
@@ -108,23 +166,43 @@ const normalize = (s: string) =>
       [modal]="true"
       [visible]="dialogOpen()"
       (visibleChange)="dialogOpen.set($event)"
-      [style]="{ width: '28rem' }"
+      [style]="{ width: '30rem', maxWidth: '92vw' }"
     >
-      <form [formGroup]="form" class="space-y-3" (ngSubmit)="save()">
+      <form [formGroup]="form" class="space-y-4" (ngSubmit)="save()">
         @if (formError()) {
-          <div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ formError() }}</div>
+          <div class="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <i class="pi pi-exclamation-circle mt-0.5 text-sm text-red-500"></i>
+            <span>{{ formError() }}</span>
+          </div>
         }
 
-        <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Tên danh mục *</label>
-          <input pInputText formControlName="TenDanhMuc" class="w-full" placeholder="Ví dụ: Đồ uống" />
-        </div>
+        <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
+          <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <i class="pi pi-info-circle text-emerald-500"></i>
+            Thông tin danh mục
+          </div>
 
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">
+              Tên danh mục <span class="text-red-500">*</span>
+            </label>
+            <input
+              pInputText
+              formControlName="TenDanhMuc"
+              class="w-full"
+              placeholder="Ví dụ: Đồ uống"
+            />
+            @if (form.controls.TenDanhMuc.touched && form.controls.TenDanhMuc.hasError('required')) {
+              <small class="mt-1 block text-red-600">Vui lòng nhập tên danh mục.</small>
+            }
+          </div>
+        </div>
 
         @if (editing(); as e) {
           @if ((e.san_pham_count ?? 0) > 0) {
-            <p class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              Đổi tên sẽ cập nhật cho {{ e.san_pham_count }} sản phẩm đang thuộc danh mục này.
+            <p class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <i class="pi pi-info-circle mt-px shrink-0 text-amber-500"></i>
+              <span>Đổi tên sẽ cập nhật cho {{ e.san_pham_count }} sản phẩm đang thuộc danh mục này.</span>
             </p>
           }
         }
@@ -188,6 +266,10 @@ export class CategoryList {
     });
   }
 
+  canDelete(c: Category): boolean {
+    return (c.san_pham_count ?? 0) === 0;
+  }
+
   openCreate() {
     this.editing.set(null);
     this.formError.set(null);
@@ -230,7 +312,17 @@ export class CategoryList {
   }
 
   async remove(c: Category) {
-    if ((c.san_pham_count ?? 0) > 0) return;
+    if (!this.canDelete(c)) {
+      const msg =
+        `Không thể xóa "${c.TenDanhMuc}" vì đang có ${c.san_pham_count} sản phẩm thuộc danh mục này. ` +
+        'Hãy chuyển các sản phẩm sang danh mục khác (ở trang Sản phẩm) trước.';
+      this.success.set(null);
+      this.error.set(msg);
+      setTimeout(() => {
+        if (this.error() === msg) this.error.set(null);
+      }, 6000);
+      return;
+    }
 
     const ok = await this.confirmDialog.ask({
       title: 'Xóa danh mục',

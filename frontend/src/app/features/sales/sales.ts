@@ -58,40 +58,53 @@ const COLORS = [
       <section class="flex min-h-0 flex-col gap-3">
         <div class="shrink-0 space-y-3">
           @if (receipt(); as r) {
-            <div class="rounded-xl bg-emerald-50 p-4 text-emerald-800">
-              <div class="font-semibold">Thanh toán thành công, hóa đơn #{{ r.id }}</div>
-              <div class="mt-1 text-sm">
-                Tổng tiền: <b>{{ r.total | number: '1.0-0' }} ₫</b> ({{ r.method }})
-                @if (r.discount > 0) {
-                  · Đã giảm {{ r.discount | number: '1.0-0' }} ₫
-                }
-                @if (r.method === 'Tiền mặt' && r.given !== null && r.given >= r.total) {
-                  · Khách đưa {{ r.given | number: '1.0-0' }} ₫ · Tiền thừa
-                  <b>{{ r.given - r.total | number: '1.0-0' }} ₫</b>
-                }
+            <div class="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+                <i class="pi pi-check text-xs"></i>
+              </span>
+              <div class="min-w-0">
+                <div class="font-semibold">Thanh toán thành công, hóa đơn #{{ r.id }}</div>
+                <div class="mt-1 text-sm text-emerald-800">
+                  Tổng tiền: <b>{{ r.total | number: '1.0-0' }} ₫</b> ({{ r.method }})
+                  @if (r.discount > 0) {
+                    · Đã giảm {{ r.discount | number: '1.0-0' }} ₫
+                  }
+                  @if (r.method === 'Tiền mặt' && r.given !== null && r.given >= r.total) {
+                    · Khách đưa {{ r.given | number: '1.0-0' }} ₫ · Tiền thừa
+                    <b>{{ r.given - r.total | number: '1.0-0' }} ₫</b>
+                  }
+                </div>
+                <p-button label="Hóa đơn mới" icon="pi pi-plus" size="small" class="mt-3" (onClick)="newInvoice()" />
               </div>
-              <p-button label="Hóa đơn mới" icon="pi pi-plus" size="small" class="mt-3" (onClick)="newInvoice()" />
             </div>
           }
 
           @if (queued(); as q) {
-            <div class="rounded-xl bg-amber-50 p-4 text-amber-800">
-              <div class="font-semibold">Đã lưu hóa đơn #{{ q.id }} vào hàng đợi</div>
-              <div class="mt-1 text-sm">
-                Hàng được giữ @if (q.until) { đến <b>{{ q.until | date: 'HH:mm' }}</b> }. Quá hạn mà chưa thanh toán,
-                hóa đơn tự hủy và hoàn lại kho.
+            <div class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white shadow-sm">
+                <i class="pi pi-clock text-xs"></i>
+              </span>
+              <div class="min-w-0">
+                <div class="font-semibold">Đã lưu hóa đơn #{{ q.id }} vào hàng đợi</div>
+                <div class="mt-1 text-sm text-amber-800">
+                  Hàng được giữ @if (q.until) { đến <b>{{ q.until | date: 'HH:mm' }}</b> }. Quá hạn mà chưa thanh toán,
+                  hóa đơn tự hủy và hoàn lại kho.
+                </div>
+                <a
+                  routerLink="/admin/invoices"
+                  class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-amber-700"
+                >
+                  Xem hàng đợi <i class="pi pi-arrow-right text-xs"></i>
+                </a>
               </div>
-              <a
-                routerLink="/admin/invoices"
-                class="mt-2 inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700"
-              >
-                Xem hàng đợi <i class="pi pi-arrow-right text-xs"></i>
-              </a>
             </div>
           }
 
           @if (error()) {
-            <div class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }}</div>
+            <div class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              <i class="pi pi-exclamation-circle mt-0.5 text-red-500"></i>
+              <span>{{ error() }}</span>
+            </div>
           }
 
           <!-- Ô tìm kiếm -->
@@ -102,7 +115,7 @@ const COLORS = [
               type="text"
               autocomplete="off"
               placeholder="Gõ chữ cái đầu của tên sản phẩm, ví dụ: n, nuoc, tra..."
-              class="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-12 text-base shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-12 text-base shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100/70"
               [value]="keyword()"
               (input)="keyword.set($any($event.target).value)"
               (keydown.enter)="addFirst()"
@@ -111,7 +124,7 @@ const COLORS = [
             @if (keyword()) {
               <button
                 type="button"
-                class="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-slate-700"
+                class="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
                 aria-label="Xóa từ khóa"
                 (click)="clearSearch()"
               >
@@ -119,13 +132,16 @@ const COLORS = [
               </button>
             }
           </div>
-          <p class="text-xs text-slate-500">
-            @if (keyword().trim()) {
-              {{ filtered().length }} kết quả cho "{{ keyword().trim() }}"
-              @if (firstAvailable()) { · nhấn <b>Enter</b> để thêm sản phẩm đầu tiên }
-            } @else {
-              {{ filtered().length }} sản phẩm · bấm vào sản phẩm để thêm vào hóa đơn
-            }
+          <p class="flex items-center gap-1.5 text-xs text-slate-500">
+            <i class="pi pi-info-circle text-[10px] text-slate-400"></i>
+            <span>
+              @if (keyword().trim()) {
+                {{ filtered().length }} kết quả cho "{{ keyword().trim() }}"
+                @if (firstAvailable()) { · nhấn <b>Enter</b> để thêm sản phẩm đầu tiên }
+              } @else {
+                {{ filtered().length }} sản phẩm · bấm vào sản phẩm để thêm vào hóa đơn
+              }
+            </span>
           </p>
         </div>
 
@@ -134,7 +150,7 @@ const COLORS = [
           @if (loading()) {
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               @for (i of skeleton; track i) {
-                <div class="animate-pulse overflow-hidden rounded-xl bg-white shadow-sm">
+                <div class="animate-pulse overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
                   <div class="aspect-[4/3] bg-slate-200"></div>
                   <div class="space-y-2 p-3">
                     <div class="h-3 w-4/5 rounded bg-slate-200"></div>
@@ -144,13 +160,15 @@ const COLORS = [
               }
             </div>
           } @else if (filtered().length === 0) {
-            <div class="rounded-xl bg-white p-10 text-center shadow-sm">
-              <i class="pi pi-search mb-3 text-3xl text-slate-300"></i>
+            <div class="flex flex-col items-center rounded-2xl border border-slate-200/70 bg-white p-10 text-center shadow-sm">
+              <span class="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-300">
+                <i class="pi pi-search text-2xl"></i>
+              </span>
               <p class="text-slate-600">
                 {{ products().length === 0 ? 'Chưa có sản phẩm nào đang bán.' : 'Không tìm thấy sản phẩm phù hợp.' }}
               </p>
               @if (keyword() || category()) {
-                <button type="button" class="mt-3 text-sm text-emerald-600 underline" (click)="clearFilters()">
+                <button type="button" class="mt-3 text-sm font-medium text-emerald-600 underline-offset-2 hover:underline" (click)="clearFilters()">
                   Xóa bộ lọc
                 </button>
               }
@@ -160,7 +178,7 @@ const COLORS = [
               @for (p of filtered(); track p.MaSanPham) {
                 <button
                   type="button"
-                  class="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-left transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  class="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-sm"
                   [class.ring-2]="!!keyword().trim() && p === firstAvailable()"
                   [class.ring-emerald-400]="!!keyword().trim() && p === firstAvailable()"
                   [disabled]="stockOf(p) <= 0"
@@ -188,12 +206,12 @@ const COLORS = [
                     }
 
                     @if (cartQty().get(p.MaSanPham); as n) {
-                      <span class="absolute right-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white shadow">
+                      <span class="absolute right-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white shadow-sm ring-2 ring-white/70">
                         ×{{ n }}
                       </span>
                     }
                     @if (stockOf(p) <= 0) {
-                      <span class="absolute left-2 top-2 rounded-full bg-slate-800 px-2 py-0.5 text-xs font-medium text-white">
+                      <span class="absolute left-2 top-2 rounded-full bg-slate-800/90 px-2 py-0.5 text-xs font-medium text-white backdrop-blur">
                         Hết hàng
                       </span>
                     }
@@ -205,7 +223,7 @@ const COLORS = [
                     </div>
                     <div class="mt-1.5 flex items-end justify-between gap-2">
                       <span class="font-bold text-emerald-600">{{ price(p) | number: '1.0-0' }} ₫</span>
-                      <span class="text-xs" [class]="stockClass(p)">{{ stockLabel(p) }}</span>
+                      <span class="whitespace-nowrap text-xs" [class]="stockClass(p)">{{ stockLabel(p) }}</span>
                     </div>
                   </div>
                 </button>
@@ -216,28 +234,41 @@ const COLORS = [
       </section>
 
       <!-- ================= CỘT PHẢI: hóa đơn và thanh toán ================= -->
-      <aside #cartEl class="flex min-h-0 flex-col overflow-hidden rounded-2xl bg-white shadow-sm">
-        <div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
-          <div>
-            <div class="font-semibold text-slate-800">Hóa đơn hiện tại</div>
-            <div class="text-xs text-slate-500">{{ itemCount() }} sản phẩm</div>
+      <aside #cartEl class="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+        <div class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
+          <div class="flex items-center gap-2.5">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+              <i class="pi pi-shopping-cart text-sm"></i>
+            </span>
+            <div>
+              <div class="font-semibold text-slate-800">Hóa đơn hiện tại</div>
+              <div class="text-xs text-slate-500">{{ itemCount() }} sản phẩm</div>
+            </div>
           </div>
           @if (lines().length > 0) {
-            <button type="button" class="text-xs text-red-600 hover:underline" (click)="clearCart()">Xóa hết</button>
+            <button
+              type="button"
+              class="rounded-lg px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50"
+              (click)="clearCart()"
+            >
+              Xóa hết
+            </button>
           }
         </div>
 
         <div class="max-h-96 min-h-40 flex-1 overflow-y-auto lg:max-h-none">
           @if (lines().length === 0) {
-            <div class="flex h-full flex-col items-center justify-center gap-2 px-6 py-10 text-center text-slate-400">
-              <i class="pi pi-shopping-cart text-4xl"></i>
+            <div class="flex h-full flex-col items-center justify-center gap-3 px-6 py-12 text-center text-slate-400">
+              <span class="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+                <i class="pi pi-shopping-cart text-2xl"></i>
+              </span>
               <p class="text-sm">Chưa có sản phẩm nào.<br />Bấm vào sản phẩm bên cạnh để thêm.</p>
             </div>
           } @else {
             <ul class="divide-y divide-slate-100">
               @for (l of lines(); track l.product.MaSanPham) {
-                <li class="flex gap-3 px-4 py-3">
-                  <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100">
+                <li class="flex gap-3 px-4 py-3 transition-colors hover:bg-slate-50/60">
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
                     @if (showImage(l.product)) {
                       <img [src]="l.product.hinh_anh_url" alt="" class="h-full w-full object-cover" (error)="markFailed(l.product)" />
                     } @else {
@@ -252,7 +283,7 @@ const COLORS = [
                       </div>
                       <button
                         type="button"
-                        class="shrink-0 text-slate-400 hover:text-red-600"
+                        class="shrink-0 rounded p-0.5 text-slate-400 transition hover:text-red-600"
                         aria-label="Bỏ sản phẩm"
                         (click)="remove(l)"
                       >
@@ -261,23 +292,33 @@ const COLORS = [
                     </div>
                     <div class="text-xs text-slate-500">{{ price(l.product) | number: '1.0-0' }} ₫</div>
 
-                    <div class="mt-1 flex items-center justify-between">
-                      <div class="inline-flex items-center overflow-hidden rounded-lg border border-slate-200">
-                        <button type="button" class="h-8 w-8 text-slate-600 hover:bg-slate-50" aria-label="Giảm" (click)="change(l, -1)">
+                    <div class="mt-1.5 flex items-center justify-between gap-2">
+                      <div class="inline-flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+                        <button
+                          type="button"
+                          class="flex h-8 w-8 items-center justify-center text-slate-600 transition hover:bg-slate-100"
+                          aria-label="Giảm"
+                          (click)="change(l, -1)"
+                        >
                           <i class="pi pi-minus text-xs"></i>
                         </button>
                         <input
                           type="number"
                           min="1"
-                          class="h-8 w-12 border-x border-slate-200 text-center text-sm focus:outline-none"
+                          class="h-8 w-11 border-x border-slate-200 bg-transparent text-center text-sm focus:outline-none"
                           [value]="l.qty"
                           (change)="setQty(l, $event)"
                         />
-                        <button type="button" class="h-8 w-8 text-slate-600 hover:bg-slate-50" aria-label="Tăng" (click)="change(l, 1)">
+                        <button
+                          type="button"
+                          class="flex h-8 w-8 items-center justify-center text-slate-600 transition hover:bg-slate-100"
+                          aria-label="Tăng"
+                          (click)="change(l, 1)"
+                        >
                           <i class="pi pi-plus text-xs"></i>
                         </button>
                       </div>
-                      <span class="text-sm font-semibold text-slate-800">
+                      <span class="text-sm font-semibold tabular-nums text-slate-800">
                         {{ price(l.product) * l.qty | number: '1.0-0' }} ₫
                       </span>
                     </div>
@@ -288,19 +329,19 @@ const COLORS = [
           }
         </div>
 
-        <div class="shrink-0 space-y-3 border-t border-slate-100 bg-slate-50/60 p-4">
-          <div class="space-y-1">
+        <div class="shrink-0 space-y-3 border-t border-slate-100 bg-slate-50/70 p-4">
+          <div class="space-y-1.5 rounded-xl border border-slate-200/70 bg-white p-3">
             <div class="flex items-baseline justify-between text-sm text-slate-600">
-              <span>Tạm tính</span><span>{{ total() | number: '1.0-0' }} ₫</span>
+              <span>Tạm tính</span><span class="tabular-nums">{{ total() | number: '1.0-0' }} ₫</span>
             </div>
             @if (discount() > 0) {
               <div class="flex items-baseline justify-between text-sm text-emerald-700">
-                <span>Giảm giá ({{ promoName() }})</span><span>-{{ discount() | number: '1.0-0' }} ₫</span>
+                <span>Giảm giá ({{ promoName() }})</span><span class="tabular-nums">-{{ discount() | number: '1.0-0' }} ₫</span>
               </div>
             }
-            <div class="flex items-baseline justify-between pt-1">
+            <div class="flex items-baseline justify-between border-t border-slate-100 pt-2">
               <span class="font-medium text-slate-700">Cần thanh toán</span>
-              <span class="text-2xl font-bold text-slate-900">{{ payable() | number: '1.0-0' }} ₫</span>
+              <span class="text-2xl font-bold tabular-nums text-emerald-700">{{ payable() | number: '1.0-0' }} ₫</span>
             </div>
           </div>
 
@@ -308,10 +349,10 @@ const COLORS = [
             @for (m of methods; track m.name) {
               <button
                 type="button"
-                class="flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium"
+                class="flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition"
                 [class]="method() === m.name
-                  ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-200'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'"
                 (click)="method.set(m.name)"
               >
                 <i [class]="m.icon"></i>{{ m.name }}
@@ -321,11 +362,11 @@ const COLORS = [
 
           @if (method() === 'Tiền mặt') {
             <div>
-              <label class="mb-1 block text-xs font-medium text-slate-600">Khách đưa (₫)</label>
+              <label class="mb-1.5 block text-xs font-medium text-slate-600">Khách đưa (₫)</label>
               <input
                 type="number"
                 min="0"
-                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-right text-lg font-semibold focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-right text-lg font-semibold tabular-nums transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100/70"
                 placeholder="0"
                 [value]="given() ?? ''"
                 (input)="onGiven($any($event.target).value)"
@@ -336,7 +377,9 @@ const COLORS = [
                   @for (v of quickCash(); track v) {
                     <button
                       type="button"
-                      class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:border-emerald-400 hover:text-emerald-700"
+                      [class]="given() === v
+                        ? 'rounded-full border border-emerald-500 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700'
+                        : 'rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-700'"
                       (click)="given.set(v)"
                     >
                       {{ v === payable() ? 'Vừa đủ' : (v | number: '1.0-0') }}
@@ -346,13 +389,16 @@ const COLORS = [
               }
 
               @if (given() !== null && given()! >= payable() && payable() > 0) {
-                <div class="mt-2 flex items-baseline justify-between rounded-lg bg-emerald-50 px-3 py-2 text-emerald-800">
+                <div class="mt-2 flex items-baseline justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800">
                   <span class="text-sm">Tiền thừa</span>
-                  <b class="text-lg">{{ given()! - payable() | number: '1.0-0' }} ₫</b>
+                  <b class="text-lg tabular-nums">{{ given()! - payable() | number: '1.0-0' }} ₫</b>
                 </div>
               }
               @if (given() !== null && given()! < payable()) {
-                <div class="mt-2 text-sm text-red-600">Khách đưa chưa đủ.</div>
+                <div class="mt-2 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <i class="pi pi-exclamation-circle text-red-500"></i>
+                  <span>Khách đưa chưa đủ.</span>
+                </div>
               }
             </div>
           }
@@ -374,7 +420,10 @@ const COLORS = [
             [disabled]="lines().length === 0 || busy()"
             (onClick)="holdInvoice()"
           />
-          <p class="text-xs text-slate-500">Giá và tổng tiền cuối cùng do máy chủ tính khi thanh toán.</p>
+          <p class="flex items-start gap-1.5 text-xs text-slate-500">
+            <i class="pi pi-info-circle mt-px shrink-0 text-slate-400"></i>
+            <span>Giá và tổng tiền cuối cùng do máy chủ tính khi thanh toán.</span>
+          </p>
         </div>
       </aside>
     </div>
@@ -383,11 +432,13 @@ const COLORS = [
     @if (lines().length > 0) {
       <button
         type="button"
-        class="fixed inset-x-4 bottom-4 z-10 flex items-center justify-between rounded-xl bg-emerald-600 px-4 py-3 text-white shadow-lg lg:hidden"
+        class="fixed inset-x-4 bottom-4 z-10 flex items-center justify-between rounded-2xl bg-emerald-600 px-4 py-3 text-white shadow-xl shadow-emerald-900/20 transition active:scale-[0.99] lg:hidden"
         (click)="cartEl.scrollIntoView({ behavior: 'smooth' })"
       >
-        <span><i class="pi pi-shopping-cart mr-2"></i>{{ itemCount() }} sản phẩm</span>
-        <span class="font-semibold">{{ payable() | number: '1.0-0' }} ₫</span>
+        <span class="flex items-center gap-2 text-sm font-medium">
+          <i class="pi pi-shopping-cart"></i>{{ itemCount() }} sản phẩm
+        </span>
+        <span class="font-semibold tabular-nums">{{ payable() | number: '1.0-0' }} ₫</span>
       </button>
     }
 
@@ -397,33 +448,35 @@ const COLORS = [
       [modal]="true"
       [closable]="false"
       [visible]="!!pending()"
-      [style]="{ width: '24rem' }"
+      [style]="{ width: '24rem', maxWidth: '92vw' }"
     >
       @if (pending(); as p) {
         <div class="space-y-3 text-center">
           @if (qrFailed()) {
-            <div class="rounded-lg bg-red-50 px-3 py-6 text-sm text-red-700">
+            <div class="flex flex-col items-center gap-2 rounded-xl bg-red-50 px-3 py-6 text-sm text-red-700">
+              <i class="pi pi-exclamation-circle text-xl text-red-500"></i>
               Không tải được mã QR. Kiểm tra kết nối mạng và thông tin ngân hàng trong environment.
             </div>
           } @else {
             <img
               [src]="qrUrl()"
               alt="Mã QR chuyển khoản"
-              class="mx-auto w-64 rounded-lg border border-slate-200"
+              class="mx-auto w-64 rounded-xl border border-slate-200 shadow-sm"
               (error)="qrFailed.set(true)"
             />
           }
 
-          <div class="text-2xl font-semibold text-slate-800">{{ p.total | number: '1.0-0' }} ₫</div>
+          <div class="text-2xl font-semibold tabular-nums text-slate-800">{{ p.total | number: '1.0-0' }} ₫</div>
 
-          <div class="text-sm text-slate-600">
+          <div class="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
             <div>{{ bank.bankId }} · {{ bank.accountNo }}</div>
             <div>{{ bank.accountName }}</div>
-            <div>Nội dung: <b>HD{{ p.id }}</b></div>
+            <div class="mt-0.5">Nội dung: <b class="text-slate-800">HD{{ p.id }}</b></div>
           </div>
 
-          <p class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Chỉ bấm "Đã nhận tiền" khi đã thấy tiền về tài khoản (kiểm tra bằng app ngân hàng).
+          <p class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs text-amber-800">
+            <i class="pi pi-info-circle mt-px shrink-0 text-amber-500"></i>
+            <span>Chỉ bấm "Đã nhận tiền" khi đã thấy tiền về tài khoản (kiểm tra bằng app ngân hàng).</span>
           </p>
         </div>
       }
