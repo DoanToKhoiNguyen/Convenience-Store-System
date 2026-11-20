@@ -14,6 +14,11 @@ export class ShiftService {
                 tuan: r?.tuan,
                 ca: Array.isArray(r?.ca) ? r.ca : [],
                 da_chon: Array.isArray(r?.da_chon) ? r.da_chon : [],
+                da_ky: Array.isArray(r?.da_ky) ? r.da_ky : [],
+                gioi_han: {
+                    nhan_vien: Number(r?.gioi_han?.nhan_vien ?? 2),
+                    quan_ly: Number(r?.gioi_han?.quan_ly ?? 1),
+                },
             })),
         );
     }

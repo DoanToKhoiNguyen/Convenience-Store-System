@@ -14,6 +14,7 @@ use App\Domains\BaoCao\Http\Controllers\BaoCaoController;
 use App\Domains\SanPham\Http\Controllers\SanPhamCongKhaiController;
 use App\Domains\DanhMuc\Http\Controllers\DanhMucController;
 use App\Domains\LoHang\Http\Controllers\LoHangController;
+use App\Domains\Auth\Http\Controllers\CaptchaController;
 use App\Models\SanPham;
 use Illuminate\Routing\Router;
 
@@ -21,7 +22,8 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::post('/login', [AuthController::class, 'login']);
+Route::get('/captcha', [CaptchaController::class, 'tao'])->middleware('throttle:30,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
 
 // Route yêu cầu phải có Token hợp lệ mới được gọi

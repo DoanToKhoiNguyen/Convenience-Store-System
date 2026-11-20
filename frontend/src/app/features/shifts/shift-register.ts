@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
-import { RegisterData } from './shift.model';
+import { RegisterData, SlotInfo } from './shift.model';
 import { ShiftService } from './shift.service';
 import { addDays, displayDate, slotKey, timeShort, weekDays } from './week.util';
 
@@ -107,12 +107,24 @@ import { addDays, displayDate, slotKey, timeShort, weekDays } from './week.util'
                       <button
                         type="button"
                         [class]="cellClass(day.date, ca.MaCa)"
-                        [disabled]="!open() || busy()"
+                        [disabled]="!open() || busy() || blocked(day.date, ca.MaCa)"
                         [attr.aria-pressed]="has(day.date, ca.MaCa)"
+                        [attr.title]="cellTitle(day.date, ca.MaCa)"
                         (click)="toggle(day.date, ca.MaCa)"
                       >
                         @if (has(day.date, ca.MaCa)) {
                           <i class="pi pi-check"></i>
+                        }
+                        @if (slotInfo(day.date, ca.MaCa); as info) {
+                          <span
+                            class="flex items-center gap-0.5 text-[10px] font-medium leading-none tabular-nums"
+                            [class]="has(day.date, ca.MaCa) ? 'text-white/80' : 'text-slate-400'"
+                          >
+                            {{ info.so_nhan_vien }}/{{ maxStaff() }}
+                            @if (info.so_quan_ly > 0) {
+                              <i class="pi pi-shield text-[8px]"></i>
+                            }
+                          </span>
                         }
                       </button>
                     </td>
@@ -125,7 +137,11 @@ import { addDays, displayDate, slotKey, timeShort, weekDays } from './week.util'
 
         <div class="mt-3 flex items-start gap-2.5 rounded-xl border border-slate-200/70 bg-white px-4 py-3 text-xs text-slate-500 shadow-sm">
           <i class="pi pi-info-circle mt-0.5 text-emerald-500"></i>
-          <span>Bấm vào ô để chọn hoặc bỏ chọn ca. Nhớ bấm "Lưu đăng ký" để lưu thay đổi.</span>
+          <span>
+            Bấm vào ô để chọn hoặc bỏ chọn ca. Mỗi ca tối đa <b class="text-slate-700">2 nhân viên</b>;
+            quản lý/chủ có thể đăng ký chung ca với nhân viên (tổng tối đa 3 người) và mỗi ca chỉ một quản lý.
+            Số <b class="text-slate-700">x/{{ maxStaff() }}</b> trên ô là số nhân viên đã đăng ký. Nhớ bấm "Lưu đăng ký" để lưu thay đổi.
+          </span>
         </div>
       }
     } @else if (loading()) {
@@ -168,6 +184,16 @@ export class ShiftRegister {
     return a.size !== b.size || [...a].some((k) => !b.has(k));
   });
 
+  readonly maxStaff = computed(() => this.data()?.gioi_han?.nhan_vien ?? 2);
+
+  private readonly slotMap = computed(() => {
+    const map = new Map<string, SlotInfo>();
+    for (const s of this.data()?.da_ky ?? []) {
+      map.set(slotKey(String(s.Ngay).slice(0, 10), Number(s.MaCa)), s);
+    }
+    return map;
+  });
+
   constructor() {
     this.load();
   }
@@ -194,8 +220,25 @@ export class ShiftRegister {
     return this.selected().has(slotKey(date, ca));
   }
 
+  slotInfo(date: string, ca: number) {
+    return this.slotMap().get(slotKey(date, ca));
+  }
+
+  blocked(date: string, ca: number) {
+    return !this.has(date, ca) && this.slotInfo(date, ca)?.con_cho === false;
+  }
+
+  cellTitle(date: string, ca: number): string {
+    if (!this.open()) return '';
+    if (this.blocked(date, ca)) return 'Ca đã đủ người đăng ký';
+    const info = this.slotInfo(date, ca);
+    return info
+      ? `Đã đăng ký ${info.so_nhan_vien}/${this.maxStaff()} nhân viên`
+      : `Còn trống ${this.maxStaff()}/${this.maxStaff()} nhân viên`;
+  }
+
   toggle(date: string, ca: number) {
-    if (!this.open() || this.busy()) return;
+    if (!this.open() || this.busy() || this.blocked(date, ca)) return;
     const k = slotKey(date, ca);
     this.selected.update((s) => {
       const next = new Set(s);
@@ -206,9 +249,12 @@ export class ShiftRegister {
   }
 
   cellClass(date: string, ca: number): string {
-    const base = 'flex h-14 w-full items-center justify-center rounded-xl border text-lg transition ';
+    const base = 'flex h-16 w-full flex-col items-center justify-center gap-1 rounded-xl border text-lg transition ';
     if (this.has(date, ca)) {
       return base + 'border-emerald-600 bg-emerald-600 text-white shadow-sm';
+    }
+    if (this.blocked(date, ca)) {
+      return base + 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300';
     }
     return (
       base +
@@ -234,6 +280,7 @@ export class ShiftRegister {
         this.original.set(new Set(this.selected()));
         this.success.set(res.message);
         setTimeout(() => this.success.set(null), 4000);
+        this.load(); // tải lại số chỗ đã đăng ký của từng ca
       },
       error: (e: HttpErrorResponse) => {
         this.busy.set(false);

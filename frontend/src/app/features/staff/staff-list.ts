@@ -27,7 +27,14 @@ import { StaffService } from './staff.service';
         </div>
       </div>
       @if (canEdit()) {
-        <p-button label="Thêm nhân viên" icon="pi pi-plus" (onClick)="openCreate()" />
+        <button
+          type="button"
+          class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-600 hover:to-teal-700 hover:shadow-emerald-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 active:scale-[0.98]"
+          (click)="openCreate()"
+        >
+          <i class="pi pi-plus text-xs"></i>
+          Thêm nhân viên
+        </button>
       }
     </div>
 

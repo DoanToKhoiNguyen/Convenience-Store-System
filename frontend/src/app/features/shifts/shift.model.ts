@@ -18,10 +18,25 @@ export interface Slot {
     MaCa: number;
 }
 
+export interface SlotInfo {
+    Ngay: string;
+    MaCa: number;
+    so_nhan_vien: number;
+    so_quan_ly: number;
+    con_cho: boolean;
+}
+
+export interface ShiftLimit {
+    nhan_vien: number;
+    quan_ly: number;
+}
+
 export interface RegisterData {
     tuan: WeekInfo;
     ca: Shift[];
     da_chon: Slot[];
+    da_ky: SlotInfo[];
+    gioi_han: ShiftLimit;
 }
 
 export interface TimetableEntry {
