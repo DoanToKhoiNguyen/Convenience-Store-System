@@ -27,4 +27,8 @@ export class StaffService {
     update(id: number, body: StaffPayload) {
         return this.http.put(`${this.url}/${id}`, body);
     }
+
+    resetPassword(id: number) {
+        return this.http.post<{ message: string }>(`${this.url}/${id}/dat-lai-mat-khau`, {});
+    }
 }

@@ -138,8 +138,10 @@ import { addDays, displayDate, slotKey, timeShort, weekDays } from './week.util'
         <div class="mt-3 flex items-start gap-2.5 rounded-xl border border-slate-200/70 bg-white px-4 py-3 text-xs text-slate-500 shadow-sm">
           <i class="pi pi-info-circle mt-0.5 text-emerald-500"></i>
           <span>
-            Bấm vào ô để chọn hoặc bỏ chọn ca. Mỗi ca tối đa <b class="text-slate-700">2 nhân viên</b>;
-            quản lý/chủ có thể đăng ký chung ca với nhân viên (tổng tối đa 3 người) và mỗi ca chỉ một quản lý.
+            Bấm vào ô để chọn hoặc bỏ chọn ca. Mỗi ca tối đa <b class="text-slate-700">{{ maxStaff() }} nhân viên</b>;
+            quản lý/chủ có thể đăng ký chung ca với nhân viên (tổng tối đa
+            <b class="text-slate-700">{{ maxStaff() + maxManager() }} người</b>) và mỗi ca tối đa
+            <b class="text-slate-700">{{ maxManager() }} quản lý</b>.
             Số <b class="text-slate-700">x/{{ maxStaff() }}</b> trên ô là số nhân viên đã đăng ký. Nhớ bấm "Lưu đăng ký" để lưu thay đổi.
           </span>
         </div>
@@ -185,6 +187,7 @@ export class ShiftRegister {
   });
 
   readonly maxStaff = computed(() => this.data()?.gioi_han?.nhan_vien ?? 2);
+  readonly maxManager = computed(() => this.data()?.gioi_han?.quan_ly ?? 1);
 
   private readonly slotMap = computed(() => {
     const map = new Map<string, SlotInfo>();

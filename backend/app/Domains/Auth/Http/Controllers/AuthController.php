@@ -9,28 +9,11 @@ use App\Domains\Auth\Http\Requests\LoginRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
-use App\Domains\Auth\Services\CaptchaService;
 
 class AuthController extends Controller
 {
-    public function login(LoginRequest $request, CaptchaService $captcha)
+    public function login(LoginRequest $request)
     {
-        if ($captcha->batHay()) {
-            $request->validate([
-                'captcha_id'   => 'required|string',
-                'captcha_code' => 'required|string|max:10',
-            ], [
-                'captcha_id.required'   => 'Mã xác nhận đã hết hạn, vui lòng thử lại.',
-                'captcha_code.required' => 'Vui lòng nhập mã xác nhận.',
-            ]);
-
-            if (!$captcha->kiemTra($request->input('captcha_id'), $request->input('captcha_code'))) {
-                return response()->json([
-                    'message' => 'Mã xác nhận không đúng hoặc đã hết hạn.',
-                    'errors'  => ['captcha_code' => ['Mã xác nhận không đúng hoặc đã hết hạn.']],
-                ], 422);
-            }
-        }
         // Tìm tài khoản theo tên đăng nhập
         $taiKhoan = TaiKhoan::where('TenDangNhap', $request->TenDangNhap)->first();
 

@@ -6,6 +6,8 @@ import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 import { PurchaseOrder } from './purchase.model';
 import { PurchaseService } from './purchase.service';
 import { AuthService } from '../../core/auth/auth.service';
@@ -23,7 +25,8 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
 
 @Component({
   selector: 'app-purchase-list',
-  imports: [TableModule, TagModule, ButtonModule, DialogModule, DatePipe, DecimalPipe],
+  imports: [TableModule, TagModule, ButtonModule, DialogModule, ConfirmDialogModule, DatePipe, DecimalPipe],
+  providers: [ConfirmationService],
   template: `
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
@@ -253,12 +256,15 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
         }
       </ng-template>
     </p-dialog>
+
+    <p-confirmdialog />
   `,
 })
 export class PurchaseList {
   private service = inject(PurchaseService);
 
   private auth = inject(AuthService);
+  private confirm = inject(ConfirmationService);
   // Chỉ chủ và quản lý được duyệt, hủy. Nhân viên chỉ xem và nhận hàng.
   readonly canApprove = computed(() => this.auth.hasAnyRole([ROLE.OWNER, ROLE.MANAGER]));
 
@@ -327,17 +333,31 @@ export class PurchaseList {
   }
 
   approve(o: PurchaseOrder) {
-    if (!confirm(`Duyệt phiếu nhập #${o.MaPhieuNhap}?`)) return;
-    this.run(this.service.approve(o.MaPhieuNhap), 'Đã duyệt phiếu nhập.', () =>
-      this.selected.set(null),
-    );
+    this.confirm.confirm({
+      header: 'Duyệt phiếu nhập',
+      message: `Duyệt phiếu nhập #${o.MaPhieuNhap}?`,
+      icon: 'pi pi-check-circle',
+      acceptLabel: 'Duyệt',
+      rejectLabel: 'Hủy',
+      accept: () =>
+        this.run(this.service.approve(o.MaPhieuNhap), 'Đã duyệt phiếu nhập.', () =>
+          this.selected.set(null),
+        ),
+    });
   }
 
   cancel(o: PurchaseOrder) {
-    if (!confirm(`Hủy phiếu nhập #${o.MaPhieuNhap}?`)) return;
-    this.run(this.service.cancel(o.MaPhieuNhap), 'Đã hủy phiếu nhập.', () =>
-      this.selected.set(null),
-    );
+    this.confirm.confirm({
+      header: 'Hủy phiếu nhập',
+      message: `Hủy phiếu nhập #${o.MaPhieuNhap}?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Hủy phiếu',
+      rejectLabel: 'Không',
+      accept: () =>
+        this.run(this.service.cancel(o.MaPhieuNhap), 'Đã hủy phiếu nhập.', () =>
+          this.selected.set(null),
+        ),
+    });
   }
 
   confirmReceive() {

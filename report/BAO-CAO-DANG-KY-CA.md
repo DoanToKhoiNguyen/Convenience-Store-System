@@ -13,13 +13,14 @@ Phạm vi: xử lý các mục **1 → 2 → 3 → 4 → 9** trong danh sách 20
 | 2 | Giao diện tự đồng bộ khi backend từ chối (422) | Đã sửa |
 | 3 | Ca chỉ có quản lý không còn trông như ca trống trên thời khóa biểu | Đã sửa |
 | 4 | Tooltip ô bị khóa nêu đúng lý do | Đã sửa |
-| 9 | Feature test tự động cho quy tắc 2 NV / 1 QL | Đã thêm, 11 test pass |
+| 9 | Feature test tự động cho quy tắc 2 NV / 1 QL | Đã thêm, 14 test trong file (16 test toàn suite) |
 
 Kết quả kiểm chứng:
 
 - `php -l` trên controller: không lỗi cú pháp.
-- `vendor/bin/phpunit` toàn bộ backend: **13 tests, 64 assertions — OK** (11 test mới + 2 test có sẵn).
+- `php -d extension=pdo_sqlite vendor/bin/phpunit` toàn bộ backend: **16 tests, 90 assertions — OK**.
 - `npx tsc -p tsconfig.app.json --noEmit` (frontend): không lỗi.
+- `npx ng build --configuration development` (frontend): build thành công (sau khi bỏ `provideAnimationsAsync` — xem mục 11).
 
 Quy tắc nghiệp vụ được bảo đảm:
 
@@ -212,7 +213,7 @@ Cấu trúc chung:
 - `dangNhap($user)` tạo token Sanctum thật và gắn header `Bearer`. `TaiKhoan` không implement `Authenticatable` nên `Sanctum::actingAs()` không dùng được; đồng thời gọi `auth->forgetGuards()` vì trong một test, Laravel cache user đã resolve giữa các request.
 - `luu($user, $slots)` gọi `PUT /api/dang-ky-ca/tuan-sau` với body `{ ChiTiet: [{ Ngay, MaCa }] }`.
 
-### Danh sách test (11)
+### Danh sách test (14)
 
 | # | Test | Kỳ vọng |
 |---|------|---------|
@@ -227,6 +228,9 @@ Cấu trúc chung:
 | 9 | `test_nhan_vien_da_dang_ky_van_thay_ca_cua_minh_con_cho` | Người đã đăng ký vẫn thấy `con_cho=true` và `da_chon` đúng |
 | 10 | `test_thoi_khoa_bieu_chi_hien_ten_nhan_vien_va_dem_so_quan_ly` | `data` chỉ có tên NV; `quan_ly` = `[{ Ngay, MaCa, so_luong: 2 }]` (quản lý + chủ) |
 | 11 | `test_tai_khoan_bi_khoa_khong_hien_trong_thoi_khoa_bieu_va_khong_tinh_cho` | Tài khoản bị khóa không tính chỗ, không hiện tên, nhưng dòng đăng ký vẫn còn trong DB |
+| 12 | `test_thang_chuc_giua_tuan_doi_vai_tro_cua_dang_ky_da_co` | A đăng ký khi còn là NV, được thăng chức: chỗ NV trống ra cho C, A chiếm chỗ QL; QL khác thấy `da_co_quan_ly` và bị 422; thời khóa biểu coi A là QL |
+| 13 | `test_quan_ly_moi_thang_chuc_doi_duoc_sang_ca_khac` | A (đã là QL) đổi sang ca khác: ca cũ trống, ca mới có 1 QL; QL khác bị 422 ở ca mới nhưng đăng ký được ca cũ |
+| 14 | `test_tai_khoan_bi_khoa_bi_chan_moi_request` | Request đầu trả 403 `ACCOUNT_LOCKED`, token bị thu hồi; các request sau trả 401 |
 
 ### Lưu ý vận hành môi trường test
 
@@ -243,10 +247,10 @@ php -d extension=pdo_sqlite vendor/bin/phpunit
 ### Kết quả chạy
 
 ```
-PHPUnit 12.5.40 ... OK (13 tests, 64 assertions)
+PHPUnit 12.5.40 ... OK (16 tests, 90 assertions)
 ```
 
-Frontend: `npx tsc -p tsconfig.app.json --noEmit` → không lỗi.
+Frontend: `npx tsc -p tsconfig.app.json --noEmit` → không lỗi; `npx ng build --configuration development` → build thành công.
 
 ### Sự cố phát sinh khi chạy PostgreSQL (đã sửa)
 
@@ -280,9 +284,11 @@ SQL sinh ra trên Postgres: `"ld"."NgayDangKy" as "Ngay"`. Sau khi sửa, endpoi
 | `backend/app/Domains/CaLamViec/Http/Controllers/LichDangKyController.php` | Cache lock theo tuần + bắt `LockTimeoutException` (mục 1); `ly_do_khoa` trong `da_ky` (mục 4); tổng hợp `quan_ly` trong `thoiKhoaBieu` (mục 3) |
 | `frontend/src/app/features/shifts/shift.model.ts` | `SlotInfo.ly_do_khoa`, `TimetableManager`, `TimetableData.quan_ly` |
 | `frontend/src/app/features/shifts/shift.service.ts` | Map `da_ky`, `gioi_han`, `quan_ly` từ response |
-| `frontend/src/app/features/shifts/shift-register.ts` | `load(silent)`, đồng bộ sau 422/thành công, banner loại trừ nhau, `cellTitle()` theo `ly_do_khoa` |
+| `frontend/src/app/features/shifts/shift-register.ts` | `load(silent)`, đồng bộ sau 422/thành công, banner loại trừ nhau, `cellTitle()` theo `ly_do_khoa`, ghi chú giới hạn lấy động từ `gioi_han` |
 | `frontend/src/app/features/shifts/shift-timetable.ts` | Chip "Quản lý", bộ đếm `NV · QL`, tiêu đề tổng kết rõ nghĩa |
-| `backend/tests/Feature/LichDangKyTest.php` | **Mới** — 11 feature test |
+| `frontend/src/app/app.config.ts` | Bỏ `provideAnimationsAsync()` — không cần cho PrimeNG 22, gây lỗi build vì thiếu `@angular/animations` |
+| `backend/database/migrations/2026_11_23_000001_add_index_ngay_ca_to_lich_dang_ky_table.php` | **Mới** — index `(NgayDangKy, MaCa)` cho truy vấn đếm chỗ |
+| `backend/tests/Feature/LichDangKyTest.php` | **Mới** — 14 feature test |
 | `report/BAO-CAO-DANG-KY-CA.md` | **Mới** — báo cáo này |
 
 Không đổi schema, không đổi route, không đổi payload request. Response chỉ **bổ sung** khóa (`ly_do_khoa`, `quan_ly`, `gioi_han`) nên client cũ không vỡ.
@@ -338,16 +344,16 @@ Không đổi schema, không đổi route, không đổi payload request. Respon
 | 5–6 | Nhãn `x/2` gây hiểu nhầm với quản lý | Đề xuất hiển thị `x/3` tổng hoặc tách "NV + QL" |
 | 7 | Nhấp nháy sau khi lưu | Đã giải quyết một phần nhờ `load(true)` của mục 2 |
 | 8 | Nhãn "Tổng số ca của nhân viên" | Đã đổi chữ ở mục 3 |
-| 10 | Hardcode "tối đa 3 người" trong ghi chú | Nên dùng `gioi_han.nhan_vien + gioi_han.quan_ly` |
+| 10 | Hardcode "tối đa 3 người" trong ghi chú | **Đã sửa** — hiển thị động theo `gioi_han` (xem mục 11) |
 | 11 | Dữ liệu cũ vượt giới hạn (quản lý chèn thành người thứ 4) | Cần bước rà dữ liệu một lần |
-| 12 | Đổi vai trò giữa tuần tạo 2 quản lý trong ca cũ | Edge case, cần kiểm tra khi đổi vai trò |
+| 12 | Đổi vai trò giữa tuần tạo 2 quản lý trong ca cũ | **Đã kiểm chứng** — vai trò đọc theo hiện tại; trường hợp ca cũ đã có QL khác thì lần lưu kế tiếp của người được thăng chức bị 422 (xem mục 11) |
 | 13 | Icon khiên `text-[8px]` khó thấy, thiếu legend | Nên tăng lên `text-[10px]` + chú giải dưới bảng |
 | 14 | Ô khóa chưa có `aria-label` lý do | Cải thiện khả năng tiếp cận |
 | 15 | Câu "Còn trống 2/2 nhân viên" chưa tự nhiên | Đổi thành "Còn 2 chỗ" |
 | 16 | Ô trống không hiện `0/2` | Nhất quán số đếm |
 | 17 | "x người" trên thời khóa biểu | Đã đổi thành `x NV · y QL` ở mục 3 |
-| 18 | Thiếu index `lich_dang_ky (NgayDangKy, MaCa)` | Cân nhắc migration index khi dữ liệu lớn |
-| 19 | Chưa kiểm chứng AOT trên trình duyệt | `ng build` đang fail sẵn do thiếu `@angular/animations` |
+| 18 | Thiếu index `lich_dang_ky (NgayDangKy, MaCa)` | **Đã sửa** — migration `2026_11_23_000001` |
+| 19 | Chưa kiểm chứng AOT trên trình duyệt | **Đã sửa** — bỏ `provideAnimationsAsync`, `ng build` pass |
 | 20 | Xác nhận cách hiểu "không trùng ca" | Đang hiểu là mỗi ca tối đa 1 quản lý/chủ |
 
 Ngoài ra, message lỗi hiện dựng bằng `"Ca {$tenCa}..."` trong khi `TenCa` đã có chữ "Ca" (ra "Ca Ca sáng..."). Đây là lỗi chữ nghĩa nhỏ, test đang bám đúng hành vi hiện tại; có thể sửa thành `"{$tenCa}"` nếu muốn.
@@ -362,9 +368,10 @@ cd backend
 php -l app/Domains/CaLamViec/Http/Controllers/LichDangKyController.php
 php -d extension=pdo_sqlite vendor/bin/phpunit
 
-# Frontend — type-check
+# Frontend — type-check + build (build cũng kiểm tra template)
 cd ../frontend
 npx tsc -p tsconfig.app.json --noEmit
+npx ng build --configuration development
 ```
 
 Kịch bản thủ công đề xuất trên UI (2 tài khoản trình duyệt ẩn danh):
@@ -375,3 +382,40 @@ Kịch bản thủ công đề xuất trên UI (2 tài khoản trình duyệt �
 4. Quản lý D mở trang → ô còn chọn được, đăng ký → ô hiện 2/2 + khiên.
 5. Quản lý E (hoặc chủ) mở trang → ô khóa, tooltip "Ca đã có quản lý/chủ đăng ký".
 6. Thời khóa biểu: ca hiện tên A, B + chip "Quản lý" + dòng "2 NV · 1 QL", không có tên D/E.
+
+---
+
+## 11. Cập nhật bổ sung (cuối ngày 23/11/2026)
+
+### 11.1. Ghi chú giới hạn ca hiển thị động (mục 10)
+
+`shift-register.ts` không còn viết cứng "2 nhân viên / tổng 3 người". Ghi chú lấy từ `gioi_han` của API:
+
+- `maxStaff()` = `gioi_han.nhan_vien` (mặc định 2)
+- `maxManager()` = `gioi_han.quan_ly` (mặc định 1)
+
+Câu hiển thị: "Mỗi ca tối đa {maxStaff} nhân viên; ... tổng tối đa {maxStaff + maxManager} người và mỗi ca tối đa {maxManager} quản lý." Đổi giới hạn ở backend là giao diện tự khớp.
+
+### 11.2. Index chống chậm khi dữ liệu lớn (mục 18)
+
+Migration `2026_11_23_000001_add_index_ngay_ca_to_lich_dang_ky_table.php` thêm `lich_dang_ky_ngay_ca_index (NgayDangKy, MaCa)`. Unique hiện có bắt đầu bằng `MaTaiKhoan` nên không dùng được cho truy vấn đếm chỗ theo ngày + ca. Đã chạy `php artisan migrate` trên PostgreSQL và xác nhận index tồn tại trong `\d lich_dang_ky`.
+
+### 11.3. Thăng chức giữa tuần (mục 12)
+
+Không cần sửa code: cả `tuanSau()` và `luuTuanSau()` đều join `tai__khoan` và đọc `MaVaiTro` **tại thời điểm request**, không lưu vai trò vào `lich_dang_ky`. Kịch bản đã kiểm chứng bằng test:
+
+1. Thứ 2: A (NV) đăng ký thứ 5.
+2. Thứ 4: A được đổi `MaVaiTro` sang quản lý.
+3. Đăng ký cũ của A lập tức được tính là **quản lý**: chỗ nhân viên trống ra cho người khác, chỗ quản lý bị A chiếm.
+4. Nếu ca cũ đã có quản lý khác, lần lưu kế tiếp của A bị 422 ("đã có quản lý đăng ký"). A vẫn đổi được sang ca khác; ca mới tính A là quản lý.
+5. Thời khóa biểu bỏ tên A khỏi danh sách nhân viên và đếm A vào `quan_ly`.
+
+Lưu ý còn lại: nếu A được thăng chức khi ca cũ **đã có một quản lý khác**, ca đó tạm thời có 2 quản lý trong DB. Không có thao tác ghi nào xảy ra lúc thăng chức để tự dọn; lần lưu kế tiếp của A (hoặc bất kỳ ai đụng vào ca đó) sẽ bị chặn bởi quy tắc 1 quản lý/ca, buộc A chọn ca khác.
+
+### 11.4. Tài khoản bị khóa chặn mọi request
+
+Middleware `CheckAccountStatus` (alias `active`) áp cho toàn bộ nhóm `auth:sanctum` trong `routes/api.php`: request đầu tiên sau khi khóa nhận **403** `{ code: "ACCOUNT_LOCKED" }` và toàn bộ token bị xóa; các request sau trả **401**. Test `test_tai_khoan_bi_khoa_bi_chan_moi_request` khóa hành vi này.
+
+### 11.5. Build frontend
+
+`app.config.ts` đã bỏ `provideAnimationsAsync()`. App không dùng animation API của Angular; PrimeNG 22 (kể cả ripple) chuyển động bằng CSS nên không cần `@angular/animations`. `ng build` từ chỗ fail vì thiếu package nay chạy thành công và trở thành bước kiểm tra template.

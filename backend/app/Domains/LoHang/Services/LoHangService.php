@@ -61,7 +61,7 @@ class LoHangService
     }
 
     /**
-     * Bán hàng: trừ từ lô có hạn gần nhất trước, bỏ qua lô đã hết hạn.
+     * Bán hàng: trừ hết lô nhập trước rồi mới sang lô nhập sau, bỏ qua lô đã hết hạn.
      * Trả về [['MaLoHang' => .., 'MaLo' => .., 'SoLuong' => ..], ...].
      */
     public function xuatBan(int $maSanPham, int $soLuong, string $lyDo, int $maTaiKhoan): array
@@ -109,7 +109,7 @@ class LoHangService
     /**
      * Cập nhật tồn kho thủ công.
      * - Có chọn lô: thay đổi áp dụng cho lô đó.
-     * - Không chọn, giảm: trừ lô có hạn gần nhất trước (kể cả lô đã hết hạn).
+     * - Không chọn, giảm: trừ lô nhập trước nhất (kể cả lô đã hết hạn).
      * - Không chọn, tăng: cộng vào lô mới nhất.
      */
     public function capNhatThuCong(int $maSanPham, int $soLuongMoi, ?int $maLo, string $lyDo, int $maTaiKhoan): SanPham
@@ -301,7 +301,7 @@ class LoHangService
         return $sp->TienToLo . '-' . str_pad((string) $sp->SoLoCuoi, 3, '0', STR_PAD_LEFT);
     }
 
-    /** Rút số lượng từ các lô theo thứ tự hạn gần nhất trước (lô không hạn xếp cuối). */
+    /** Rút số lượng từ các lô theo thứ tự nhập trước (FIFO): hết lô cũ mới sang lô mới. */
     private function rutTuCacLo(SanPham $sp, int $soLuong, bool $chiConHan): array
     {
         $q = LoHang::where('MaSanPham', $sp->MaSanPham)->where('SoLuongCon', '>', 0);
@@ -310,8 +310,7 @@ class LoHangService
                 ->orWhere('HanSuDung', '>=', Carbon::today()->toDateString()));
         }
 
-        $los = $q->orderByRaw('"HanSuDung" IS NULL')
-            ->orderBy('HanSuDung')
+        $los = $q->orderBy('NgayNhap')
             ->orderBy('MaLoHang')
             ->lockForUpdate()
             ->get();

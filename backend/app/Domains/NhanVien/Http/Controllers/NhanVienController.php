@@ -64,7 +64,30 @@ class NhanVienController extends Controller
     return response()->json(['message' => 'Thêm nhân viên thành công!', 'data' => $nhanVien], 201);
 }
 
-public function update(Request $request, $id): JsonResponse
+    /** Đặt lại mật khẩu của một nhân viên về mật khẩu mặc định (thu hồi mọi phiên đăng nhập). */
+    public function datLaiMatKhau(Request $request, $id): JsonResponse
+    {
+        $nhanVien = TaiKhoan::find($id);
+        if (!$nhanVien) {
+            return response()->json(['message' => 'Không tìm thấy nhân viên.'], 404);
+        }
+
+        // Tự đặt lại mật khẩu của mình sẽ bỏ qua bước nhập mật khẩu cũ.
+        if ((int) $request->user()->MaTaiKhoan === (int) $nhanVien->MaTaiKhoan) {
+            return response()->json([
+                'message' => 'Hãy đổi mật khẩu của bạn ở trang thông tin cá nhân.',
+            ], 400);
+        }
+
+        $nhanVien->update(['MatKhau' => Hash::make(self::MAT_KHAU_MAC_DINH)]);
+        $nhanVien->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Đã đặt lại mật khẩu về ' . self::MAT_KHAU_MAC_DINH . '. Nhân viên cần đăng nhập lại.',
+        ]);
+    }
+
+    public function update(Request $request, $id): JsonResponse
 {
     $nhanVien = TaiKhoan::find($id);
     if (!$nhanVien) {

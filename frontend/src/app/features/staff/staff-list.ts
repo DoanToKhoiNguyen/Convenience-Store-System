@@ -5,8 +5,10 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
+import { ConfirmationService } from 'primeng/api';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE, ROLE_LABEL } from '../../core/auth/roles';
 import { Staff, StaffPayload } from './staff.model';
@@ -14,7 +16,17 @@ import { StaffService } from './staff.service';
 
 @Component({
   selector: 'app-staff-list',
-  imports: [ReactiveFormsModule, TableModule, TagModule, ButtonModule, DialogModule, InputTextModule, TooltipModule],
+  imports: [
+    ReactiveFormsModule,
+    TableModule,
+    TagModule,
+    ButtonModule,
+    DialogModule,
+    ConfirmDialogModule,
+    InputTextModule,
+    TooltipModule,
+  ],
+  providers: [ConfirmationService],
   template: `
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
@@ -66,12 +78,11 @@ import { StaffService } from './staff.service';
         [paginator]="true"
         [rows]="10"
         dataKey="MaTaiKhoan"
-        [tableStyle]="{ 'min-width': '52rem' }"
+        [tableStyle]="{ 'min-width': '44rem' }"
       >
         <ng-template #header>
           <tr class="bg-slate-50/80">
             <th class="min-w-[14rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Họ tên</th>
-            <th class="min-w-[9rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tên đăng nhập</th>
             <th class="min-w-[14rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Email</th>
             <th class="min-w-[9rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Số điện thoại</th>
             <th class="min-w-[8rem] px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Vai trò</th>
@@ -99,7 +110,6 @@ import { StaffService } from './staff.service';
                 </div>
               </div>
             </td>
-            <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-600">{{ s.TenDangNhap }}</td>
             <td class="whitespace-normal! px-4 py-3 text-slate-600">{{ s.Email }}</td>
             <td class="whitespace-nowrap px-4 py-3 tabular-nums text-slate-600">{{ s.SoDienThoai ?? '—' }}</td>
             <td class="whitespace-nowrap px-4 py-3">
@@ -129,6 +139,17 @@ import { StaffService } from './staff.service';
                   />
                   @if (!isMe(s)) {
                     <p-button
+                      icon="pi pi-key"
+                      size="small"
+                      [text]="true"
+                      [rounded]="true"
+                      [disabled]="busy()"
+                      ariaLabel="Đặt lại mật khẩu"
+                      pTooltip="Đặt lại mật khẩu về mặc định"
+                      tooltipPosition="top"
+                      (onClick)="resetPassword(s)"
+                    />
+                    <p-button
                       [icon]="isActive(s) ? 'pi pi-lock' : 'pi pi-lock-open'"
                       size="small"
                       [severity]="isActive(s) ? 'danger' : 'success'"
@@ -149,7 +170,7 @@ import { StaffService } from './staff.service';
 
         <ng-template #emptymessage>
           <tr>
-            <td [attr.colspan]="canEdit() ? 7 : 6" class="px-4 py-12">
+            <td [attr.colspan]="canEdit() ? 6 : 5" class="px-4 py-12">
               @if (loading()) {
                 <div class="flex flex-col items-center gap-2 text-slate-400">
                   <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
@@ -191,24 +212,24 @@ import { StaffService } from './staff.service';
           </div>
 
           <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Họ tên</label>
-            <input pInputText formControlName="HoTen" class="w-full" />
+            <label for="sl-hoten" class="mb-1 block text-sm font-medium text-slate-700">Họ tên</label>
+            <input pInputText id="sl-hoten" formControlName="HoTen" class="w-full" />
           </div>
 
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">Tên đăng nhập</label>
-              <input pInputText formControlName="TenDangNhap" class="w-full" />
+              <label for="sl-tendangnhap" class="mb-1 block text-sm font-medium text-slate-700">Tên đăng nhập</label>
+              <input pInputText id="sl-tendangnhap" formControlName="TenDangNhap" class="w-full" />
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">Số điện thoại</label>
-              <input pInputText formControlName="SoDienThoai" class="w-full" />
+              <label for="sl-sdt" class="mb-1 block text-sm font-medium text-slate-700">Số điện thoại</label>
+              <input pInputText id="sl-sdt" formControlName="SoDienThoai" class="w-full" />
             </div>
           </div>
 
           <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Email</label>
-            <input pInputText type="email" formControlName="Email" class="w-full" />
+            <label for="sl-email" class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+            <input pInputText id="sl-email" type="email" formControlName="Email" class="w-full" />
           </div>
 
           @if (!editing()) {
@@ -227,8 +248,9 @@ import { StaffService } from './staff.service';
 
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">Vai trò</label>
+              <label for="sl-vaitro" class="mb-1 block text-sm font-medium text-slate-700">Vai trò</label>
               <select
+                id="sl-vaitro"
                 formControlName="MaVaiTro"
                 class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100 disabled:text-slate-400"
               >
@@ -240,8 +262,9 @@ import { StaffService } from './staff.service';
 
             @if (editing()) {
               <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Trạng thái</label>
+                <label for="sl-trangthai" class="mb-1 block text-sm font-medium text-slate-700">Trạng thái</label>
                 <select
+                  id="sl-trangthai"
                   formControlName="TrangThai"
                   class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100 disabled:text-slate-400"
                 >
@@ -278,12 +301,15 @@ import { StaffService } from './staff.service';
         />
       </ng-template>
     </p-dialog>
+
+    <p-confirmdialog />
   `,
 })
 export class StaffList {
   private service = inject(StaffService);
   private auth = inject(AuthService);
   private fb = inject(FormBuilder);
+  private confirm = inject(ConfirmationService);
 
   readonly roles = [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF].map((v) => ({
     value: v as number,
@@ -384,13 +410,25 @@ export class StaffList {
   save() {
     if (this.form.invalid) return;
 
+    const current = this.editing();
+    if (current && !this.form.getRawValue().TrangThai && this.isActive(current)) {
+      this.confirm.confirm({
+        header: 'Khóa tài khoản',
+        message: `Khóa tài khoản "${current.HoTen}"? Họ sẽ bị đăng xuất ngay.`,
+        icon: 'pi pi-lock',
+        acceptLabel: 'Khóa',
+        rejectLabel: 'Hủy',
+        accept: () => this.persistSave(),
+      });
+      return;
+    }
+
+    this.persistSave();
+  }
+
+  private persistSave() {
     const v = this.form.getRawValue();
     const current = this.editing();
-
-    if (current) {
-      const lockingNow = !v.TrangThai && this.isActive(current);
-      if (lockingNow && !confirm(`Khóa tài khoản "${current.HoTen}"? Họ sẽ bị đăng xuất ngay.`)) return;
-    }
 
     let request;
     if (current) {
@@ -430,13 +468,48 @@ export class StaffList {
     });
   }
 
+  resetPassword(s: Staff) {
+    this.confirm.confirm({
+      header: 'Đặt lại mật khẩu',
+      message: `Đặt lại mật khẩu của "${s.HoTen}" về mật khẩu mặc định (123123)? Tài khoản sẽ bị đăng xuất khỏi mọi thiết bị.`,
+      icon: 'pi pi-key',
+      acceptLabel: 'Đặt lại',
+      rejectLabel: 'Hủy',
+      accept: () => this.doResetPassword(s),
+    });
+  }
+
+  private doResetPassword(s: Staff) {
+    this.busy.set(true);
+    this.error.set(null);
+    this.service.resetPassword(s.MaTaiKhoan).subscribe({
+      next: (res) => {
+        this.busy.set(false);
+        this.notify(res.message);
+        this.load();
+      },
+      error: (e: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.error.set(this.errorText(e));
+      },
+    });
+  }
+
   toggleLock(s: Staff) {
     const lock = this.isActive(s);
-    const text = lock
-      ? `Khóa tài khoản "${s.HoTen}"? Họ sẽ bị đăng xuất và không thể đăng nhập.`
-      : `Mở khóa tài khoản "${s.HoTen}"?`;
-    if (!confirm(text)) return;
+    this.confirm.confirm({
+      header: lock ? 'Khóa tài khoản' : 'Mở khóa tài khoản',
+      message: lock
+        ? `Khóa tài khoản "${s.HoTen}"? Họ sẽ bị đăng xuất và không thể đăng nhập.`
+        : `Mở khóa tài khoản "${s.HoTen}"?`,
+      icon: lock ? 'pi pi-lock' : 'pi pi-lock-open',
+      acceptLabel: lock ? 'Khóa' : 'Mở khóa',
+      rejectLabel: 'Hủy',
+      accept: () => this.doToggleLock(s, lock),
+    });
+  }
 
+  private doToggleLock(s: Staff, lock: boolean) {
     this.busy.set(true);
     this.error.set(null);
     this.service.update(s.MaTaiKhoan, { TrangThai: !lock }).subscribe({

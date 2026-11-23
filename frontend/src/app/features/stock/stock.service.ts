@@ -1,12 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map } from 'rxjs';
+import { map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AlertProduct } from './stock.model';
+import { NoticeService } from '../../core/ui/notice.service';
 
 @Injectable({ providedIn: 'root' })
 export class StockService {
     private http = inject(HttpClient);
+    private notice = inject(NoticeService);
 
     alerts() {
         return this.http
@@ -23,9 +25,11 @@ export class StockService {
     }
 
     createPurchase(supplierId: number, items: { id: number | string; qty: number }[]) {
-        return this.http.post<{ data: { MaPhieuNhap: number } }>(`${environment.apiUrl}/phieu-nhap`, {
-            MaNhaCungCap: supplierId,
-            ChiTiet: items.map((i) => ({ MaSanPham: i.id, SoLuong: i.qty })),
-        });
+        return this.http
+            .post<{ data: { MaPhieuNhap: number } }>(`${environment.apiUrl}/phieu-nhap`, {
+                MaNhaCungCap: supplierId,
+                ChiTiet: items.map((i) => ({ MaSanPham: i.id, SoLuong: i.qty })),
+            })
+            .pipe(tap(() => this.notice.refresh()));
     }
 }

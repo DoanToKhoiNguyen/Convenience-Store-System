@@ -92,21 +92,11 @@ export class AuthService {
         );
     }
 
-    captcha() {
-        return this.http.get<{ enabled: boolean; id?: string; image?: string }>(
-            `${environment.apiUrl}/captcha`,
-        );
-    }
-
-    login(username: string, password: string, captcha?: { id: string; code: string }) {
-        const body: Record<string, string> = {
+    login(username: string, password: string) {
+        const body = {
             TenDangNhap: username,
             MatKhau: password,
         };
-        if (captcha) {
-            body['captcha_id'] = captcha.id;
-            body['captcha_code'] = captcha.code;
-        }
 
         return this.http
             .post<LoginResponse>(`${environment.apiUrl}/login`, body)

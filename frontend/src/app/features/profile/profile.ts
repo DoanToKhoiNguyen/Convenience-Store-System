@@ -42,18 +42,18 @@ import { ROLE_LABEL } from '../../core/auth/roles';
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Họ tên</label>
-          <input pInputText formControlName="HoTen" class="w-full" />
+          <label for="pf-hoten" class="mb-1 block text-sm font-medium text-slate-700">Họ tên</label>
+          <input pInputText id="pf-hoten" formControlName="HoTen" class="w-full" />
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Email</label>
-          <input pInputText type="email" formControlName="Email" class="w-full" />
+          <label for="pf-email" class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+          <input pInputText id="pf-email" type="email" formControlName="Email" class="w-full" />
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Số điện thoại</label>
-          <input pInputText formControlName="SoDienThoai" class="w-full" />
+          <label for="pf-sdt" class="mb-1 block text-sm font-medium text-slate-700">Số điện thoại</label>
+          <input pInputText id="pf-sdt" formControlName="SoDienThoai" class="w-full" />
         </div>
 
         <p-button
@@ -80,8 +80,9 @@ import { ROLE_LABEL } from '../../core/auth/roles';
         }
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Mật khẩu hiện tại</label>
+          <label for="pf-pwd-cu" class="mb-1 block text-sm font-medium text-slate-700">Mật khẩu hiện tại</label>
           <p-password
+            inputId="pf-pwd-cu"
             formControlName="MatKhauCu"
             placeholder="Nhập mật khẩu hiện tại"
             autocomplete="current-password"
@@ -92,11 +93,15 @@ import { ROLE_LABEL } from '../../core/auth/roles';
             [style]="{ width: '100%' }"
             [inputStyle]="{ width: '100%' }"
           />
+          @if (pwdForm.controls.MatKhauCu.touched && pwdForm.controls.MatKhauCu.hasError('required')) {
+            <small class="text-red-600">Vui lòng nhập mật khẩu hiện tại.</small>
+          }
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Mật khẩu mới (tối thiểu 6 ký tự)</label>
+          <label for="pf-pwd-moi" class="mb-1 block text-sm font-medium text-slate-700">Mật khẩu mới (tối thiểu 6 ký tự)</label>
           <p-password
+            inputId="pf-pwd-moi"
             formControlName="MatKhauMoi"
             placeholder="Nhập mật khẩu mới"
             autocomplete="new-password"
@@ -107,11 +112,17 @@ import { ROLE_LABEL } from '../../core/auth/roles';
             [style]="{ width: '100%' }"
             [inputStyle]="{ width: '100%' }"
           />
+          @if (pwdForm.controls.MatKhauMoi.touched && pwdForm.controls.MatKhauMoi.hasError('required')) {
+            <small class="text-red-600">Vui lòng nhập mật khẩu mới.</small>
+          } @else if (pwdForm.controls.MatKhauMoi.touched && pwdForm.controls.MatKhauMoi.hasError('minlength')) {
+            <small class="text-red-600">Mật khẩu mới phải có ít nhất 6 ký tự.</small>
+          }
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-slate-700">Nhập lại mật khẩu mới</label>
+          <label for="pf-pwd-nhap" class="mb-1 block text-sm font-medium text-slate-700">Nhập lại mật khẩu mới</label>
           <p-password
+            inputId="pf-pwd-nhap"
             formControlName="NhapLaiMatKhau"
             placeholder="Nhập lại mật khẩu mới"
             autocomplete="new-password"
@@ -122,7 +133,9 @@ import { ROLE_LABEL } from '../../core/auth/roles';
             [style]="{ width: '100%' }"
             [inputStyle]="{ width: '100%' }"
           />
-          @if (pwdForm.hasError('mismatch') && pwdForm.controls.NhapLaiMatKhau.dirty) {
+          @if (pwdForm.controls.NhapLaiMatKhau.touched && pwdForm.controls.NhapLaiMatKhau.hasError('required')) {
+            <small class="text-red-600">Vui lòng nhập lại mật khẩu mới.</small>
+          } @else if (pwdForm.hasError('mismatch') && pwdForm.controls.NhapLaiMatKhau.dirty) {
             <small class="text-red-600">Mật khẩu nhập lại chưa khớp.</small>
           }
         </div>
@@ -132,7 +145,7 @@ import { ROLE_LABEL } from '../../core/auth/roles';
           label="Đổi mật khẩu"
           icon="pi pi-key"
           [loading]="pwdBusy()"
-          [disabled]="pwdForm.invalid || pwdBusy()"
+          [disabled]="pwdBusy()"
         />
         <p class="text-xs text-slate-500">Sau khi đổi, các thiết bị khác sẽ bị đăng xuất.</p>
       </form>
@@ -207,7 +220,10 @@ export class Profile {
   }
 
   savePassword() {
-    if (this.pwdForm.invalid) return;
+    if (this.pwdForm.invalid) {
+      this.pwdForm.markAllAsTouched();
+      return;
+    }
 
     this.pwdBusy.set(true);
     this.pwdMsg.set(null);
@@ -227,7 +243,7 @@ export class Profile {
   }
 
   private errorText(e: HttpErrorResponse): string {
-    const errs = e.error?.errors as Record<string, string[]> | undefined;
+    const errs = e.error?.errors as Record<string, string[]>;
     if (errs) return Object.values(errs).flat().join(' ');
     return e.error?.message ?? 'Có lỗi xảy ra, vui lòng thử lại.';
   }

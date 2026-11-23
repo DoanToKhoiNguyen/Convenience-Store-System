@@ -4,6 +4,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter, map } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE, ROLE_LABEL } from '../../core/auth/roles';
+import { NoticeService } from '../../core/ui/notice.service';
 
 interface MenuItem {
   label: string;
@@ -136,6 +137,17 @@ function readCollapsed(): boolean {
                     [class.text-slate-400]="!rla.isActive"
                   ></i>
                   <span [class]="collapsed() ? 'truncate lg:hidden' : 'truncate'">{{ item.label }}</span>
+
+                  @if (badgeCount(item.link); as n) {
+                    <span
+                      [class]="badgeClass()"
+                      [attr.aria-label]="badgeLabel(item.link, n)"
+                      [title]="badgeLabel(item.link, n)"
+                    >
+                      <i class="pi pi-exclamation-circle text-[9px]" [class]="collapsed() ? 'lg:hidden' : ''"></i>
+                      <span [class]="collapsed() ? 'lg:hidden' : ''">{{ n }}</span>
+                    </span>
+                  }
                 </a>
               }
             }
@@ -270,12 +282,37 @@ function readCollapsed(): boolean {
           </div>
         </main>
       </div>
+
+      <!-- Thông báo nổi khi có việc mới -->
+      @if (notice.thongBaoMoi(); as tb) {
+        <div
+          class="fixed bottom-4 right-4 z-50 flex w-[min(22rem,calc(100vw-2rem))] items-start gap-3 rounded-2xl border border-emerald-200 bg-white p-3.5 shadow-xl shadow-slate-900/10"
+          role="status"
+        >
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+            <i class="pi pi-bell text-sm"></i>
+          </span>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-semibold text-slate-800">Thông báo mới</div>
+            <p class="mt-0.5 text-sm text-slate-600">{{ tb }}</p>
+          </div>
+          <button
+            type="button"
+            class="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Đóng thông báo"
+            (click)="notice.anThongBao()"
+          >
+            <i class="pi pi-times text-xs"></i>
+          </button>
+        </div>
+      }
     </div>
   `,
 })
 export class AdminLayout {
   protected auth = inject(AuthService);
   private router = inject(Router);
+  protected notice = inject(NoticeService);
 
   readonly collapsed = signal(readCollapsed());
   readonly mobileOpen = signal(false);
@@ -295,6 +332,12 @@ export class AdminLayout {
       items: g.items.filter((i) => !i.roles || this.auth.hasAnyRole(i.roles)),
     })).filter((g) => g.items.length > 0),
   );
+
+  // Số việc cần chú ý, hết thì ẩn chấm báo
+  private readonly badges = computed<Record<string, number>>(() => ({
+    '/admin/stock-alerts': this.notice.canhBaoKho(),
+    '/admin/purchases': this.notice.phieuChoDuyet() + this.notice.phieuChoNhan(),
+  }));
 
   readonly roleName = computed(() => ROLE_LABEL[this.auth.user()?.MaVaiTro ?? 0] ?? '');
 
@@ -326,13 +369,47 @@ export class AdminLayout {
   );
 
   constructor() {
-    // Chuyển trang thì đóng menu điện thoại và menu người dùng
+    // Chuyển trang thì đóng menu điện thoại, menu người dùng và làm mới chấm báo
     this.router.events
       .pipe(
         filter((e) => e instanceof NavigationEnd),
         takeUntilDestroyed(),
       )
-      .subscribe(() => this.closeAll());
+      .subscribe(() => {
+        this.closeAll();
+        this.notice.refresh();
+      });
+  }
+
+  badgeCount(link: string): number {
+    return this.badges()[link] ?? 0;
+  }
+
+  badgeClass(): string {
+    const base =
+      'ml-auto inline-flex h-5 min-w-5 shrink-0 items-center justify-center gap-1 rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white shadow-sm shadow-red-500/40';
+    return this.collapsed()
+      ? base + ' lg:absolute lg:right-1 lg:top-1 lg:ml-0 lg:h-2.5 lg:min-w-2.5 lg:gap-0 lg:px-0'
+      : base;
+  }
+
+  badgeLabel(link: string, n: number): string {
+    if (link === '/admin/stock-alerts') {
+      const tong = this.notice.canhBaoKhoTong();
+      const coPhieu = tong - n;
+      return coPhieu > 0
+        ? `${n} sản phẩm cần nhập thêm (${coPhieu} đã có phiếu nhập)`
+        : `${n} sản phẩm cần nhập thêm`;
+    }
+    if (link === '/admin/purchases') {
+      const parts: string[] = [];
+      const duyet = this.notice.phieuChoDuyet();
+      const nhan = this.notice.phieuChoNhan();
+      if (duyet > 0) parts.push(`${duyet} phiếu chờ duyệt`);
+      if (nhan > 0) parts.push(`${nhan} phiếu chờ nhận hàng`);
+      return parts.join(' · ') || String(n);
+    }
+    return String(n);
   }
 
   toggleCollapsed() {

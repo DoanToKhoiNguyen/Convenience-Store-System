@@ -237,6 +237,86 @@ class LichDangKyTest extends TestCase
         ], $res->json('quan_ly'));
     }
 
+    public function test_thang_chuc_giua_tuan_doi_vai_tro_cua_dang_ky_da_co(): void
+    {
+        $a = $this->nguoiDung('3', 'nhanvien-a');
+        $b = $this->nguoiDung('3', 'nhanvien-b');
+        $c = $this->nguoiDung('3', 'nhanvien-c');
+
+        // Thứ 2: A và B đăng ký kín ca khi A còn là nhân viên.
+        $this->luu($a, [[$this->thuHai, 1]])->assertOk();
+        $this->luu($b, [[$this->thuHai, 1]])->assertOk();
+
+        // Thứ 4: A được thăng chức; đăng ký cũ đọc vai trò theo hiện tại.
+        $a->update(['MaVaiTro' => '2']);
+
+        // C vào được vì A không còn tính là nhân viên.
+        $this->luu($c, [[$this->thuHai, 1]])->assertOk();
+        $this->assertSame(3, $this->soDangKy($this->thuHai));
+
+        // Quản lý khác thấy ca đã có quản lý (A) và bị chặn.
+        $ql = $this->nguoiDung('2', 'quanly-a');
+        $this->dangNhap($ql);
+        $this->getJson('/api/dang-ky-ca/tuan-sau')
+            ->assertOk()
+            ->assertJsonPath('da_ky.0.so_nhan_vien', 2)
+            ->assertJsonPath('da_ky.0.so_quan_ly', 1)
+            ->assertJsonPath('da_ky.0.con_cho', false)
+            ->assertJsonPath('da_ky.0.ly_do_khoa', 'da_co_quan_ly');
+
+        $this->luu($ql, [[$this->thuHai, 1]])->assertStatus(422);
+
+        // Thời khóa biểu coi A là quản lý, không còn trong danh sách tên nhân viên.
+        $res = $this->getJson('/api/lich-lam-viec?tu_ngay=' . $this->thuHai)->assertOk();
+        $ten = collect($res->json('data'))->pluck('HoTen');
+        $this->assertFalse($ten->contains('nhanvien-a'));
+        $this->assertTrue($ten->contains('nhanvien-b'));
+        $this->assertSame(1, $res->json('quan_ly.0.so_luong'));
+    }
+
+    public function test_quan_ly_moi_thang_chuc_doi_duoc_sang_ca_khac(): void
+    {
+        $a = $this->nguoiDung('3', 'nhanvien-a');
+        $thu5 = Carbon::parse($this->thuHai)->addDays(3)->toDateString();
+        $thu6 = Carbon::parse($this->thuHai)->addDays(4)->toDateString();
+
+        $this->luu($a, [[$thu5, 1]])->assertOk();
+        $a->update(['MaVaiTro' => '2']);
+
+        // Lưu lại thay thế toàn bộ lựa chọn: rời ca thứ 5, sang ca thứ 6.
+        $this->luu($a, [[$thu6, 1]])->assertOk();
+        $this->assertSame(0, $this->soDangKy($thu5));
+        $this->assertSame(1, $this->soDangKy($thu6));
+
+        // Ca mới đã có A (quản lý) nên quản lý khác không chen được.
+        $ql = $this->nguoiDung('2', 'quanly-b');
+        $this->luu($ql, [[$thu6, 1]])->assertStatus(422);
+
+        // Ca cũ đã trống nên quản lý đó đăng ký được.
+        $this->luu($ql, [[$thu5, 1]])->assertOk();
+    }
+
+    public function test_tai_khoan_bi_khoa_bi_chan_moi_request(): void
+    {
+        $a = $this->nguoiDung('3', 'nhanvien-a');
+        $this->luu($a, [[$this->thuHai, 1]])->assertOk();
+
+        $a->update(['TrangThai' => false]);
+        $this->app['auth']->forgetGuards();
+
+        // Mọi request bị chặn và token hiện tại bị thu hồi.
+        $this->getJson('/api/dang-ky-ca/tuan-sau')
+            ->assertStatus(403)
+            ->assertJsonPath('code', 'ACCOUNT_LOCKED');
+
+        $this->assertSame(0, $a->tokens()->count());
+
+        // Token đã bị thu hồi nên các request sau không còn xác thực được.
+        $this->app['auth']->forgetGuards();
+        $this->putJson('/api/dang-ky-ca/tuan-sau', ['ChiTiet' => []])->assertStatus(401);
+        $this->getJson('/api/me')->assertStatus(401);
+    }
+
     public function test_tai_khoan_bi_khoa_khong_hien_trong_thoi_khoa_bieu_va_khong_tinh_cho(): void
     {
         $a = $this->nguoiDung('3', 'nhanvien-a');

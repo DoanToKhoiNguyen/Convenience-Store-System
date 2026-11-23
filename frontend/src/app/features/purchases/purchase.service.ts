@@ -1,12 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map } from 'rxjs';
+import { map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Page, PurchaseOrder } from './purchase.model';
+import { NoticeService } from '../../core/ui/notice.service';
 
 @Injectable({ providedIn: 'root' })
 export class PurchaseService {
     private http = inject(HttpClient);
+    private notice = inject(NoticeService);
     private url = `${environment.apiUrl}/phieu-nhap`;
 
     list(page: number) {
@@ -28,14 +30,16 @@ export class PurchaseService {
     }
 
     approve(id: number) {
-        return this.http.post(`${this.url}/${id}/duyet`, {});
+        return this.http.post(`${this.url}/${id}/duyet`, {}).pipe(tap(() => this.notice.refresh()));
     }
 
     cancel(id: number) {
-        return this.http.post(`${this.url}/${id}/huy`, {});
+        return this.http.post(`${this.url}/${id}/huy`, {}).pipe(tap(() => this.notice.refresh()));
     }
 
     receive(id: number, items: { MaChiTietPhieuNhap: number; HanSuDung: string | null }[]) {
-        return this.http.put(`${this.url}/${id}/nhan-hang`, { ChiTiet: items });
+        return this.http
+            .put(`${this.url}/${id}/nhan-hang`, { ChiTiet: items })
+            .pipe(tap(() => this.notice.refresh()));
     }
 }

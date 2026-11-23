@@ -17,6 +17,19 @@ import { HoaDon, ChiTietHoaDon, SanPham } from './bill.model';
     InputTextModule, TagModule, CardModule
   ],
   template: `
+    @if (thongBao()) {
+      <div class="mx-6 mt-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <i class="pi pi-check-circle mt-0.5"></i>
+        <span>{{ thongBao() }}</span>
+      </div>
+    }
+    @if (loi()) {
+      <div class="mx-6 mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <i class="pi pi-exclamation-circle mt-0.5"></i>
+        <span>{{ loi() }}</span>
+      </div>
+    }
+
     <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
       
       <!-- Cột trái: Thao tác hóa đơn hiện tại -->
@@ -158,6 +171,9 @@ export class BillList implements OnInit {
   danhSachChiTiet = signal<ChiTietHoaDon[]>([]);
   danhSachHoaDon = signal<HoaDon[]>([]);
 
+  thongBao = signal<string | null>(null);
+  loi = signal<string | null>(null);
+
   tuKhoaTimKiem: string = '';
   sanPhamDuocChon: SanPham | null = null;
   filteredSanPham = signal<SanPham[]>([]);
@@ -165,6 +181,17 @@ export class BillList implements OnInit {
 
   ngOnInit() {
     this.taiDanhSachHoaDon();
+  }
+
+  private baoThanhCong(message: string) {
+    this.loi.set(null);
+    this.thongBao.set(message);
+    setTimeout(() => this.thongBao.set(null), 4000);
+  }
+
+  private baoLoi(message: string) {
+    this.thongBao.set(null);
+    this.loi.set(message);
   }
 
   // Tải danh sách tất cả hóa đơn
@@ -186,9 +213,9 @@ export class BillList implements OnInit {
         this.hoaDonHienTai.set(res.data);
         this.danhSachChiTiet.set([]);
         this.taiDanhSachHoaDon(); // Cập nhật lại danh sách bên dưới
-        alert(res.message);
+        this.baoThanhCong(res.message);
       },
-      error: (err) => alert(err.error?.message || 'Lỗi tạo hóa đơn')
+      error: (err) => this.baoLoi(err.error?.message || 'Lỗi tạo hóa đơn')
     });
   }
 
@@ -217,7 +244,7 @@ export class BillList implements OnInit {
     if (!hd) return;
 
     if (!this.sanPhamDuocChon || !this.sanPhamDuocChon.TenSanPham) {
-      alert('Vui lòng chọn sản phẩm từ danh sách gợi ý!');
+      this.baoLoi('Vui lòng chọn sản phẩm từ danh sách gợi ý!');
       return;
     }
 
@@ -234,9 +261,9 @@ export class BillList implements OnInit {
         this.tuKhoaTimKiem = '';
         this.soLuongInput = 1;
         this.taiDanhSachHoaDon(); // Cập nhật lại tổng tiền ở danh sách bên dưới
-        alert(res.message);
+        this.baoThanhCong(res.message);
       },
-      error: (err) => alert(err.error?.message || 'Lỗi thêm sản phẩm')
+      error: (err) => this.baoLoi(err.error?.message || 'Lỗi thêm sản phẩm')
     });
   }
 
@@ -249,9 +276,9 @@ export class BillList implements OnInit {
       next: (res) => {
         this.hoaDonHienTai.set(res.data);
         this.taiDanhSachHoaDon(); // Cập nhật trạng thái đã thanh toán xuống bảng lịch sử
-        alert(res.message);
+        this.baoThanhCong(res.message);
       },
-      error: (err) => alert(err.error?.message || 'Lỗi khi thanh toán')
+      error: (err) => this.baoLoi(err.error?.message || 'Lỗi khi thanh toán')
     });
   }
 

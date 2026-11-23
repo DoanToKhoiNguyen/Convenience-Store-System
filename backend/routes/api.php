@@ -14,7 +14,7 @@ use App\Domains\BaoCao\Http\Controllers\BaoCaoController;
 use App\Domains\SanPham\Http\Controllers\SanPhamCongKhaiController;
 use App\Domains\DanhMuc\Http\Controllers\DanhMucController;
 use App\Domains\LoHang\Http\Controllers\LoHangController;
-use App\Domains\Auth\Http\Controllers\CaptchaController;
+use App\Domains\ThongBao\Http\Controllers\ThongBaoController;
 use App\Models\SanPham;
 use Illuminate\Routing\Router;
 
@@ -22,7 +22,6 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::get('/captcha', [CaptchaController::class, 'tao'])->middleware('throttle:30,1');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
 
@@ -32,6 +31,7 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/me', [AuthController::class, 'capNhatThongTin']);
     Route::put('/me/mat-khau', [AuthController::class, 'doiMatKhau']);
+    Route::get('/thong-bao', [ThongBaoController::class, 'chiSo']);
 
     Route::middleware(['role:1,2'])->group(function () {
         Route::get('/nhan-vien', [NhanVienController::class, 'index']);      // Xem danh sách nhân viên
@@ -68,6 +68,7 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
         Route::post('/nhan-vien', [NhanVienController::class, 'store']);  
         Route::put('/nhan-vien/{id}', [NhanVienController::class, 'update']);     
         Route::delete('/nhan-vien/{id}', [NhanVienController::class, 'destroy']); 
+        Route::post('/nhan-vien/{id}/dat-lai-mat-khau', [NhanVienController::class, 'datLaiMatKhau']);
         Route::get('/bao-cao/nhap-hang', [BaoCaoController::class, 'nhapHang']);
     });
 
