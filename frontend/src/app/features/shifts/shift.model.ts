@@ -24,6 +24,7 @@ export interface SlotInfo {
     so_nhan_vien: number;
     so_quan_ly: number;
     con_cho: boolean;
+    ly_do_khoa: 'du_nhan_vien' | 'da_co_quan_ly' | null;
 }
 
 export interface ShiftLimit {
@@ -46,8 +47,15 @@ export interface TimetableEntry {
     HoTen: string;
 }
 
+export interface TimetableManager {
+    Ngay: string;
+    MaCa: number;
+    so_luong: number;
+}
+
 export interface TimetableData {
     tuan: WeekInfo;
     ca: Shift[];
     data: TimetableEntry[];
+    quan_ly: TimetableManager[];
 }

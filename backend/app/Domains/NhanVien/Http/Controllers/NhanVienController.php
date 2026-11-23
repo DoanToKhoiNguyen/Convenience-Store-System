@@ -11,6 +11,8 @@ use Illuminate\Validation\Rule;
 
 class NhanVienController extends Controller
 {
+    public const MAT_KHAU_MAC_DINH = '123123';
+
     /**
      * Lấy danh sách nhân viên
      */
@@ -45,7 +47,8 @@ class NhanVienController extends Controller
 {
     $validated = $request->validate([
         'TenDangNhap' => 'required|string|unique:tai__khoan,TenDangNhap',
-        'MatKhau'     => 'required|string|min:6',
+        // Không bắt buộc: bỏ trống thì dùng mật khẩu mặc định
+        'MatKhau'     => 'nullable|string|min:6',
         'HoTen'       => 'required|string|max:255',
         'Email'       => 'required|email|unique:tai__khoan,Email',
         'SoDienThoai' => 'nullable|string|max:20',
@@ -54,7 +57,7 @@ class NhanVienController extends Controller
 
     $nhanVien = TaiKhoan::create([
         ...$validated,
-        'MatKhau'   => Hash::make($validated['MatKhau']),
+        'MatKhau'   => Hash::make($validated['MatKhau'] ?? self::MAT_KHAU_MAC_DINH),
         'TrangThai' => true,
     ]);
 

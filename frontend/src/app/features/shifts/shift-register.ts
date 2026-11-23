@@ -198,20 +198,32 @@ export class ShiftRegister {
     this.load();
   }
 
-  load() {
-    this.loading.set(true);
-    this.error.set(null);
+  // silent = tải lại ngầm (không bật spinner) khi cần đồng bộ số chỗ;
+  // giữ các lựa chọn chưa lưu nếu ca đó vẫn còn chỗ.
+  load(silent = false) {
+    if (!silent) {
+      this.loading.set(true);
+      this.error.set(null);
+    }
     this.service.registration().subscribe({
       next: (d) => {
         this.data.set(d);
-        const set = new Set(d.da_chon.map((s) => slotKey(s.Ngay, s.MaCa)));
-        this.selected.set(new Set(set));
-        this.original.set(set);
+        if (silent) {
+          const conCho = new Map<string, boolean>();
+          for (const s of d.da_ky) {
+            conCho.set(slotKey(String(s.Ngay).slice(0, 10), Number(s.MaCa)), s.con_cho);
+          }
+          this.selected.update((cur) => new Set([...cur].filter((k) => conCho.get(k) !== false)));
+        } else {
+          const set = new Set(d.da_chon.map((s) => slotKey(s.Ngay, s.MaCa)));
+          this.selected.set(new Set(set));
+          this.original.set(set);
+        }
         this.loading.set(false);
       },
       error: (e: HttpErrorResponse) => {
         this.loading.set(false);
-        this.error.set(e.error?.message ?? 'Không tải được dữ liệu đăng ký ca.');
+        if (!silent) this.error.set(e.error?.message ?? 'Không tải được dữ liệu đăng ký ca.');
       },
     });
   }
@@ -230,7 +242,11 @@ export class ShiftRegister {
 
   cellTitle(date: string, ca: number): string {
     if (!this.open()) return '';
-    if (this.blocked(date, ca)) return 'Ca đã đủ người đăng ký';
+    if (this.blocked(date, ca)) {
+      return this.slotInfo(date, ca)?.ly_do_khoa === 'da_co_quan_ly'
+        ? 'Ca đã có quản lý/chủ đăng ký'
+        : `Ca đã đủ ${this.maxStaff()} nhân viên`;
+    }
     const info = this.slotInfo(date, ca);
     return info
       ? `Đã đăng ký ${info.so_nhan_vien}/${this.maxStaff()} nhân viên`
@@ -278,16 +294,20 @@ export class ShiftRegister {
       next: (res) => {
         this.busy.set(false);
         this.original.set(new Set(this.selected()));
+        this.error.set(null);
         this.success.set(res.message);
         setTimeout(() => this.success.set(null), 4000);
-        this.load(); // tải lại số chỗ đã đăng ký của từng ca
+        this.load(true); // tải lại số chỗ đã đăng ký của từng ca
       },
       error: (e: HttpErrorResponse) => {
         this.busy.set(false);
         const errs = e.error?.errors as Record<string, string[]> | undefined;
+        this.success.set(null);
         this.error.set(
           errs ? Object.values(errs).flat().join(' ') : (e.error?.message ?? 'Lưu đăng ký thất bại.'),
         );
+        // Số chỗ có thể đã thay đổi: đồng bộ lại và bỏ các ô không còn hợp lệ.
+        if (e.status === 422) this.load(true);
       },
     });
   }

@@ -37,6 +37,7 @@ export class ShiftService {
                     tuan: r?.tuan,
                     ca: Array.isArray(r?.ca) ? r.ca : [],
                     data: Array.isArray(r?.data) ? r.data : [],
+                    quan_ly: Array.isArray(r?.quan_ly) ? r.quan_ly : [],
                 })),
             );
     }

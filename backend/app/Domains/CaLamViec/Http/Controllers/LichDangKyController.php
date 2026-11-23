@@ -6,10 +6,12 @@ use App\Domains\CaLamViec\Services\TuanLamViec;
 use App\Http\Controllers\Controller;
 use App\Models\CaLamViec;
 use App\Models\LichDangKy;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -65,14 +67,17 @@ class LichDangKyController extends Controller
                 $nvKhac = $nguoiKhac->filter(fn ($r) => (int) $r->MaVaiTro === self::VAI_TRO_NHAN_VIEN)->count();
                 $qlKhac = $nguoiKhac->count() - $nvKhac;
 
+                $conCho = $laQuanLy
+                    ? $qlKhac < self::TOI_DA_QUAN_LY
+                    : $nvKhac < self::TOI_DA_NHAN_VIEN;
+
                 return [
                     'Ngay'         => $ngay,
                     'MaCa'         => (int) $maCa,
                     'so_nhan_vien' => $soNhanVien,
                     'so_quan_ly'   => $soQuanLy,
-                    'con_cho'      => $laQuanLy
-                        ? $qlKhac < self::TOI_DA_QUAN_LY
-                        : $nvKhac < self::TOI_DA_NHAN_VIEN,
+                    'con_cho'      => $conCho,
+                    'ly_do_khoa'   => $conCho ? null : ($laQuanLy ? 'da_co_quan_ly' : 'du_nhan_vien'),
                 ];
             })
             ->values();
@@ -121,57 +126,67 @@ class LichDangKyController extends Controller
         $tenCa = CaLamViec::pluck('TenCa', 'MaCa');
 
         try {
-            DB::transaction(function () use ($chon, $tuan, $user, $laQuanLy, $tenCa) {
-                LichDangKy::where('MaTaiKhoan', $user->MaTaiKhoan)
-                    ->whereBetween('NgayDangKy', [$tuan['tu_ngay'], $tuan['den_ngay']])
-                    ->delete();
+            // Khóa theo tuần: mọi lượt lưu trong cùng tuần xếp hàng, tránh hai người
+            // cùng lúc đếm ra còn chỗ rồi cùng ghi vào một ca.
+            Cache::lock('dang-ky-ca:' . $tuan['tu_ngay'], 10)->block(
+                5,
+                function () use ($chon, $tuan, $user, $laQuanLy, $tenCa) {
+                    DB::transaction(function () use ($chon, $tuan, $user, $laQuanLy, $tenCa) {
+                        LichDangKy::where('MaTaiKhoan', $user->MaTaiKhoan)
+                            ->whereBetween('NgayDangKy', [$tuan['tu_ngay'], $tuan['den_ngay']])
+                            ->delete();
 
-                if ($chon->isNotEmpty()) {
-                    // Khóa các dòng trong tuần để hai người không cùng lúc vượt giới hạn.
-                    LichDangKy::where('TrangThai', self::DA_DANG_KY)
-                        ->whereBetween('NgayDangKy', [$tuan['tu_ngay'], $tuan['den_ngay']])
-                        ->lockForUpdate()
-                        ->get();
+                        if ($chon->isNotEmpty()) {
+                            LichDangKy::where('TrangThai', self::DA_DANG_KY)
+                                ->whereBetween('NgayDangKy', [$tuan['tu_ngay'], $tuan['den_ngay']])
+                                ->lockForUpdate()
+                                ->get();
 
-                    $dangKy = DB::table('lich_dang_ky as ld')
-                        ->join('tai__khoan as tk', 'tk.MaTaiKhoan', '=', 'ld.MaTaiKhoan')
-                        ->where('ld.TrangThai', self::DA_DANG_KY)
-                        ->where('tk.TrangThai', true)
-                        ->whereBetween('ld.NgayDangKy', [$tuan['tu_ngay'], $tuan['den_ngay']])
-                        ->get(['ld.NgayDangKy', 'ld.MaCa', 'tk.MaVaiTro']);
+                            $dangKy = DB::table('lich_dang_ky as ld')
+                                ->join('tai__khoan as tk', 'tk.MaTaiKhoan', '=', 'ld.MaTaiKhoan')
+                                ->where('ld.TrangThai', self::DA_DANG_KY)
+                                ->where('tk.TrangThai', true)
+                                ->whereBetween('ld.NgayDangKy', [$tuan['tu_ngay'], $tuan['den_ngay']])
+                                ->get(['ld.NgayDangKy', 'ld.MaCa', 'tk.MaVaiTro']);
 
-                    foreach ($chon as $c) {
-                        $trongCa = $dangKy->filter(fn ($r) => Carbon::parse($r->NgayDangKy)->toDateString() === $c['Ngay']
-                            && (int) $r->MaCa === $c['MaCa']);
-                        $soNhanVien = $trongCa->filter(fn ($r) => (int) $r->MaVaiTro === self::VAI_TRO_NHAN_VIEN)->count();
-                        $soQuanLy = $trongCa->count() - $soNhanVien;
+                            foreach ($chon as $c) {
+                                $trongCa = $dangKy->filter(fn ($r) => Carbon::parse($r->NgayDangKy)->toDateString() === $c['Ngay']
+                                    && (int) $r->MaCa === $c['MaCa']);
+                                $soNhanVien = $trongCa->filter(fn ($r) => (int) $r->MaVaiTro === self::VAI_TRO_NHAN_VIEN)->count();
+                                $soQuanLy = $trongCa->count() - $soNhanVien;
 
-                        $ten = $tenCa[$c['MaCa']] ?? ('Ca ' . $c['MaCa']);
-                        $ngay = Carbon::parse($c['Ngay'])->format('d/m/Y');
+                                $ten = $tenCa[$c['MaCa']] ?? ('Ca ' . $c['MaCa']);
+                                $ngay = Carbon::parse($c['Ngay'])->format('d/m/Y');
 
-                        if ($laQuanLy && $soQuanLy >= self::TOI_DA_QUAN_LY) {
-                            throw ValidationException::withMessages([
-                                'ChiTiet' => "Ca {$ten} ngày {$ngay} đã có quản lý đăng ký. Mỗi ca chỉ một quản lý hoặc chủ.",
-                            ]);
+                                if ($laQuanLy && $soQuanLy >= self::TOI_DA_QUAN_LY) {
+                                    throw ValidationException::withMessages([
+                                        'ChiTiet' => "Ca {$ten} ngày {$ngay} đã có quản lý đăng ký. Mỗi ca chỉ một quản lý hoặc chủ.",
+                                    ]);
+                                }
+
+                                if (!$laQuanLy && $soNhanVien >= self::TOI_DA_NHAN_VIEN) {
+                                    throw ValidationException::withMessages([
+                                        'ChiTiet' => "Ca {$ten} ngày {$ngay} đã đủ " . self::TOI_DA_NHAN_VIEN . ' nhân viên.',
+                                    ]);
+                                }
+                            }
                         }
 
-                        if (!$laQuanLy && $soNhanVien >= self::TOI_DA_NHAN_VIEN) {
-                            throw ValidationException::withMessages([
-                                'ChiTiet' => "Ca {$ten} ngày {$ngay} đã đủ " . self::TOI_DA_NHAN_VIEN . ' nhân viên.',
+                        foreach ($chon as $c) {
+                            LichDangKy::create([
+                                'NgayDangKy' => $c['Ngay'],
+                                'TrangThai'  => self::DA_DANG_KY,
+                                'MaTaiKhoan' => $user->MaTaiKhoan,
+                                'MaCa'       => $c['MaCa'],
                             ]);
                         }
-                    }
-                }
-
-                foreach ($chon as $c) {
-                    LichDangKy::create([
-                        'NgayDangKy' => $c['Ngay'],
-                        'TrangThai'  => self::DA_DANG_KY,
-                        'MaTaiKhoan' => $user->MaTaiKhoan,
-                        'MaCa'       => $c['MaCa'],
-                    ]);
-                }
-            });
+                    });
+                },
+            );
+        } catch (LockTimeoutException) {
+            return response()->json([
+                'message' => 'Có người khác đang lưu đăng ký cùng lúc, vui lòng thử lại sau vài giây.',
+            ], 409);
         } catch (UniqueConstraintViolationException $e) {
             return response()->json(['message' => 'Bạn vừa gửi đăng ký hai lần, vui lòng thử lại.'], 409);
         }
@@ -201,12 +216,38 @@ class LichDangKyController extends Controller
             ->orderBy('tk.HoTen')
             ->get(['ld.NgayDangKy as Ngay', 'ld.MaCa', 'tk.MaTaiKhoan', 'tk.HoTen']);
 
+        // Chỉ trả số lượng quản lý/chủ theo ca, không trả tên.
+        $quanLy = DB::table('lich_dang_ky as ld')
+            ->join('tai__khoan as tk', 'tk.MaTaiKhoan', '=', 'ld.MaTaiKhoan')
+            ->where('ld.TrangThai', self::DA_DANG_KY)
+            ->where('tk.TrangThai', true)
+            ->whereIn('tk.MaVaiTro', [1, 2])
+            ->whereBetween('ld.NgayDangKy', [$tuan['tu_ngay'], $tuan['den_ngay']])
+            ->groupBy('ld.NgayDangKy', 'ld.MaCa')
+            ->orderBy('ld.NgayDangKy')
+            ->orderBy('ld.MaCa')
+            // Không dùng DB::raw cho tên cột: PostgreSQL hạ chữ thường định danh
+            // không có ngoặc kép, sẽ thành "ld.ngaydangky" và không khớp cột.
+            ->select([
+                'ld.NgayDangKy as Ngay',
+                'ld.MaCa',
+                DB::raw('COUNT(*) as so_luong'),
+            ])
+            ->get()
+            ->map(fn ($r) => [
+                'Ngay'     => Carbon::parse($r->Ngay)->toDateString(),
+                'MaCa'     => (int) $r->MaCa,
+                'so_luong' => (int) $r->so_luong,
+            ])
+            ->values();
+
         return response()->json([
             'tuan' => $tuan + [
                 'la_tuan_dang_ky' => $tuan['tu_ngay'] === TuanLamViec::tuanDangKy()['tu_ngay'],
             ],
             'ca'   => $this->cacCa(),
             'data' => $dangKy->values(),
+            'quan_ly' => $quanLy,
         ]);
     }
 

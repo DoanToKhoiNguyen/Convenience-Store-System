@@ -20,7 +20,7 @@ import { addDays, displayDate, formatDate, slotKey, timeShort, weekDays } from '
             <p class="text-sm text-slate-500">
               Tuần {{ show(d.tuan.tu_ngay) }} – {{ show(d.tuan.den_ngay) }}
               <span class="mx-1 text-slate-300">·</span>
-              {{ total() }} lượt làm việc
+              {{ total() }} lượt nhân viên
               @if (d.tuan.la_tuan_dang_ky) {
                 <span class="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
                   <i class="pi pi-clock text-[10px]"></i>
@@ -84,12 +84,23 @@ import { addDays, displayDate, formatDate, slotKey, timeShort, weekDays } from '
                           {{ e.HoTen }}
                         </div>
                       } @empty {
-                        <span class="text-xs text-slate-300">—</span>
+                        @if (managers(day.date, ca.MaCa) === 0) {
+                          <span class="text-xs text-slate-300">—</span>
+                        }
                       }
-                      @if (cell(day.date, ca.MaCa).length > 0) {
+                      @if (managers(day.date, ca.MaCa) > 0) {
+                        <div class="mb-1 flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">
+                          <i class="pi pi-shield text-[10px]"></i>
+                          Quản lý
+                        </div>
+                      }
+                      @if (cell(day.date, ca.MaCa).length > 0 || managers(day.date, ca.MaCa) > 0) {
                         <div class="mt-1.5 flex items-center justify-end gap-1 text-[11px] text-slate-400">
                           <i class="pi pi-users text-[10px]"></i>
-                          {{ cell(day.date, ca.MaCa).length }} người
+                          {{ cell(day.date, ca.MaCa).length }} NV
+                          @if (managers(day.date, ca.MaCa) > 0) {
+                            <span>· {{ managers(day.date, ca.MaCa) }} QL</span>
+                          }
                         </div>
                       }
                     </div>
@@ -105,11 +116,18 @@ import { addDays, displayDate, formatDate, slotKey, timeShort, weekDays } from '
         </table>
       </div>
 
+      <p class="mt-3 flex items-start gap-2 text-xs text-slate-500">
+        <i class="pi pi-info-circle mt-px text-slate-400"></i>
+        <span>
+          Chỉ hiển thị tên nhân viên. Ca có quản lý/chủ trực được đánh dấu khiên "Quản lý" (không hiện tên).
+        </span>
+      </p>
+
       @if (summary().length) {
         <div class="mt-4 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
           <div class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
             <i class="pi pi-users text-emerald-500"></i>
-            Tổng số ca trong tuần
+            Tổng số ca của nhân viên
           </div>
           <div class="flex flex-wrap gap-2">
             @for (s of summary(); track $index) {
@@ -164,6 +182,14 @@ export class ShiftTimetable {
     return map;
   });
 
+  private readonly managerGrid = computed(() => {
+    const map = new Map<string, number>();
+    for (const q of this.data()?.quan_ly ?? []) {
+      map.set(slotKey(String(q.Ngay).slice(0, 10), Number(q.MaCa)), q.so_luong);
+    }
+    return map;
+  });
+
   readonly summary = computed(() => {
     const byUser = new Map<number, { name: string; count: number }>();
     for (const e of this.data()?.data ?? []) {
@@ -182,6 +208,10 @@ export class ShiftTimetable {
 
   cell(date: string, ca: number): TimetableEntry[] {
     return this.grid().get(slotKey(date, ca)) ?? [];
+  }
+
+  managers(date: string, ca: number): number {
+    return this.managerGrid().get(slotKey(date, ca)) ?? 0;
   }
 
   move(weeks: number) {

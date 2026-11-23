@@ -146,71 +146,6 @@ import { AuthService } from '../../core/auth/auth.service';
           }
         </div>
 
-        <!-- Mã xác nhận -->
-        @if (captchaEnabled()) {
-          <div class="space-y-2">
-            <label
-              for="captcha"
-              class="block text-xs font-semibold tracking-wide text-white/55"
-            >
-              Mã xác nhận
-              <span class="text-red-400">*</span>
-            </label>
-
-            <div class="flex items-center gap-2.5">
-              <input
-                pInputText
-                id="captcha"
-                formControlName="captcha"
-                placeholder="Nhập mã"
-                autocomplete="off"
-                autocapitalize="characters"
-                spellcheck="false"
-                maxlength="8"
-                class="min-w-0 flex-1 !rounded-full !border !border-white/20 !bg-white/5 !py-3 !pl-5 !pr-4 !text-sm uppercase tracking-widest !text-white placeholder:!text-white/35 transition-all focus:!border-emerald-400/60 focus:!ring-2 focus:!ring-emerald-400/25"
-              />
-
-              <button
-                type="button"
-                class="shrink-0 rounded-full border border-white/10 bg-white/5 p-2.5 text-emerald-300 transition hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40 disabled:opacity-60"
-                aria-label="Đổi mã khác"
-                title="Đổi mã khác"
-                [disabled]="captchaLoading()"
-                (click)="loadCaptcha()"
-              >
-                <i class="pi pi-refresh text-lg" [class.animate-spin]="captchaLoading()"></i>
-              </button>
-
-              @if (captchaImage(); as src) {
-                <img
-                  [src]="src"
-                  alt="Mã xác nhận"
-                  class="h-12 shrink-0 cursor-pointer select-none rounded-xl border border-white/20 bg-white/90 p-0.5"
-                  draggable="false"
-                  title="Bấm để đổi mã khác"
-                  (click)="loadCaptcha()"
-                />
-              } @else {
-                <div class="flex h-12 w-[9.5rem] shrink-0 items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/5 text-xs text-white/40">
-                  {{ captchaLoading() ? 'Đang tải...' : 'Chưa có mã' }}
-                </div>
-              }
-            </div>
-
-            @if (captchaError()) {
-              <small class="flex items-center gap-1 text-sm text-red-300">
-                <i class="pi pi-info-circle"></i>
-                {{ captchaError() }}
-              </small>
-            } @else if (form.controls.captcha.touched && form.controls.captcha.invalid) {
-              <small class="flex items-center gap-1 text-sm text-red-300">
-                <i class="pi pi-info-circle"></i>
-                Vui lòng nhập mã xác nhận
-              </small>
-            }
-          </div>
-        }
-
         <!-- Submit button -->
         <p-button
           type="submit"
@@ -244,56 +179,10 @@ export class Login {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
-  // Mã xác nhận
-  readonly captchaEnabled = signal(true); // coi là bật cho đến khi máy chủ báo tắt
-  readonly captchaImage = signal<string | null>(null);
-  readonly captchaLoading = signal(false);
-  readonly captchaError = signal<string | null>(null);
-  private captchaId: string | null = null;
-
   readonly form = this.fb.nonNullable.group({
     username: ['', Validators.required],
     password: ['', Validators.required],
-    captcha: ['', Validators.required],
   });
-
-  constructor() {
-    this.loadCaptcha();
-  }
-
-  // Lấy mã mới (cũng dùng cho nút làm mới). Mỗi mã chỉ dùng được một lần.
-  loadCaptcha() {
-    this.captchaLoading.set(true);
-    this.captchaError.set(null);
-    this.form.controls.captcha.reset('');
-
-    this.auth.captcha().subscribe({
-      next: (res) => {
-        this.captchaLoading.set(false);
-
-        if (!res.enabled) {
-          this.captchaEnabled.set(false);
-          this.captchaId = null;
-          this.captchaImage.set(null);
-          this.form.controls.captcha.clearValidators();
-          this.form.controls.captcha.updateValueAndValidity();
-          return;
-        }
-
-        this.captchaEnabled.set(true);
-        this.captchaId = res.id ?? null;
-        this.captchaImage.set(res.image ?? null);
-        this.form.controls.captcha.setValidators(Validators.required);
-        this.form.controls.captcha.updateValueAndValidity();
-      },
-      error: () => {
-        this.captchaLoading.set(false);
-        this.captchaId = null;
-        this.captchaImage.set(null);
-        this.captchaError.set('Không tải được mã xác nhận. Bấm biểu tượng làm mới để thử lại.');
-      },
-    });
-  }
 
   submit() {
     if (this.form.invalid) {
@@ -301,27 +190,16 @@ export class Login {
       return;
     }
 
-    if (this.captchaEnabled() && !this.captchaId) {
-      this.error.set('Chưa có mã xác nhận. Vui lòng bấm làm mới mã rồi thử lại.');
-      this.loadCaptcha();
-      return;
-    }
-
     this.loading.set(true);
     this.error.set(null);
 
-    const { username, password, captcha } = this.form.getRawValue();
-    const code =
-      this.captchaEnabled() && this.captchaId
-        ? { id: this.captchaId, code: captcha.trim() }
-        : undefined;
+    const { username, password } = this.form.getRawValue();
 
-    this.auth.login(username, password, code).subscribe({
+    this.auth.login(username, password).subscribe({
       next: () => this.router.navigate(['/admin']),
       error: (e: HttpErrorResponse) => {
         this.loading.set(false);
         this.error.set(this.toMessage(e));
-        this.loadCaptcha(); // mã cũ đã bị hủy, lấy mã mới
       },
     });
   }

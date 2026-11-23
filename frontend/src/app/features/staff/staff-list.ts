@@ -212,10 +212,10 @@ import { StaffService } from './staff.service';
           </div>
 
           @if (!editing()) {
-            <div>
-              <label class="mb-1 block text-sm font-medium text-slate-700">Mật khẩu</label>
-              <input pInputText type="password" formControlName="MatKhau" class="w-full" autocomplete="new-password" />
-            </div>
+            <p class="flex items-start gap-1.5 text-xs text-slate-500">
+              <i class="pi pi-info-circle mt-0.5 text-[11px] text-slate-400"></i>
+              Mật khẩu mặc định của tài khoản mới là <b class="text-slate-700">123123</b>. Nên đổi mật khẩu sau lần đăng nhập đầu tiên.
+            </p>
           }
         </div>
 
@@ -310,7 +310,6 @@ export class StaffList {
     Email: ['', [Validators.required, Validators.email]],
     MaVaiTro: [ROLE.STAFF as number, Validators.required],
     TrangThai: [true],
-    MatKhau: [''],
   });
 
   constructor() {
@@ -348,13 +347,11 @@ export class StaffList {
     this.formError.set(null);
     this.form.reset({
       HoTen: '', TenDangNhap: '', SoDienThoai: '', Email: '',
-      MaVaiTro: ROLE.STAFF, TrangThai: true, MatKhau: '',
+      MaVaiTro: ROLE.STAFF, TrangThai: true,
     });
     this.form.controls.TenDangNhap.enable();
     this.form.controls.MaVaiTro.enable();
     this.form.controls.TrangThai.enable();
-    this.form.controls.MatKhau.setValidators([Validators.required, Validators.minLength(6)]);
-    this.form.controls.MatKhau.updateValueAndValidity();
     this.dialogOpen.set(true);
   }
 
@@ -368,13 +365,10 @@ export class StaffList {
       Email: s.Email,
       MaVaiTro: Number(s.MaVaiTro),
       TrangThai: this.isActive(s),
-      MatKhau: '',
     });
 
-    // Khi sửa: không cho đổi tên đăng nhập, không có mật khẩu
+    // Khi sửa: không cho đổi tên đăng nhập
     this.form.controls.TenDangNhap.disable();
-    this.form.controls.MatKhau.clearValidators();
-    this.form.controls.MatKhau.updateValueAndValidity();
 
     // Tự sửa chính mình: không được đổi vai trò / trạng thái
     if (this.isMe(s)) {
@@ -417,7 +411,6 @@ export class StaffList {
         SoDienThoai: v.SoDienThoai || null,
         Email: v.Email,
         MaVaiTro: Number(v.MaVaiTro),
-        MatKhau: v.MatKhau,
       });
     }
 
@@ -466,7 +459,7 @@ export class StaffList {
   }
 
   private errorText(e: HttpErrorResponse): string {
-    const errs = e.error?.errors as Record<string, string[]> | undefined;
+    const errs = e.error?.errors as Record<string, string[]>;
     if (errs) return Object.values(errs).flat().join(' ');
     return e.error?.message ?? 'Có lỗi xảy ra, vui lòng thử lại.';
   }

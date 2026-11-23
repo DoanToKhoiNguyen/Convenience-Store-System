@@ -3,14 +3,15 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { PasswordModule } from 'primeng/password';
 import { TagModule } from 'primeng/tag';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE_LABEL } from '../../core/auth/roles';
 
 @Component({
-    selector: 'app-profile',
-    imports: [ReactiveFormsModule, ButtonModule, InputTextModule, TagModule],
-    template: `
+  selector: 'app-profile',
+  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, PasswordModule, TagModule],
+  template: `
     <h1 class="mb-4 text-2xl font-semibold text-slate-800">Thông tin cá nhân</h1>
 
     <div class="grid max-w-5xl gap-6 lg:grid-cols-2">
@@ -80,17 +81,47 @@ import { ROLE_LABEL } from '../../core/auth/roles';
 
         <div>
           <label class="mb-1 block text-sm font-medium text-slate-700">Mật khẩu hiện tại</label>
-          <input pInputText type="password" formControlName="MatKhauCu" class="w-full" autocomplete="current-password" />
+          <p-password
+            formControlName="MatKhauCu"
+            placeholder="Nhập mật khẩu hiện tại"
+            autocomplete="current-password"
+            [feedback]="false"
+            [toggleMask]="true"
+            styleClass="block w-full"
+            inputStyleClass="w-full"
+            [style]="{ width: '100%' }"
+            [inputStyle]="{ width: '100%' }"
+          />
         </div>
 
         <div>
           <label class="mb-1 block text-sm font-medium text-slate-700">Mật khẩu mới (tối thiểu 6 ký tự)</label>
-          <input pInputText type="password" formControlName="MatKhauMoi" class="w-full" autocomplete="new-password" />
+          <p-password
+            formControlName="MatKhauMoi"
+            placeholder="Nhập mật khẩu mới"
+            autocomplete="new-password"
+            [feedback]="false"
+            [toggleMask]="true"
+            styleClass="block w-full"
+            inputStyleClass="w-full"
+            [style]="{ width: '100%' }"
+            [inputStyle]="{ width: '100%' }"
+          />
         </div>
 
         <div>
           <label class="mb-1 block text-sm font-medium text-slate-700">Nhập lại mật khẩu mới</label>
-          <input pInputText type="password" formControlName="NhapLaiMatKhau" class="w-full" autocomplete="new-password" />
+          <p-password
+            formControlName="NhapLaiMatKhau"
+            placeholder="Nhập lại mật khẩu mới"
+            autocomplete="new-password"
+            [feedback]="false"
+            [toggleMask]="true"
+            styleClass="block w-full"
+            inputStyleClass="w-full"
+            [style]="{ width: '100%' }"
+            [inputStyle]="{ width: '100%' }"
+          />
           @if (pwdForm.hasError('mismatch') && pwdForm.controls.NhapLaiMatKhau.dirty) {
             <small class="text-red-600">Mật khẩu nhập lại chưa khớp.</small>
           }
@@ -109,95 +140,95 @@ import { ROLE_LABEL } from '../../core/auth/roles';
   `,
 })
 export class Profile {
-    protected auth = inject(AuthService);
-    private fb = inject(FormBuilder);
+  protected auth = inject(AuthService);
+  private fb = inject(FormBuilder);
 
-    readonly roleName = computed(() => ROLE_LABEL[this.auth.user()?.MaVaiTro ?? 0] ?? '');
-    readonly active = computed(() => !!Number(this.auth.user()?.TrangThai ?? 1));
+  readonly roleName = computed(() => ROLE_LABEL[this.auth.user()?.MaVaiTro ?? 0] ?? '');
+  readonly active = computed(() => !!Number(this.auth.user()?.TrangThai ?? 1));
 
-    readonly infoBusy = signal(false);
-    readonly infoMsg = signal<string | null>(null);
-    readonly infoErr = signal<string | null>(null);
+  readonly infoBusy = signal(false);
+  readonly infoMsg = signal<string | null>(null);
+  readonly infoErr = signal<string | null>(null);
 
-    readonly pwdBusy = signal(false);
-    readonly pwdMsg = signal<string | null>(null);
-    readonly pwdErr = signal<string | null>(null);
+  readonly pwdBusy = signal(false);
+  readonly pwdMsg = signal<string | null>(null);
+  readonly pwdErr = signal<string | null>(null);
 
-    readonly infoForm = this.fb.nonNullable.group({
-        HoTen: ['', Validators.required],
-        Email: ['', [Validators.required, Validators.email]],
-        SoDienThoai: [''],
+  readonly infoForm = this.fb.nonNullable.group({
+    HoTen: ['', Validators.required],
+    Email: ['', [Validators.required, Validators.email]],
+    SoDienThoai: [''],
+  });
+
+  readonly pwdForm = this.fb.nonNullable.group(
+    {
+      MatKhauCu: ['', Validators.required],
+      MatKhauMoi: ['', [Validators.required, Validators.minLength(6)]],
+      NhapLaiMatKhau: ['', Validators.required],
+    },
+    {
+      validators: (g) =>
+        g.get('MatKhauMoi')?.value === g.get('NhapLaiMatKhau')?.value ? null : { mismatch: true },
+    },
+  );
+
+  constructor() {
+    const u = this.auth.user();
+    if (u) {
+      this.infoForm.reset({
+        HoTen: u.HoTen ?? '',
+        Email: u.Email ?? '',
+        SoDienThoai: u.SoDienThoai ?? '',
+      });
+    }
+  }
+
+  saveInfo() {
+    if (this.infoForm.invalid) return;
+    const v = this.infoForm.getRawValue();
+
+    this.infoBusy.set(true);
+    this.infoMsg.set(null);
+    this.infoErr.set(null);
+
+    this.auth
+      .updateProfile({ HoTen: v.HoTen, Email: v.Email, SoDienThoai: v.SoDienThoai || null })
+      .subscribe({
+        next: () => {
+          this.infoBusy.set(false);
+          this.infoForm.markAsPristine();
+          this.infoMsg.set('Đã cập nhật thông tin cá nhân.');
+        },
+        error: (e: HttpErrorResponse) => {
+          this.infoBusy.set(false);
+          this.infoErr.set(this.errorText(e));
+        },
+      });
+  }
+
+  savePassword() {
+    if (this.pwdForm.invalid) return;
+
+    this.pwdBusy.set(true);
+    this.pwdMsg.set(null);
+    this.pwdErr.set(null);
+
+    this.auth.changePassword(this.pwdForm.getRawValue()).subscribe({
+      next: () => {
+        this.pwdBusy.set(false);
+        this.pwdForm.reset();
+        this.pwdMsg.set('Đã đổi mật khẩu.');
+      },
+      error: (e: HttpErrorResponse) => {
+        this.pwdBusy.set(false);
+        this.pwdErr.set(this.errorText(e));
+      },
     });
+  }
 
-    readonly pwdForm = this.fb.nonNullable.group(
-        {
-            MatKhauCu: ['', Validators.required],
-            MatKhauMoi: ['', [Validators.required, Validators.minLength(6)]],
-            NhapLaiMatKhau: ['', Validators.required],
-        },
-        {
-            validators: (g) =>
-                g.get('MatKhauMoi')?.value === g.get('NhapLaiMatKhau')?.value ? null : { mismatch: true },
-        },
-    );
-
-    constructor() {
-        const u = this.auth.user();
-        if (u) {
-            this.infoForm.reset({
-                HoTen: u.HoTen ?? '',
-                Email: u.Email ?? '',
-                SoDienThoai: u.SoDienThoai ?? '',
-            });
-        }
-    }
-
-    saveInfo() {
-        if (this.infoForm.invalid) return;
-        const v = this.infoForm.getRawValue();
-
-        this.infoBusy.set(true);
-        this.infoMsg.set(null);
-        this.infoErr.set(null);
-
-        this.auth
-            .updateProfile({ HoTen: v.HoTen, Email: v.Email, SoDienThoai: v.SoDienThoai || null })
-            .subscribe({
-                next: () => {
-                    this.infoBusy.set(false);
-                    this.infoForm.markAsPristine();
-                    this.infoMsg.set('Đã cập nhật thông tin cá nhân.');
-                },
-                error: (e: HttpErrorResponse) => {
-                    this.infoBusy.set(false);
-                    this.infoErr.set(this.errorText(e));
-                },
-            });
-    }
-
-    savePassword() {
-        if (this.pwdForm.invalid) return;
-
-        this.pwdBusy.set(true);
-        this.pwdMsg.set(null);
-        this.pwdErr.set(null);
-
-        this.auth.changePassword(this.pwdForm.getRawValue()).subscribe({
-            next: () => {
-                this.pwdBusy.set(false);
-                this.pwdForm.reset();
-                this.pwdMsg.set('Đã đổi mật khẩu.');
-            },
-            error: (e: HttpErrorResponse) => {
-                this.pwdBusy.set(false);
-                this.pwdErr.set(this.errorText(e));
-            },
-        });
-    }
-
-    private errorText(e: HttpErrorResponse): string {
-        const errs = e.error?.errors as Record<string, string[]> | undefined;
-        if (errs) return Object.values(errs).flat().join(' ');
-        return e.error?.message ?? 'Có lỗi xảy ra, vui lòng thử lại.';
-    }
+  private errorText(e: HttpErrorResponse): string {
+    const errs = e.error?.errors as Record<string, string[]> | undefined;
+    if (errs) return Object.values(errs).flat().join(' ');
+    return e.error?.message ?? 'Có lỗi xảy ra, vui lòng thử lại.';
+  }
 }
