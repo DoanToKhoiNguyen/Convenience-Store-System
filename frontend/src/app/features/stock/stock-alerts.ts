@@ -8,6 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { AlertProduct } from './stock.model';
 import { StockService } from './stock.service';
+import { NoticeService } from '../../core/ui/notice.service';
 import { RouterLink } from '@angular/router';
 
 const key = (p: AlertProduct) => String(p.MaSanPham);
@@ -61,6 +62,16 @@ interface Group {
       >
         <i class="pi pi-clock text-xs"></i>
         Sắp hết hạn
+        @if (expiryMoi() ? expiryTotal() : 0; as n) {
+          <span
+            class="inline-flex h-5 min-w-5 items-center justify-center gap-1 rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white shadow-sm shadow-red-500/40"
+            [title]="expiryLabel()"
+            [attr.aria-label]="expiryLabel()"
+          >
+            <i class="pi pi-bell text-[9px]"></i>
+            {{ n }}
+          </span>
+        }
       </a>
     </div>
 
@@ -329,6 +340,7 @@ interface Group {
 })
 export class StockAlerts {
   private service = inject(StockService);
+  private notice = inject(NoticeService);
 
   readonly items = signal<AlertProduct[]>([]);
   readonly loading = signal(true);
@@ -342,6 +354,13 @@ export class StockAlerts {
   readonly dialogOpen = signal(false);
 
   readonly outOfStock = computed(() => this.items().filter((p) => p.SoLuongHienTai <= 0).length);
+
+  // Chấm đỏ trên tab "Sắp hết hạn": chỉ đếm lô còn hàng sắp hết hạn (lô quá hạn đã tự động loại)
+  readonly expiryTotal = computed(() => this.notice.loSapHetHan());
+  // Chuông chỉ hiện khi có lô mới sắp hết hạn mà người dùng chưa mở trang xem
+  readonly expiryMoi = computed(() => this.notice.moiHan());
+
+  readonly expiryLabel = computed(() => `${this.expiryTotal()} lô hàng sắp hết hạn`);
 
   readonly selectable = computed(() => this.items().filter((p) => this.canSelect(p)));
 

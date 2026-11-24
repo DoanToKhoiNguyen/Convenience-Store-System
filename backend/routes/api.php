@@ -95,7 +95,7 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
         Route::get('/san-pham/', [SanPhamController::class, 'index']);
         Route::get('/san-pham/{id}', [SanPhamController::class, 'show']);
         Route::get('/lo-hang/canh-bao', [LoHangController::class, 'canhBao']);
-        Route::post('/lo-hang/{id}/huy', [LoHangController::class, 'huy']);
+        Route::get('/lo-hang/da-loai', [LoHangController::class, 'daLoai']);
     });
 });
 #Route::get('/san-pham/tra-cuu', [SanPhamController::class, 'search']);

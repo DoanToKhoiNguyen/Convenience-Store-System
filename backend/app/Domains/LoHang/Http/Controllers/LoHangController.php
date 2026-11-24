@@ -5,6 +5,7 @@ namespace App\Domains\LoHang\Http\Controllers;
 use App\Domains\LoHang\Services\LoHangService;
 use App\Http\Controllers\Controller;
 use App\Models\LoHang;
+use App\Models\LoHangDaLoai;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,9 @@ class LoHangController extends Controller
     /** Các lô đã hết hạn hoặc sắp hết hạn theo CanhBaoHSD của từng sản phẩm. */
     public function canhBao(): JsonResponse
     {
+        // Đồng bộ trước khi xem: lô quá hạn phải được trừ khỏi tồn kho ngay
+        $this->service->loaiLoHetHan();
+
         $ds = [];
         $los = LoHang::with('sanPham')
             ->where('SoLuongCon', '>', 0)
@@ -47,21 +51,26 @@ class LoHangController extends Controller
         return response()->json(['data' => $ds]);
     }
 
-    public function huy(Request $request, $id): JsonResponse
+    /** Nhật ký các lô đã bị hệ thống tự động loại khi hết hạn (mọi vai trò đều xem được). */
+    public function daLoai(): JsonResponse
     {
-        $data = $request->validate(['LyDo' => 'nullable|string|max:150']);
+        $this->service->loaiLoHetHan();
 
-        try {
-            $lo = DB::transaction(fn () => $this->service->huyLo(
-                (int) $id,
-                $data['LyDo'] ?? 'Hàng hết hạn',
-                $request->user()->MaTaiKhoan
-            ));
-        } catch (\DomainException $e) {
-            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 400);
-        }
+        $ds = LoHangDaLoai::with('taiKhoan')
+            ->orderByDesc('ThoiGianLoai')
+            ->orderByDesc('MaLoai')
+            ->get()
+            ->map(fn ($r) => [
+                'MaLoai'        => (int) $r->MaLoai,
+                'TenSanPham'    => $r->TenSanPham,
+                'MaLo'          => $r->MaLo,
+                'HanSuDung'     => $r->HanSuDung?->toDateString(),
+                'SoLuongLoai'   => (int) $r->SoLuongLoai,
+                'ThoiGianLoai'  => $r->ThoiGianLoai?->toDateTimeString(),
+                'NguoiThucHien' => $r->taiKhoan?->HoTen ?? 'Hệ thống',
+            ]);
 
-        return response()->json(['message' => "Đã hủy lô {$lo->MaLo} và trừ khỏi tồn kho."]);
+        return response()->json(['data' => $ds]);
     }
 
     public function capNhatHan(Request $request, $id): JsonResponse

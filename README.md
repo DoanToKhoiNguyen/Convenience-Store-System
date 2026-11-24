@@ -155,11 +155,20 @@ npm start
 
 ### 6.3. Tiến trình nền
 
-Hóa đơn giữ hàng quá hạn chỉ được hủy khi bộ lập lịch (scheduler) chạy. Docker Compose hiện chỉ chạy web server, nên mở một terminal riêng:
+`php artisan schedule:work` là bộ lập lịch (scheduler) của Laravel: chạy liên tục, mỗi phút kiểm tra các tác vụ khai báo trong `routes/console.php` và thực thi khi tới giờ. Trong dự án hiện có 2 việc phụ thuộc vào nó:
+
+- Hủy hóa đơn giữ hàng quá hạn.
+- Tự động loại các lô đã hết hạn khỏi tồn kho (`lo-hang:loai-het-han`), ghi vào tab "Đã loại" của trang cảnh báo hạn sử dụng.
+
+Docker Compose hiện chỉ chạy web server nên scheduler không tự khởi động. **Mỗi lần khởi động lại dự án/container phải chạy lại lệnh dưới đây** trong một terminal riêng và để terminal mở (chỉ dừng khi `Ctrl+C`, đóng terminal hoặc tắt container):
 
 ```bash
 docker compose exec backend php artisan schedule:work
 ```
+
+Nếu không chạy scheduler, chức năng không mất hẳn nhưng có độ trễ: lô hết hạn vẫn được loại khi có người đăng nhập (app gọi `/api/thong-bao` mỗi 60 giây) hoặc khi mở trang cảnh báo hạn sử dụng; còn hóa đơn giữ hàng quá hạn thì chỉ được hủy khi scheduler chạy.
+
+> Sau khi cập nhật code có tác vụ mới trong `routes/console.php`, cần `Ctrl+C` và chạy lại `schedule:work` để nó nạp lại danh sách tác vụ.
 
 ### 6.4. Chạy nhanh khi đã cài đặt xong
 

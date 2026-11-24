@@ -138,13 +138,13 @@ function readCollapsed(): boolean {
                   ></i>
                   <span [class]="collapsed() ? 'truncate lg:hidden' : 'truncate'">{{ item.label }}</span>
 
-                  @if (badgeCount(item.link); as n) {
+                  @if (coMoi(item.link) ? badgeCount(item.link) : 0; as n) {
                     <span
                       [class]="badgeClass()"
                       [attr.aria-label]="badgeLabel(item.link, n)"
                       [title]="badgeLabel(item.link, n)"
                     >
-                      <i class="pi pi-exclamation-circle text-[9px]" [class]="collapsed() ? 'lg:hidden' : ''"></i>
+                      <i class="pi pi-bell text-[9px]" [class]="collapsed() ? 'lg:hidden' : ''"></i>
                       <span [class]="collapsed() ? 'lg:hidden' : ''">{{ n }}</span>
                     </span>
                   }
@@ -333,9 +333,9 @@ export class AdminLayout {
     })).filter((g) => g.items.length > 0),
   );
 
-  // Số việc cần chú ý, hết thì ẩn chấm báo
+  // Badge chỉ hiện khi có việc CHƯA XEM; xem rồi thì ẩn cả chấm lẫn số
   private readonly badges = computed<Record<string, number>>(() => ({
-    '/admin/stock-alerts': this.notice.canhBaoKho(),
+    '/admin/stock-alerts': this.notice.canhBaoKho() + this.notice.loSapHetHan(),
     '/admin/purchases': this.notice.phieuChoDuyet() + this.notice.phieuChoNhan(),
   }));
 
@@ -375,10 +375,25 @@ export class AdminLayout {
         filter((e) => e instanceof NavigationEnd),
         takeUntilDestroyed(),
       )
-      .subscribe(() => {
+      .subscribe((e) => {
         this.closeAll();
+        this.danhDauDaXem(e.urlAfterRedirects);
         this.notice.refresh();
       });
+  }
+
+  // Mở trang nào thì coi như đã xem cảnh báo của trang đó: badge giữ số, ẩn chuông
+  private danhDauDaXem(url: string) {
+    const u = url.split(/[?#]/)[0];
+    if (u.startsWith('/admin/stock-alerts')) this.notice.xemKenh('kho');
+    if (u.startsWith('/admin/expiry-alerts')) this.notice.xemKenh('han');
+    if (u.startsWith('/admin/purchases')) this.notice.xemKenh('mua');
+  }
+
+  coMoi(link: string): boolean {
+    if (link === '/admin/stock-alerts') return this.notice.moiKho() || this.notice.moiHan();
+    if (link === '/admin/purchases') return this.notice.moiMua();
+    return false;
   }
 
   badgeCount(link: string): number {
@@ -395,11 +410,19 @@ export class AdminLayout {
 
   badgeLabel(link: string, n: number): string {
     if (link === '/admin/stock-alerts') {
-      const tong = this.notice.canhBaoKhoTong();
-      const coPhieu = tong - n;
-      return coPhieu > 0
-        ? `${n} sản phẩm cần nhập thêm (${coPhieu} đã có phiếu nhập)`
-        : `${n} sản phẩm cần nhập thêm`;
+      const parts: string[] = [];
+      const kho = this.notice.canhBaoKho();
+      if (kho > 0) {
+        const coPhieu = this.notice.canhBaoKhoTong() - kho;
+        parts.push(
+          coPhieu > 0
+            ? `${kho} sản phẩm cần nhập thêm (${coPhieu} đã có phiếu nhập)`
+            : `${kho} sản phẩm cần nhập thêm`,
+        );
+      }
+      const han = this.notice.loSapHetHan();
+      if (han > 0) parts.push(`${han} lô hàng sắp hết hạn`);
+      return parts.join(' · ') || String(n);
     }
     if (link === '/admin/purchases') {
       const parts: string[] = [];

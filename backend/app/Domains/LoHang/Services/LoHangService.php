@@ -5,9 +5,11 @@ namespace App\Domains\LoHang\Services;
 use App\Models\CapNhatTonKho;
 use App\Models\HoaDonLo;
 use App\Models\LoHang;
+use App\Models\LoHangDaLoai;
 use App\Models\SanPham;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -154,27 +156,67 @@ class LoHangService
         return $sp;
     }
 
-    /** Hủy cả lô (hàng hết hạn, hỏng): đưa số còn lại về 0 và trừ khỏi tồn kho. */
-    public function huyLo(int $maLo, string $lyDo, int $maTaiKhoan): LoHang
+    /**
+     * Tự động loại các lô đã hết hạn còn hàng: đưa lô về 0, trừ tồn kho và ghi nhật ký "Đã loại".
+     * Chạy bởi bộ lập lịch và mỗi khi mở trang cảnh báo hạn sử dụng. Trả về số lô đã loại.
+     */
+    public function loaiLoHetHan(): int
     {
-        $tam = LoHang::find($maLo);
-        if (!$tam) {
-            throw new \DomainException('Không tìm thấy lô hàng.', 404);
+        $ids = LoHang::where('SoLuongCon', '>', 0)
+            ->whereNotNull('HanSuDung')
+            ->where('HanSuDung', '<', Carbon::today()->toDateString())
+            ->pluck('MaLoHang');
+
+        $dem = 0;
+        foreach ($ids as $id) {
+            try {
+                $daLoai = DB::transaction(function () use ($id) {
+                    $tam = LoHang::find($id);
+                    if (!$tam) {
+                        return false;
+                    }
+
+                    // Khóa sản phẩm trước rồi mới khóa lô (cùng thứ tự với bán hàng để tránh deadlock)
+                    $sp = $this->khoaSanPham((int) $tam->MaSanPham);
+                    $lo = LoHang::where('MaLoHang', $id)->lockForUpdate()->first();
+
+                    // Kiểm tra lại sau khi khóa: có thể vừa được bán hoặc đổi hạn sử dụng
+                    if (!$lo || (int) $lo->SoLuongCon <= 0 || !$lo->HanSuDung
+                        || $lo->HanSuDung->toDateString() >= Carbon::today()->toDateString()) {
+                        return false;
+                    }
+
+                    $soLuong = (int) $lo->SoLuongCon;
+                    $lo->SoLuongCon = 0;
+                    $lo->save();
+
+                    $this->ghiTon($sp, -$soLuong, "Hết hạn - tự động loại lô {$lo->MaLo}", null);
+
+                    LoHangDaLoai::create([
+                        'MaLoHang'     => (int) $lo->MaLoHang,
+                        'MaSanPham'    => (int) $lo->MaSanPham,
+                        'TenSanPham'   => $sp->TenSanPham,
+                        'MaLo'         => $lo->MaLo,
+                        'HanSuDung'    => $lo->HanSuDung->toDateString(),
+                        'SoLuongLoai'  => $soLuong,
+                        'ThoiGianLoai' => now(),
+                        'MaTaiKhoan'   => null,
+                        'LyDo'         => 'Hết hạn sử dụng',
+                    ]);
+
+                    return true;
+                });
+            } catch (\Throwable $e) {
+                Log::error("Không tự loại được lô #{$id}: " . $e->getMessage());
+                $daLoai = false;
+            }
+
+            if ($daLoai) {
+                $dem++;
+            }
         }
 
-        $sp = $this->khoaSanPham((int) $tam->MaSanPham); // khóa sản phẩm trước, lô sau (cùng thứ tự với các hàm khác)
-        $lo = LoHang::where('MaLoHang', $maLo)->lockForUpdate()->first();
-
-        $soLuong = (int) $lo->SoLuongCon;
-        if ($soLuong <= 0) {
-            throw new \DomainException('Lô này đã hết hàng, không còn gì để hủy.', 422);
-        }
-
-        $lo->SoLuongCon = 0;
-        $lo->save();
-        $this->ghiTon($sp, -$soLuong, "Hủy lô {$lo->MaLo}: {$lyDo}", $maTaiKhoan);
-
-        return $lo;
+        return $dem;
     }
 
     public function datHanSuDung(int $maLo, ?string $han): LoHang
@@ -343,7 +385,7 @@ class LoHangService
         return $chia;
     }
 
-    private function ghiTon(SanPham $sp, int $delta, string $lyDo, int $maTaiKhoan): void
+    private function ghiTon(SanPham $sp, int $delta, string $lyDo, ?int $maTaiKhoan): void
     {
         $truoc = (int) $sp->SoLuongHienTai;
         $sp->SoLuongHienTai = $truoc + $delta;

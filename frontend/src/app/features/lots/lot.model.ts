@@ -18,6 +18,16 @@ export interface LotAlert extends Lot {
     CanhBaoHSD: number;
 }
 
+export interface RemovedLot {
+    MaLoai: number;
+    TenSanPham: string;
+    MaLo: string;
+    HanSuDung: string | null;
+    SoLuongLoai: number;
+    ThoiGianLoai: string | null;
+    NguoiThucHien: string;
+}
+
 export function lotText(l: Pick<Lot, 'trang_thai' | 'so_ngay_con_lai'>): string {
     const n = l.so_ngay_con_lai ?? 0;
     switch (l.trang_thai) {
