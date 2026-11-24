@@ -1,63 +1,102 @@
-## Công nghệ sử dụng
+# Hệ thống quản lý cửa hàng tiện lợi
 
-| Phần | Công nghệ |
+Ứng dụng quản lý cửa hàng tiện lợi: bán hàng tại quầy (POS), quản lý kho theo lô và hạn sử dụng, phiếu nhập hàng, khuyến mãi, ca làm việc và báo cáo doanh thu.
+
+- **Backend:** REST API Laravel 13 (PHP 8.3), xác thực bằng token Laravel Sanctum.
+- **Frontend:** Angular 22 (standalone component, signals), PrimeNG 22, Tailwind CSS v4.
+- **Cơ sở dữ liệu:** PostgreSQL 16.
+- **Hạ tầng dev:** Docker Compose (PostgreSQL, Redis, backend).
+
+## 1. Tính năng chính
+
+| Nhóm | Nội dung |
 |---|---|
-| Backend | PHP 8.3+, **Laravel 12** (chế độ API) |
-| Frontend | **Angular 19/20**, TypeScript (strict), Tailwind CSS, PrimeNG |
-| Database | **PostgreSQL** |
-| Cache / Queue | **Redis**, Laravel Horizon |
-| Xác thực / Phân quyền | Laravel Sanctum, spatie/laravel-permission |
-| Real-time | Laravel Reverb (WebSocket) |
-| Test | Pest / PHPUnit (backend), Jest + Playwright (frontend) |
-| Chất lượng code | Larastan (PHPStan), Laravel Pint, ESLint, Prettier |
-| Hạ tầng | Docker, Nginx, GitHub Actions |
+| Bán hàng (POS) | Tạo hóa đơn nháp, thêm sản phẩm, giữ hàng chờ thanh toán, thanh toán và trừ kho, hủy hóa đơn, xem lịch sử hóa đơn |
+| Kho hàng | Sản phẩm, danh mục, nhà cung cấp; phiếu nhập (chờ duyệt → duyệt → nhận hàng theo từng lô + hạn sử dụng); cập nhật tồn kho; lịch sử tồn kho |
+| Lô & hạn dùng | Mỗi lần nhận hàng tạo một lô riêng; cảnh báo lô sắp hết hạn / hết hạn; hủy lô hỏng |
+| Cảnh báo kho | Sản phẩm tồn thấp hơn mức tối thiểu, gợi ý số lượng cần nhập, lập phiếu nhập nhanh theo nhà cung cấp |
+| Khuyến mãi | Tạo, sửa, ngưng/bật lại chương trình khuyến mãi |
+| Nhân sự | Đăng ký ca làm theo tuần, thời khóa biểu, quản lý tài khoản nhân viên (khóa/mở khóa, đặt lại mật khẩu) |
+| Báo cáo | Doanh thu, nhập hàng |
+| Khác | Trang sản phẩm công khai cho khách xem, hồ sơ cá nhân, chấm báo việc cần xử lý trên sidebar |
 
-## Kiến trúc tổng quan
+## 2. Quy tắc nghiệp vụ quan trọng
 
-```
-Angular (Quản trị + POS + Trang khách)
-        │  REST API (JSON, token Sanctum)
-        ▼
-Nginx → Laravel API (PHP 8.3)
-        │
-        ├─ PostgreSQL (dữ liệu chính)
-        ├─ Redis (cache, queue, real-time)
-        └─ S3 / MinIO (ảnh sản phẩm)
-```
+**Ca làm việc**
+- Mỗi ca tối đa **2 nhân viên**.
+- Quản lý/chủ được đăng ký chung ca với nhân viên, tổng tối đa **3 người** và tối đa **1 quản lý/chủ** mỗi ca.
+- Vai trò được đọc tại thời điểm request: nhân viên được thăng chức giữa tuần thì đăng ký cũ lập tức tính là quản lý.
+- Lưu đăng ký dùng cache lock theo tuần để chống ghi đè khi nhiều người lưu cùng lúc.
+- Thời khóa biểu chỉ hiện tên nhân viên; quản lý/chủ hiển thị bằng chip "Quản lý" kèm số lượng.
 
-## Cấu trúc thư mục
+**Tồn kho & lô hàng**
+- Mọi thay đổi tồn kho đi qua `LoHangService`; `SoLuongHienTai` của sản phẩm luôn bằng tổng `SoLuongCon` của các lô.
+- Xuất kho theo **FIFO**: trừ hết lô nhập trước mới sang lô nhập sau; lô đã hết hạn bị bỏ qua khi bán.
+- Hủy hóa đơn đang giữ hàng thì hoàn đúng số lượng về từng lô đã trừ.
+- Không cho tồn kho vượt mức tối đa của sản phẩm.
+
+**Hóa đơn**
+- Hóa đơn đưa vào hàng đợi được giữ hàng tối đa **60 phút**; quá hạn tự động hủy và hoàn kho (lệnh `hoa-don:huy-qua-han`, chạy mỗi phút).
+- Hóa đơn nháp bỏ dở quá 1 ngày được dọn tự động.
+
+**Tài khoản**
+- Tài khoản bị khóa: request kế tiếp nhận **403** và toàn bộ token bị thu hồi; các request sau trả **401**.
+- Mật khẩu mặc định của nhân viên mới là `123123`.
+- Không xóa tài khoản, chỉ đặt lại mật khẩu hoặc khóa.
+
+**Chấm báo trên sidebar**
+- "Cảnh báo kho": số sản phẩm tồn thấp **chưa có phiếu nhập** đang chờ/đã duyệt.
+- "Phiếu nhập": số phiếu **chờ duyệt** (chủ/quản lý) + **chờ nhận hàng** (mọi vai trò).
+- Số liệu tự làm mới mỗi 60 giây, khi quay lại tab và khi chuyển trang.
+
+## 3. Công nghệ sử dụng
+
+| Thành phần | Công nghệ |
+|---|---|
+| Backend | Laravel 13.17, PHP 8.3, Laravel Sanctum (token), spatie/laravel-permission |
+| Frontend | Angular 22 (standalone, signals, zoneless), PrimeNG 22, Tailwind CSS v4, echarts (báo cáo) |
+| Cơ sở dữ liệu | PostgreSQL 16 |
+| Cache / session / queue | Driver `database` (`.env.example`); Redis có trong docker-compose nhưng chưa dùng cho queue |
+| Đóng gói dev | Docker Compose: `postgres`, `redis`, `backend` (`php artisan serve`) |
+| Kiểm thử | PHPUnit 12 (backend) |
+
+## 4. Cấu trúc thư mục
 
 ```
 convenience-store/
- ├─ backend/        # Laravel API (app/Domains chia theo nghiệp vụ)
- ├─ frontend/       # Angular (src/app/features chia theo tính năng)
- ├─ docker/         # Cấu hình nginx, php, postgres
- ├─ docs/           # Tài liệu: database, API, deploy, quy ước
- ├─ .github/
- │   └─ workflows/  # CI/CD
- ├─ docker-compose.yml
- └─ README.md
+├─ backend/                     # Laravel API
+│  ├─ app/Domains/              # Chia theo nghiệp vụ
+│  │  ├─ Auth/  BanHang/  BaoCao/  CaLamViec/  DanhMuc/
+│  │  ├─ KhuyenMai/  LoHang/  NhaCungCap/  NhanVien/
+│  │  └─ PhieuNhap/  SanPham/  ThongBao/
+│  ├─ app/Http/Middleware/      # CheckRole (role), CheckAccountStatus (active)
+│  ├─ routes/api.php            # Toàn bộ endpoint /api
+│  ├─ database/seeders/         # Dữ liệu mẫu
+│  └─ tests/Feature/            # Feature test
+├─ frontend/                    # Angular
+│  └─ src/app/
+│     ├─ core/                  # auth, guards, interceptors, ui (chấm báo)
+│     ├─ layouts/               # admin-layout, pos-layout, public-layout
+│     ├─ features/              # sales, bill, purchases, stock, lots, products, ...
+│     └─ shared/                # component/pipe dùng chung
+├─ report/                      # Báo cáo triển khai
+├─ docker-compose.yml
+└─ README.md
 ```
 
-- **Backend:** mỗi nghiệp vụ (Catalog, Inventory, Sales, Staff, Promotion, Report, Auth) nằm trong `backend/app/Domains/`. Logic nghiệp vụ đặt ở `Actions/` và `Services/`, controller chỉ nhận request và trả response.
-- **Frontend:** `core/` (auth, guard, interceptor), `shared/` (component dùng chung), `layouts/` (admin, POS, public), `features/` (pos, catalog, inventory, staff, promotion, reports, public).
+## 5. Yêu cầu môi trường
 
-## Yêu cầu cài đặt
-
-| Công cụ | Phiên bản tối thiểu |
+| Công cụ | Phiên bản |
 |---|---|
-| PHP | 8.3 |
+| PHP | 8.3+ (extension `pdo_pgsql`; `pdo_sqlite` nếu chạy test) |
 | Composer | 2.x |
-| Node.js | LTS (20 trở lên) |
-| Angular CLI | 19 trở lên |
-| PostgreSQL | 15 |
-| Redis | 7 |
-| Docker + Docker Compose | bản mới nhất (nếu chạy bằng Docker) |
-| Git | bản mới nhất |
+| Node.js | 20+ (khuyến nghị 22/24) |
+| PostgreSQL | 16 (hoặc dùng container) |
+| Docker + Docker Compose | Bản mới nhất (nếu chạy bằng Docker) |
 
-## Cài đặt và chạy
+## 6. Cài đặt và chạy
 
-### Dùng Docker (khuyên dùng)
+### 6.1. Chạy bằng Docker (khuyến nghị)
 
 ```bash
 git clone <URL-repo>
@@ -69,144 +108,116 @@ docker compose up -d --build
 docker compose exec backend composer install
 docker compose exec backend php artisan key:generate
 docker compose exec backend php artisan migrate --seed
+docker compose exec backend php artisan storage:link
+```
 
+Chạy frontend trên máy host:
+
+```bash
 cd frontend
+npm install
+npm start        # ng serve, proxy /api và /storage sang http://localhost:8000
+```
+
+Địa chỉ mặc định:
+
+| Dịch vụ | URL / cổng |
+|---|---|
+| Frontend | http://localhost:4200 |
+| API | http://localhost:8000/api |
+| PostgreSQL | localhost:5432 (db `convenience_store`, user `admin`) |
+| Redis | localhost:6379 |
+
+Lệnh thường dùng:
+
+```bash
+docker compose exec backend php artisan migrate --force
+docker compose exec backend php artisan route:clear
+docker compose exec postgres psql -U admin -d convenience_store
+```
+
+### 6.2. Chạy trực tiếp trên máy (không Docker)
+
+```bash
+cd backend
+composer install
+cp .env.example .env
+# Sửa .env: DB_HOST=127.0.0.1 và thông tin kết nối PostgreSQL
+php artisan key:generate
+php artisan migrate --seed
+php artisan storage:link
+php artisan serve --port=8000
+
+cd ../frontend
 npm install
 npm start
 ```
 
-### Địa chỉ mặc định
+### 6.3. Tiến trình nền
 
-| Dịch vụ | URL |
-|---|---|
-| Frontend (Angular) | http://localhost:4200 |
-| Backend (Laravel API) | http://localhost:8000/api |
-| Tài liệu API | http://localhost:8000/docs/api |
-
-## Cấu hình môi trường
-
-Các biến quan trọng trong `backend/.env`:
-
-| Biến | Ý nghĩa |
-|---|---|
-| `APP_URL` | URL của backend |
-| `FRONTEND_URL` | URL của frontend (dùng cho CORS, Sanctum) |
-| `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | Kết nối PostgreSQL |
-| `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` | Kết nối Redis |
-| `QUEUE_CONNECTION` | Nên đặt là `redis` |
-| `SANCTUM_STATEFUL_DOMAINS` | Domain frontend được phép đăng nhập |
-| `FILESYSTEM_DISK`, `AWS_*` | Nơi lưu ảnh sản phẩm (S3/MinIO) |
-| `PAYMENT_*` | Khóa tích hợp thanh toán (VNPay, MoMo, PayOS), nếu có |
-
-Frontend: chỉnh URL API trong `frontend/src/environments/`.
-
-> **Không** commit file `.env` và không ghi mật khẩu, khóa API thật vào README hay mã nguồn.
-
-## Tài khoản mẫu (chỉ dùng cho môi trường dev)
-
-Được tạo bởi `php artisan migrate --seed`:
-
-| Vai trò | User | Mật khẩu |
-|---|---|---|
-| Chủ | admin | 123456 |
-| Quản lý | quanly | 123456 |
-| Nhân viên | nhanvien01| 123456 |
-
-> Đổi hoặc xóa các tài khoản này trước khi đưa lên môi trường thật.
-
-## Chạy test và kiểm tra code
-
-**Backend**
+Hóa đơn giữ hàng quá hạn chỉ được hủy khi bộ lập lịch (scheduler) chạy. Docker Compose hiện chỉ chạy web server, nên mở một terminal riêng:
 
 ```bash
-cd backend
-php artisan test                    # Chạy test (Pest)
-./vendor/bin/phpstan analyse        # Kiểm tra kiểu (Larastan)
-./vendor/bin/pint                   # Format code
+docker compose exec backend php artisan schedule:work
 ```
 
-**Frontend**
+### 6.4. Chạy nhanh khi đã cài đặt xong
+
+Mở 2 terminal tại thư mục gốc dự án:
 
 ```bash
+# Terminal 1 - frontend
 cd frontend
-npm run lint                        # ESLint
-npm test                            # Test đơn vị
-npx playwright test                 # Test E2E
-```
-
-## Tài liệu API
-
-- Tài liệu tự sinh (Scramble/Swagger): `/docs/api`
-- Quy ước API: xem `docs/api.md`
-
-## Tài liệu khác
-
-| File | Nội dung |
-|---|---|
-| `docs/database.md` | Sơ đồ bảng và quan hệ |
-| `docs/api.md` | Quy ước API, mã lỗi, phân quyền endpoint |
-| `docs/deploy.md` | Hướng dẫn triển khai |
-| `docs/conventions.md` | Quy ước code, commit, nhánh |
-
-## Triển khai (Deploy)
-
-Tóm tắt các bước (chi tiết xem `docs/deploy.md`):
-
-1. Chuẩn bị VPS có Docker, trỏ domain và cấu hình HTTPS (Nginx + Let's Encrypt).
-2. Tạo `.env` production (`APP_ENV=production`, `APP_DEBUG=false`).
-3. Build và chạy: `docker compose -f docker-compose.prod.yml up -d --build`.
-4. Chạy migration: `php artisan migrate --force`.
-5. Build frontend: `ng build` và phục vụ bằng Nginx.
-6. Bật backup database tự động và giám sát lỗi (Sentry / Laravel Pulse).
-
-## Quy ước làm việc
-
-- **Nhánh:** `main` (ổn định), `develop` (đang phát triển), `feature/<ten-tinh-nang>`, `fix/<ten-loi>`.
-- **Commit:** theo Conventional Commits, ví dụ `feat(pos): thêm phím tắt thanh toán`, `fix(inventory): sửa lỗi trừ kho trùng`.
-- **Pull Request:** phải qua CI (test, lint, phpstan) trước khi merge.
-- **Nguyên tắc nghiệp vụ bắt buộc:**
-  - Tiền dùng kiểu `decimal` (hoặc số nguyên theo đồng), không dùng float.
-  - Bán hàng và nhập kho phải nằm trong `DB::transaction()`, trừ kho dùng `lockForUpdate()`.
-  - Mọi thay đổi tồn kho ghi vào `stock_movements`.
-  - Hóa đơn đã chốt không sửa, chỉ tạo phiếu hoàn/hủy.
-
-
-```bash
-Lần đầu
-bash
-git clone <URL-repo>
-cd convenience-store
-
-Backend (mở terminal 1):
-
-bash
-cd backend
-composer install
-copy .env.example .env        # macOS/Linux: cp .env.example .env
-php artisan key:generate
-
-Mở backend/.env, sửa phần database cho khớp máy họ (DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD). Tạo sẵn database rỗng, rồi:
-
-bash
-php artisan migrate --seed
-php artisan serve
-
-Frontend (mở terminal 2):
-
-bash
-cd frontend
-npm install
 ng serve --proxy-config proxy.conf.json
 
-Mở http://localhost:4200 và đăng nhập bằng tài khoản seed (ví dụ admin / 123456).
-
-Nếu database chạy bằng Docker, thêm bước này trước php artisan migrate:
-
-bash
-docker compose up -d
-Những lần pull sau
-bash
-git pull
-cd backend && composer install && php artisan migrate
-cd ../frontend && npm install
+# Terminal 2 - backend
+cd backend
+docker compose exec backend php artisan serve
 ```
+
+- `ng serve --proxy-config proxy.conf.json` chạy Angular ở http://localhost:4200 và chuyển tiếp `/api`, `/storage` sang http://localhost:8000, nên phải chạy từ thư mục `frontend` (nơi có `proxy.conf.json`).
+- `docker compose exec backend php artisan serve` mở server API trong container. Nếu container đã tự chạy `php artisan serve` (lệnh mặc định trong `docker-compose.yml`) thì bỏ qua lệnh này — chạy thêm sẽ báo lỗi cổng 8000 đã được dùng.
+
+## 7. Tài khoản mẫu (sau khi seed)
+
+| Vai trò | Tên đăng nhập | Mật khẩu |
+|---|---|---|
+| Chủ doanh nghiệp | `admin` | `123456` |
+| Quản lý | `quanly` | `123456` |
+| Nhân viên | `nhanvien01` | `123456` |
+
+Nhân viên do chủ tạo mới trong ứng dụng có mật khẩu mặc định `123123`.
+
+## 8. Kiểm thử
+
+Backend (SQLite in-memory; trên Windows cần truyền rõ extension):
+
+```bash
+cd backend
+php -d extension=pdo_sqlite vendor/bin/phpunit
+```
+
+Frontend — kiểm tra kiểu và build template:
+
+```bash
+cd frontend
+npx tsc -p tsconfig.app.json --noEmit
+npx ng build --configuration development
+```
+
+Lần chạy gần nhất: **19 test, 99 assertion — OK**; frontend build thành công.
+
+## 9. Tài liệu
+
+- [Báo cáo triển khai đăng ký ca làm việc](report/BAO-CAO-DANG-KY-CA.md)
+
+## 10. API nhanh
+
+- Đăng nhập: `POST /api/login` → trả token Sanctum; gửi kèm `Authorization: Bearer <token>` cho các endpoint khác.
+- Thông tin cá nhân: `GET /api/me`, `PUT /api/me`, `PUT /api/me/mat-khau`.
+- Bán hàng: `POST /api/hoa-don`, `POST /api/hoa-don/{maHD}/chi-tiet`, `PUT /api/hoa-don/{maHD}/thanh-toan`, `POST /api/hoa-don/{maHD}/cho-thanh-toan`.
+- Kho: `GET /api/san-pham`, `GET /api/san-pham/canh-bao`, `GET /api/phieu-nhap`, `POST /api/phieu-nhap/{id}/duyet`, `PUT /api/phieu-nhap/{id}/nhan-hang`.
+- Ca làm: `GET|PUT /api/dang-ky-ca/tuan-sau`, `GET /api/lich-lam-viec`.
+- Chấm báo: `GET /api/thong-bao` (trả `canh_bao_kho`, `phieu_cho_duyet`, `phieu_cho_nhan`).
+
+Phân quyền route theo vai trò 1 (chủ), 2 (quản lý), 3 (nhân viên) qua middleware `role`.
