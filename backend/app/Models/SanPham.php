@@ -10,7 +10,7 @@ class SanPham extends Model
     protected $primaryKey = 'MaSanPham';
     protected $fillable = ['TenSanPham', 'DonGiaBan', 'DonGiaNhap', 'TonKhoToiThieu', 'TonKhoToiDa', 
     'CanhBaoHSD', 'SoLuongHienTai', 'TenThuongHieu', 'MoTa', 
-    'ThanhPhan', 'TrangThai', 'LoaiSanPham', 'MaNhaCungCap', 'HinhAnh', 'TienToLo'];
+    'ThanhPhan', 'TrangThai', 'LoaiSanPham', 'MaDanhMuc', 'MaNhaCungCap', 'HinhAnh', 'TienToLo'];
 
     protected $appends = ['hinh_anh_url'];
     protected $casts = ['TrangThai' => 'boolean'];

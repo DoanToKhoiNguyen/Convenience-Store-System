@@ -382,12 +382,11 @@ export class AdminLayout {
       });
   }
 
-  // Mở trang nào thì coi như đã xem cảnh báo của trang đó: badge giữ số, ẩn chuông
+  // Chỉ cảnh báo lô sắp hết hạn mới "xem là tắt": badge giữ số, ẩn chuông.
+  // Cảnh báo kho tắt khi lập phiếu nhập, phiếu nhập tắt khi đã nhận hàng, nên không đánh dấu ở đây.
   private danhDauDaXem(url: string) {
     const u = url.split(/[?#]/)[0];
-    if (u.startsWith('/admin/stock-alerts')) this.notice.xemKenh('kho');
     if (u.startsWith('/admin/expiry-alerts')) this.notice.xemKenh('han');
-    if (u.startsWith('/admin/purchases')) this.notice.xemKenh('mua');
   }
 
   coMoi(link: string): boolean {

@@ -55,6 +55,16 @@ interface Group {
       <span class="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
         <i class="pi pi-exclamation-circle text-xs"></i>
         Sắp hết hàng
+        @if (khoChuaNhap() > 0) {
+          <span
+            class="inline-flex h-5 min-w-5 items-center justify-center gap-1 rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white shadow-sm shadow-red-500/40"
+            [title]="khoLabel()"
+            [attr.aria-label]="khoLabel()"
+          >
+            <i class="pi pi-bell text-[9px]"></i>
+            {{ khoChuaNhap() }}
+          </span>
+        }
       </span>
       <a
         routerLink="/admin/expiry-alerts"
@@ -362,6 +372,11 @@ export class StockAlerts {
 
   readonly expiryLabel = computed(() => `${this.expiryTotal()} lô hàng sắp hết hạn`);
 
+  // Chuông tab "Sắp hết hàng": đếm sản phẩm sắp hết mà chưa có phiếu nhập nào,
+  // nên mở trang xem không tắt được, chỉ khi lập phiếu nhập mới giảm về 0.
+  readonly khoChuaNhap = computed(() => this.notice.canhBaoKho());
+  readonly khoLabel = computed(() => `${this.khoChuaNhap()} sản phẩm sắp hết chưa có phiếu nhập`);
+
   readonly selectable = computed(() => this.items().filter((p) => this.canSelect(p)));
 
   readonly allSelected = computed(
@@ -510,7 +525,7 @@ export class StockAlerts {
 
       for (const r of results) {
         if (r.ok) {
-          okMessages.push(`Phiếu #${r.id ?? '?'} - ${r.group.supplierName}`);
+          okMessages.push(`Phiếu ${r.id ?? '?'} - ${r.group.supplierName}`);
           for (const l of r.group.lines) {
             ordered.add(key(l.product));
             selected.delete(key(l.product));

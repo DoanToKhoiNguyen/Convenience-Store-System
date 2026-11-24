@@ -48,7 +48,7 @@ class LoHangService
         ?string $han,
         string $lyDo,
         int $maTaiKhoan,
-        ?int $maPhieu = null,
+        ?string $maPhieu = null,
         ?int $maChiTiet = null,
     ): LoHang {
         if ($soLuong <= 0) {
@@ -318,7 +318,7 @@ class LoHangService
         return LoHang::where('MaSanPham', $maSanPham)->orderByDesc('MaLoHang')->lockForUpdate()->first();
     }
 
-    private function taoLoNoiBo(SanPham $sp, int $soLuong, ?string $han, ?int $maPhieu, ?int $maChiTiet): LoHang
+    private function taoLoNoiBo(SanPham $sp, int $soLuong, ?string $han, ?string $maPhieu, ?int $maChiTiet): LoHang
     {
         return LoHang::create([
             'MaLo'               => $this->sinhMaLo($sp),

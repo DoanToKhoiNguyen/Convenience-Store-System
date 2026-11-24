@@ -12,12 +12,14 @@ interface NoticeCounts {
   phieu_cho_nhan: number;
 }
 
-// Số liệu đã xem của từng kênh: badge còn hiện chuông khi số liệu hiện tại lớn hơn mốc này
-type Kenh = 'kho' | 'mua' | 'han' | 'daLoai';
+// Số liệu đã xem của từng kênh: badge còn hiện chuông khi số liệu hiện tại lớn hơn mốc này.
+// Riêng kênh "kho" và "mua" không dùng mốc: mở trang xem không tắt chuông,
+// kho chỉ tắt khi lập phiếu nhập, mua chỉ tắt khi phiếu đã nhận hàng.
+type Kenh = 'han' | 'daLoai';
 type DaXem = Record<Kenh, number>;
 
 const DA_XEM_KEY = 'thong-bao-da-xem';
-const MOC_GOC: DaXem = { kho: 0, mua: 0, han: 0, daLoai: 0 };
+const MOC_GOC: DaXem = { han: 0, daLoai: 0 };
 
 // Mốc "đã xem" lưu riêng từng tài khoản để đổi tài khoản trên cùng máy không dùng lại mốc của người trước
 function docDaXem(maTaiKhoan: number): DaXem {
@@ -48,9 +50,10 @@ export class NoticeService {
   private readonly daXem = signal<DaXem>({ ...MOC_GOC });
   private choXem = new Set<Kenh>();
 
-  // Chuông chỉ hiện cho việc mới; xem xong thì badge giữ nguyên con số
-  readonly moiKho = computed(() => this.canhBaoKho() > this.daXem().kho);
-  readonly moiMua = computed(() => this.phieuChoDuyet() + this.phieuChoNhan() > this.daXem().mua);
+  // Chuông cảnh báo kho tắt khi lập phiếu nhập, chuông phiếu nhập tắt khi phiếu đã nhận hàng;
+  // các kênh khác chỉ hiện khi có việc mới chưa xem
+  readonly moiKho = computed(() => this.canhBaoKho() > 0);
+  readonly moiMua = computed(() => this.phieuChoDuyet() + this.phieuChoNhan() > 0);
   readonly moiHan = computed(() => this.loSapHetHan() > this.daXem().han);
   readonly moiDaLoai = computed(() => this.loDaLoai() > this.daXem().daLoai);
 
@@ -127,8 +130,6 @@ export class NoticeService {
       const nang = (k: Kenh) => {
         if (this.choXem.has(k)) moc[k] = Math.max(moc[k], this.soHienTai(k));
       };
-      nang('kho');
-      nang('mua');
       nang('han');
       nang('daLoai');
       this.choXem.clear();
@@ -138,10 +139,6 @@ export class NoticeService {
 
   private soHienTai(k: Kenh): number {
     switch (k) {
-      case 'kho':
-        return this.canhBaoKho();
-      case 'mua':
-        return this.phieuChoDuyet() + this.phieuChoNhan();
       case 'han':
         return this.loSapHetHan();
       case 'daLoai':

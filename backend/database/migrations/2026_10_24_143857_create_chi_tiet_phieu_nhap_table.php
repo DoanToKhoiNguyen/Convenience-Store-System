@@ -19,7 +19,8 @@ return new class extends Migration
             $table->decimal('TongGia', 12, 2);
             $table->date('ngay_san_xuat')->nullable();
 
-            $table->foreignId('MaPhieuNhap')->constrained('phieu_nhap', 'MaPhieuNhap')->onDelete('cascade');
+            $table->string('MaPhieuNhap', 10);
+            $table->foreign('MaPhieuNhap')->references('MaPhieuNhap')->on('phieu_nhap')->cascadeOnDelete();
             $table->foreignId('MaSanPham')->constrained('san_pham', 'MaSanPham')->onDelete('cascade');
         
             $table->timestamps();

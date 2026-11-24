@@ -97,7 +97,7 @@ export interface ImportProduct {
 }
 
 export interface ImportReceipt {
-    MaPhieuNhap: number;
+    MaPhieuNhap: string;
     TenNhaCungCap: string | null;
     ngay_nhan: string;
     so_dong: number;

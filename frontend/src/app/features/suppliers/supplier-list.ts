@@ -33,13 +33,12 @@ const normalize = (s: string) =>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <div class="relative w-full sm:w-80">
-          <i class="pi pi-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
+        <div class="w-full sm:w-80">
           <input
             pInputText
             type="text"
             placeholder="Tìm theo tên, địa chỉ, số điện thoại, danh mục..."
-            class="w-full pl-9"
+            class="w-full"
             [value]="keyword()"
             (input)="keyword.set($any($event.target).value)"
           />
@@ -68,6 +67,49 @@ const normalize = (s: string) =>
       </div>
     }
 
+    @if (catChips().length > 0) {
+      <div class="mb-4 flex flex-wrap items-center gap-2">
+        <span class="mr-0.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <i class="pi pi-filter text-[11px]"></i>
+          Lọc danh mục
+        </span>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition"
+          [class]="categoryFilter() === null
+            ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/40'"
+          (click)="categoryFilter.set(null)"
+        >
+          Tất cả
+          <span
+            class="rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none"
+            [class]="categoryFilter() === null ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+          >
+            {{ suppliers().length }}
+          </span>
+        </button>
+        @for (c of catChips(); track c.MaDanhMuc) {
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition"
+            [class]="categoryFilter() === c.MaDanhMuc
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/40'"
+            (click)="toggleCategory(c.MaDanhMuc)"
+          >
+            {{ c.TenDanhMuc }}
+            <span
+              class="rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none"
+              [class]="categoryFilter() === c.MaDanhMuc ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+            >
+              {{ c.count }}
+            </span>
+          </button>
+        }
+      </div>
+    }
+
     <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
         <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -75,6 +117,16 @@ const normalize = (s: string) =>
           Danh sách nhà cung cấp
           <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ filtered().length }}</span>
         </div>
+        @if (categoryFilter() !== null) {
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+            (click)="categoryFilter.set(null)"
+          >
+            <i class="pi pi-times text-[10px]"></i>
+            Bỏ lọc danh mục
+          </button>
+        }
       </div>
 
       <p-table
@@ -192,7 +244,9 @@ const normalize = (s: string) =>
                   <div class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
                     <i class="pi pi-inbox text-xl"></i>
                   </div>
-                  <span class="text-sm text-slate-500">Chưa có nhà cung cấp nào.</span>
+                  <span class="text-sm text-slate-500">
+                    {{ suppliers().length > 0 ? 'Không có nhà cung cấp phù hợp bộ lọc.' : 'Chưa có nhà cung cấp nào.' }}
+                  </span>
                 </div>
               }
             </td>
@@ -344,6 +398,7 @@ export class SupplierList {
   readonly suppliers = signal<SupplierItem[]>([]);
   readonly categories = signal<Category[]>([]);
   readonly keyword = signal('');
+  readonly categoryFilter = signal<number | null>(null);
   readonly loading = signal(true);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
@@ -354,14 +409,39 @@ export class SupplierList {
   readonly formError = signal<string | null>(null);
   readonly picked = signal<number[]>([]);
 
+  // Số NCC theo từng danh mục (chỉ đếm NCC đang có trong danh sách)
+  readonly catCounts = computed(() => {
+    const counts: Record<number, number> = {};
+    for (const s of this.suppliers()) {
+      for (const c of s.danh_muc ?? []) {
+        counts[c.MaDanhMuc] = (counts[c.MaDanhMuc] ?? 0) + 1;
+      }
+    }
+    return counts;
+  });
+
+  // Chip lọc: chỉ hiện danh mục đang có ít nhất một nhà cung cấp
+  readonly catChips = computed(() =>
+    this.categories()
+      .map((c) => ({
+        MaDanhMuc: c.MaDanhMuc,
+        TenDanhMuc: c.TenDanhMuc,
+        count: this.catCounts()[c.MaDanhMuc] ?? 0,
+      }))
+      .filter((c) => c.count > 0),
+  );
+
   readonly filtered = computed(() => {
     const k = normalize(this.keyword().trim());
-    if (!k) return this.suppliers();
-    return this.suppliers().filter((s) =>
-      normalize(
+    const cat = this.categoryFilter();
+
+    return this.suppliers().filter((s) => {
+      if (cat !== null && !(s.danh_muc ?? []).some((c) => c.MaDanhMuc === cat)) return false;
+      if (!k) return true;
+      return normalize(
         `${s.TenNhaCungCap} ${s.DiaChi} ${s.SoDienThoai} ${(s.danh_muc ?? []).map((c) => c.TenDanhMuc).join(' ')}`,
-      ).includes(k),
-    );
+      ).includes(k);
+    });
   });
 
   readonly form = this.fb.nonNullable.group({
@@ -394,6 +474,10 @@ export class SupplierList {
 
   isHidden(s: SupplierItem) {
     return Number(s.TrangThai ?? 1) === 0;
+  }
+
+  toggleCategory(id: number) {
+    this.categoryFilter.update((v) => (v === id ? null : id));
   }
 
   isPicked(id: number) {

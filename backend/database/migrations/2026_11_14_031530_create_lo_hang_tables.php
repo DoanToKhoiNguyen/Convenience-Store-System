@@ -19,7 +19,7 @@ return new class extends Migration
             $table->id('MaLoHang');
             $table->string('MaLo', 30)->unique();               // ví dụ CC-001
             $table->foreignId('MaSanPham')->constrained('san_pham', 'MaSanPham')->cascadeOnDelete();
-            $table->unsignedBigInteger('MaPhieuNhap')->nullable()->index();
+            $table->string('MaPhieuNhap', 10)->nullable()->index();
             $table->unsignedBigInteger('MaChiTietPhieuNhap')->nullable()->index();
             $table->dateTime('NgayNhap');
             $table->date('HanSuDung')->nullable();

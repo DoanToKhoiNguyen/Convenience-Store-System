@@ -112,7 +112,7 @@ class PhieuNhapController extends Controller
         }
     }
 
-    public function duyetPhieuNhap($id)
+    public function duyetPhieuNhap(Request $request, $id)
     {
         DB::beginTransaction();
 
@@ -130,6 +130,8 @@ class PhieuNhapController extends Controller
 
             // 3. Chỉ thực hiện thay đổi trạng thái thành "Đã duyệt" (Ví dụ: TrangThai = 2)
             $phieuNhap->TrangThai = 2;
+            $phieuNhap->MaTaiKhoanDuyet = $request->user()->MaTaiKhoan;
+            $phieuNhap->NgayDuyet = now();
             $phieuNhap->save();
 
             DB::commit();
@@ -199,18 +201,50 @@ class PhieuNhapController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = PhieuNhap::with(['nhaCungCap', 'chiTietPhieuNhap.loHang'])
+            $laNhanVien = (int) $request->user()->MaVaiTro === 3;
+
+            $dem = PhieuNhap::query();
+            if ($laNhanVien) {
+                $dem->whereIn('TrangThai', [2, 4]);
+            }
+            $dem = $dem->selectRaw('"TrangThai", COUNT(*) as so')
+                ->groupBy('TrangThai')
+                ->pluck('so', 'TrangThai')
+                ->mapWithKeys(fn ($so, $tt) => [(int) $tt => (int) $so]);
+
+            $counts = [
+                'tong'      => (int) $dem->sum(),
+                'cho_duyet' => (int) ($dem[1] ?? 0),
+                'cho_nhan'  => (int) ($dem[2] ?? 0),
+                'da_huy'    => (int) ($dem[3] ?? 0),
+                'da_nhan'   => (int) ($dem[4] ?? 0),
+            ];
+
+            $query = PhieuNhap::with([
+                    'nhaCungCap',
+                    'taikhoan:MaTaiKhoan,HoTen',
+                    'nguoiDuyet:MaTaiKhoan,HoTen',
+                    'nguoiNhan:MaTaiKhoan,HoTen',
+                    'chiTietPhieuNhap.loHang',
+                    'chiTietPhieuNhap.sanPham:MaSanPham,TenSanPham,HinhAnh',
+                ])
                 ->orderBy('created_at', 'desc');
 
             // Nhân viên (vai trò 3) chỉ thấy phiếu đã duyệt (2) và đã nhận hàng (4)
-            if ((int) $request->user()->MaVaiTro === 3) {
+            if ($laNhanVien) {
                 $query->whereIn('TrangThai', [2, 4]);
+            }
+
+            $trangThai = (int) $request->query('TrangThai');
+            if (in_array($trangThai, [1, 2, 3, 4], true)) {
+                $query->where('TrangThai', $trangThai);
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Lấy danh sách phiếu nhập thành công!',
                 'data'    => $query->paginate(10),
+                'counts'  => $counts,
             ], 200);
         } catch (\Exception $e) {
             Log::error('Lỗi lấy danh sách phiếu nhập: ' . $e->getMessage());
@@ -267,15 +301,17 @@ class PhieuNhapController extends Controller
                         (int) $ct->MaSanPham,
                         (int) $ct->SoLuong,
                         $han->get((int) $ct->MaChiTietPhieuNhap),
-                        "Nhận hàng - phiếu nhập #{$phieuNhap->MaPhieuNhap}",
+                        "Nhận hàng - phiếu nhập {$phieuNhap->MaPhieuNhap}",
                         $maTaiKhoan,
-                        (int) $phieuNhap->MaPhieuNhap,
+                        (string) $phieuNhap->MaPhieuNhap,
                         (int) $ct->MaChiTietPhieuNhap
                     );
                 }
 
                 // Giữ nguyên người lập và ngày lập của phiếu
                 $phieuNhap->TrangThai = 4;
+                $phieuNhap->MaTaiKhoanNhan = $maTaiKhoan;
+                $phieuNhap->NgayNhan = now();
                 $phieuNhap->save();
 
                 return $phieuNhap->load('chiTietPhieuNhap.loHang');

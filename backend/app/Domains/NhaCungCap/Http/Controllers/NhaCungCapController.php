@@ -64,20 +64,32 @@ class NhaCungCapController extends Controller
 
         $data = $this->duLieu($request, $id);
 
-        // Không cho bỏ danh mục mà nhà cung cấp này đang có sản phẩm
         $cu  = DB::table('nha_cung_cap_danh_muc')->where('MaNhaCungCap', $id)->pluck('MaDanhMuc')->map(fn ($v) => (int) $v);
         $moi = collect($data['DanhMuc'])->map(fn ($v) => (int) $v);
         $bo  = $cu->diff($moi)->values();
 
+        // Chỉ sản phẩm đang kinh doanh mới chặn bỏ danh mục; sản phẩm đã ngừng bán thì bỏ được
         if ($bo->isNotEmpty()) {
-            $dangDung = DanhMuc::whereIn(
-                'MaDanhMuc',
-                SanPham::where('MaNhaCungCap', $id)->whereIn('MaDanhMuc', $bo)->select('MaDanhMuc')
-            )->pluck('TenDanhMuc');
+            $dangBan = [];
+            foreach (DanhMuc::whereIn('MaDanhMuc', $bo)->get() as $dm) {
+                $ten = SanPham::where('MaNhaCungCap', $id)
+                    ->where(fn ($q) => $q->whereNull('TrangThai')->orWhere('TrangThai', true))
+                    ->where(function ($q) use ($dm) {
+                        $q->where('MaDanhMuc', $dm->MaDanhMuc)
+                            // Sản phẩm tạo trước khi có cột MaDanhMuc chỉ còn tên danh mục ở LoaiSanPham
+                            ->orWhere(fn ($q2) => $q2->whereNull('MaDanhMuc')->where('LoaiSanPham', $dm->TenDanhMuc));
+                    })
+                    ->orderBy('TenSanPham')
+                    ->pluck('TenSanPham');
 
-            if ($dangDung->isNotEmpty()) {
-                $thongBao = 'Không thể bỏ danh mục "' . $dangDung->implode('", "')
-                    . '" vì nhà cung cấp này đang có sản phẩm thuộc danh mục đó.';
+                if ($ten->isNotEmpty()) {
+                    $dangBan[] = 'danh mục "' . $dm->TenDanhMuc . '" (sản phẩm: ' . $ten->implode(', ') . ')';
+                }
+            }
+
+            if ($dangBan) {
+                $thongBao = 'Không thể bỏ ' . implode('; ', $dangBan)
+                    . ' vì nhà cung cấp này còn sản phẩm đang kinh doanh thuộc danh mục đó.';
 
                 return response()->json(['message' => $thongBao, 'errors' => ['DanhMuc' => [$thongBao]]], 422);
             }

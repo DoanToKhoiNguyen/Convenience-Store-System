@@ -471,7 +471,7 @@ class BaoCaoController extends Controller
             ->limit(30)
             ->get()
             ->map(fn ($r) => [
-                'MaPhieuNhap'   => (int) $r->MaPhieuNhap,
+                'MaPhieuNhap'   => (string) $r->MaPhieuNhap,
                 'TenNhaCungCap' => $r->TenNhaCungCap,
                 'ngay_nhan'     => Carbon::parse($r->ngay_nhan)->format('Y-m-d\TH:i:s'),
                 'so_dong'       => (int) $r->so_dong,

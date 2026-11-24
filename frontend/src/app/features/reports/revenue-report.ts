@@ -670,7 +670,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                   <tbody>
                     @for (r of m.phieu_nhap; track r.MaPhieuNhap) {
                       <tr class="border-b border-slate-100">
-                        <td class="py-2.5 font-medium text-slate-800">#{{ r.MaPhieuNhap }}</td>
+                        <td class="py-2.5 font-medium text-slate-800">{{ r.MaPhieuNhap }}</td>
                         <td>{{ r.ngay_nhan | date: 'dd/MM/yyyy HH:mm' }}</td>
                         <td>{{ r.TenNhaCungCap ?? '—' }}</td>
                         <td class="text-right">{{ r.so_luong.toLocaleString('vi-VN') }}</td>

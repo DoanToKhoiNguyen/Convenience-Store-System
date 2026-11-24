@@ -8,7 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import { PurchaseOrder } from './purchase.model';
+import { PurchaseCounts, PurchaseDetail, PurchaseOrder } from './purchase.model';
 import { PurchaseService } from './purchase.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE } from '../../core/auth/roles';
@@ -53,6 +53,32 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
       </div>
     }
 
+    <div class="mb-4 flex flex-wrap items-center gap-2">
+      <span class="mr-0.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <i class="pi pi-filter text-[11px]"></i>
+        Lọc theo trạng thái
+      </span>
+      @for (t of tags(); track t.label) {
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition"
+          [class]="statusFilter() === t.value
+            ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/40'"
+          (click)="chonTag(t.value)"
+        >
+          <i [class]="t.icon" class="text-[11px]"></i>
+          {{ t.label }}
+          <span
+            class="rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none"
+            [class]="statusFilter() === t.value ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+          >
+            {{ t.count }}
+          </span>
+        </button>
+      }
+    </div>
+
     <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
         <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -68,16 +94,17 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
         [paginator]="true"
         [rows]="10"
         [totalRecords]="total()"
+        [first]="first()"
         [loading]="loading()"
         (onLazyLoad)="onLazyLoad($event)"
         dataKey="MaPhieuNhap"
-        [tableStyle]="{ 'min-width': '50rem' }"
+        [tableStyle]="{ 'min-width': '56rem' }"
       >
         <ng-template #header>
           <tr class="bg-slate-50/80">
             <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Mã phiếu</th>
             <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Ngày lập</th>
-            <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Nhà cung cấp</th>
+            <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Sản phẩm</th>
             <th class="px-4 py-3 text-right! text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tổng giá trị</th>
             <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Trạng thái</th>
             <th class="px-4 py-3 text-center! text-[11px] font-semibold uppercase tracking-wider text-slate-500">Thao tác</th>
@@ -88,7 +115,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
           <tr class="transition-colors hover:bg-emerald-100/60!">
             <td class="px-4 py-3">
               <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 font-mono text-xs font-medium text-emerald-700">
-                #{{ o.MaPhieuNhap }}
+                {{ o.MaPhieuNhap }}
               </span>
             </td>
             <td class="px-4 py-3 text-slate-600">
@@ -97,20 +124,40 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
                 {{ o.NgayLap | date: 'dd/MM/yyyy HH:mm' }}
               </span>
             </td>
-            <td class="px-4 py-3 text-slate-700">
-              <span class="inline-flex items-center gap-1.5">
-                <i class="pi pi-building text-[11px] text-slate-400"></i>
-                {{ o.nha_cung_cap?.TenNhaCungCap ?? '—' }}
-              </span>
+            <td class="px-4 py-3">
+              @if (dongDau(o); as d) {
+                <div class="flex items-center gap-2.5">
+                  <div class="h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200/70">
+                    @if (anh(d); as url) {
+                      <img [src]="url" alt="" class="h-full w-full object-cover" />
+                    } @else {
+                      <div class="flex h-full w-full items-center justify-center text-slate-400">
+                        <i class="pi pi-image text-xs"></i>
+                      </div>
+                    }
+                  </div>
+                  <div class="min-w-0">
+                    <div class="max-w-[16rem] truncate font-medium text-slate-800">{{ d.TenSanPham }}</div>
+                    <div class="text-xs text-slate-500">
+                      SL {{ tongSoLuong(o) }}
+                      @if (soMatHangKhac(o) > 0) {
+                        · {{ soMatHangKhac(o) }} mặt hàng khác
+                      }
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <span class="text-slate-400">—</span>
+              }
             </td>
             <td class="px-4 py-3 text-right font-medium tabular-nums text-slate-800">{{ o.TongGiaTri | number: '1.0-0' }} ₫</td>
             <td class="px-4 py-3"><p-tag [value]="status(o).label" [severity]="status(o).severity" /></td>
             <td class="px-4 py-3 text-center">
               <div class="flex items-center justify-center gap-1">
-                <p-button label="Xem" size="small" [text]="true" (onClick)="openView(o)" />
-
                 @if (!canApprove() && o.TrangThai === 2) {
                   <p-button label="Nhận hàng" size="small" [disabled]="busy()" (onClick)="openReceive(o)" />
+                } @else {
+                  <p-button label="Xem" size="small" [text]="true" (onClick)="openView(o)" />
                 }
               </div>
             </td>
@@ -130,7 +177,9 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
                   <div class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
                     <i class="pi pi-inbox text-xl"></i>
                   </div>
-                  <span class="text-sm text-slate-500">Chưa có phiếu nhập nào.</span>
+                  <span class="text-sm text-slate-500">
+                    {{ statusFilter() !== null ? 'Không có phiếu ở trạng thái này.' : 'Chưa có phiếu nhập nào.' }}
+                  </span>
                 </div>
               }
             </td>
@@ -147,9 +196,22 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
       [style]="{ width: '42rem', maxWidth: '94vw' }"
     >
       @if (selected(); as o) {
-        <div class="mb-3 flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200/70 bg-slate-50/60 px-3 py-2 text-sm text-slate-600">
-          <i class="pi pi-building text-xs text-slate-400"></i>
-          Nhà cung cấp: <b class="text-slate-800">{{ o.nha_cung_cap?.TenNhaCungCap ?? '—' }}</b>
+        <div class="mb-3 rounded-xl border border-slate-200/70 bg-slate-50/60 p-3">
+          <div class="mb-2.5 flex flex-wrap items-center gap-1.5 border-b border-slate-200/70 pb-2.5 text-sm text-slate-600">
+            <i class="pi pi-building text-xs text-slate-400"></i>
+            Nhà cung cấp: <b class="text-slate-800">{{ o.nha_cung_cap?.TenNhaCungCap ?? '—' }}</b>
+          </div>
+          <div class="grid gap-x-4 gap-y-2.5 text-sm sm:grid-cols-2">
+            @for (t of thongTin(); track t.label) {
+              <div class="flex items-start gap-2">
+                <i [class]="t.icon" class="mt-0.5 text-[11px] text-slate-400"></i>
+                <div class="min-w-0">
+                  <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{{ t.label }}</div>
+                  <div class="truncate text-slate-700">{{ t.value }}</div>
+                </div>
+              </div>
+            }
+          </div>
         </div>
 
         @if (mode() === 'receive') {
@@ -181,7 +243,20 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
                   @if (mode() === 'view') {
                     <td class="px-4 py-2 text-slate-600">{{ d.lo_hang ? d.lo_hang.MaLo : '—' }}</td>
                   }
-                  <td class="px-4 py-2 text-slate-700">{{ d.TenSanPham }}</td>
+                  <td class="px-4 py-2">
+                    <div class="flex items-center gap-2">
+                      <div class="h-8 w-8 shrink-0 overflow-hidden rounded-md bg-slate-100 ring-1 ring-slate-200/70">
+                        @if (anh(d); as url) {
+                          <img [src]="url" alt="" class="h-full w-full object-cover" />
+                        } @else {
+                          <div class="flex h-full w-full items-center justify-center text-slate-400">
+                            <i class="pi pi-image text-[10px]"></i>
+                          </div>
+                        }
+                      </div>
+                      <span class="text-slate-700">{{ d.TenSanPham }}</span>
+                    </div>
+                  </td>
                   <td class="px-4 py-2 text-right tabular-nums text-slate-700">{{ d.SoLuong }}</td>
                   <td class="px-4 py-2 text-right tabular-nums text-slate-700">{{ d.DonGia | number: '1.0-0' }}</td>
                   <td class="px-4 py-2 text-right tabular-nums text-slate-800">{{ d.TongGia | number: '1.0-0' }}</td>
@@ -275,6 +350,10 @@ export class PurchaseList {
   readonly error = signal<string | null>(null);
   readonly success = signal<string | null>(null);
 
+  readonly counts = signal<PurchaseCounts>({ tong: 0, cho_duyet: 0, cho_nhan: 0, da_huy: 0, da_nhan: 0 });
+  readonly statusFilter = signal<number | null>(null);
+  readonly first = signal(0);
+
   readonly selected = signal<PurchaseOrder | null>(null);
   readonly mode = signal<'view' | 'receive'>('view');
   readonly dates = signal<Record<number, string>>({});
@@ -284,7 +363,59 @@ export class PurchaseList {
 
   readonly dialogTitle = computed(() => {
     const id = this.selected()?.MaPhieuNhap;
-    return this.mode() === 'receive' ? `Nhận hàng - phiếu #${id}` : `Chi tiết phiếu #${id}`;
+    return this.mode() === 'receive' ? `Nhận hàng - phiếu ${id}` : `Chi tiết phiếu ${id}`;
+  });
+
+  // Thông tin đầu phiếu: ngày lập, ngày nhận, người lập / duyệt / nhận
+  readonly thongTin = computed(() => {
+    const o = this.selected();
+    if (!o) return [];
+    return [
+      { icon: 'pi pi-calendar', label: 'Ngày lập', value: this.dinhDangNgay(o.NgayLap) },
+      { icon: 'pi pi-calendar-check', label: 'Ngày nhận', value: this.dinhDangNgay(o.NgayNhan) },
+      { icon: 'pi pi-user', label: 'Người lập phiếu', value: o.taikhoan?.HoTen ?? '—' },
+      { icon: 'pi pi-verified', label: 'Người duyệt phiếu', value: o.nguoi_duyet?.HoTen ?? '—' },
+      { icon: 'pi pi-inbox', label: 'Người nhận hàng', value: o.nguoi_nhan?.HoTen ?? '—' },
+    ];
+  });
+
+  // Cột "Sản phẩm" của danh sách: mặt hàng đầu tiên kèm ảnh và tổng số lượng
+  dongDau(o: PurchaseOrder): PurchaseDetail | null {
+    return o.chi_tiet_phieu_nhap?.[0] ?? null;
+  }
+
+  anh(d: PurchaseDetail | null): string | null {
+    return d?.san_pham?.hinh_anh_url ?? null;
+  }
+
+  tongSoLuong(o: PurchaseOrder): number {
+    return (o.chi_tiet_phieu_nhap ?? []).reduce((s, d) => s + Number(d.SoLuong), 0);
+  }
+
+  soMatHangKhac(o: PurchaseOrder): number {
+    return Math.max((o.chi_tiet_phieu_nhap?.length ?? 0) - 1, 0);
+  }
+
+  private dinhDangNgay(v?: string | null): string {
+    if (!v) return '—';
+    const d = new Date(String(v).replace(' ', 'T'));
+    if (Number.isNaN(d.getTime())) return v;
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  // Tag trạng thái: chỉ hiện trạng thái có phiếu (hoặc đang được chọn)
+  readonly tags = computed(() => {
+    const c = this.counts();
+    const all: { value: number | null; label: string; count: number; icon: string }[] = [
+      { value: null, label: 'Tất cả', count: c.tong, icon: 'pi pi-list' },
+      { value: 1, label: 'Chờ duyệt', count: c.cho_duyet, icon: 'pi pi-clock' },
+      { value: 2, label: 'Chờ nhận hàng', count: c.cho_nhan, icon: 'pi pi-inbox' },
+      { value: 4, label: 'Đã nhận hàng', count: c.da_nhan, icon: 'pi pi-check-circle' },
+      { value: 3, label: 'Đã hủy', count: c.da_huy, icon: 'pi pi-times-circle' },
+    ];
+
+    return all.filter((t) => t.value === null || t.count > 0 || this.statusFilter() === t.value);
   });
 
   readonly canConfirm = computed(() => {
@@ -297,17 +428,27 @@ export class PurchaseList {
     return STATUS[o.TrangThai] ?? { label: 'Không rõ', severity: 'info' as Severity };
   }
 
+  chonTag(value: number | null) {
+    if (this.statusFilter() === value) return;
+    this.statusFilter.set(value);
+    this.first.set(0);
+    this.page = 1;
+    this.load();
+  }
+
   onLazyLoad(e: TableLazyLoadEvent) {
+    this.first.set(e.first ?? 0);
     this.page = Math.floor((e.first ?? 0) / (e.rows ?? 10)) + 1;
     this.load();
   }
 
   load() {
     this.loading.set(true);
-    this.service.list(this.page).subscribe({
+    this.service.list(this.page, this.statusFilter()).subscribe({
       next: (p) => {
         this.orders.set(p.data ?? []);
         this.total.set(p.total ?? 0);
+        if (p.counts) this.counts.set(p.counts);
         this.loading.set(false);
       },
       error: (e) => {
@@ -335,7 +476,7 @@ export class PurchaseList {
   approve(o: PurchaseOrder) {
     this.confirm.confirm({
       header: 'Duyệt phiếu nhập',
-      message: `Duyệt phiếu nhập #${o.MaPhieuNhap}?`,
+      message: `Duyệt phiếu nhập ${o.MaPhieuNhap}?`,
       icon: 'pi pi-check-circle',
       acceptLabel: 'Duyệt',
       rejectLabel: 'Hủy',
@@ -349,7 +490,7 @@ export class PurchaseList {
   cancel(o: PurchaseOrder) {
     this.confirm.confirm({
       header: 'Hủy phiếu nhập',
-      message: `Hủy phiếu nhập #${o.MaPhieuNhap}?`,
+      message: `Hủy phiếu nhập ${o.MaPhieuNhap}?`,
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Hủy phiếu',
       rejectLabel: 'Không',

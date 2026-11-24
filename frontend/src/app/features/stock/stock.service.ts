@@ -26,7 +26,7 @@ export class StockService {
 
     createPurchase(supplierId: number, items: { id: number | string; qty: number }[]) {
         return this.http
-            .post<{ data: { MaPhieuNhap: number } }>(`${environment.apiUrl}/phieu-nhap`, {
+            .post<{ data: { MaPhieuNhap: string } }>(`${environment.apiUrl}/phieu-nhap`, {
                 MaNhaCungCap: supplierId,
                 ChiTiet: items.map((i) => ({ MaSanPham: i.id, SoLuong: i.qty })),
             })
