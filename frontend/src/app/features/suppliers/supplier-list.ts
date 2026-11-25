@@ -9,6 +9,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { ConfirmService } from '../../core/ui/confirm.service';
+import { plainEnter } from '../../core/ui/enter';
 import { Category } from '../categories/category.model';
 import { CategoryService } from '../categories/category.service';
 import { SupplierItem } from './supplier.model';
@@ -260,6 +261,7 @@ const normalize = (s: string) =>
       [modal]="true"
       [visible]="dialogOpen()"
       (visibleChange)="dialogOpen.set($event)"
+      (keydown.enter)="onEnter($event)"
       [style]="{ width: '34rem', maxWidth: '94vw' }"
     >
       <form [formGroup]="form" class="space-y-4">
@@ -506,6 +508,12 @@ export class SupplierList {
       SoDienThoai: s.SoDienThoai,
     });
     this.dialogOpen.set(true);
+  }
+
+  onEnter(e: Event) {
+    if (!plainEnter(e) || this.form.invalid || this.picked().length === 0 || this.busy()) return;
+    e.preventDefault();
+    this.save();
   }
 
   save() {

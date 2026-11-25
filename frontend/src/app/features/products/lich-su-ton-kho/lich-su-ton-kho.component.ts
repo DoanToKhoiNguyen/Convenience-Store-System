@@ -65,10 +65,14 @@ import { ProductService } from '../product.service';
                     </div>
                   </td>
                   <td class="px-4 py-3.5">
-                    <div class="flex items-center gap-2.5">
-                      <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
-                        <i class="pi pi-box text-xs"></i>
-                      </span>
+                    <div class="flex items-center gap-3">
+                      <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200/60">
+                        @if (item.san_pham?.hinh_anh_url) {
+                          <img [src]="item.san_pham.hinh_anh_url" alt="" class="h-full w-full object-cover" />
+                        } @else {
+                          <i class="pi pi-image text-slate-300"></i>
+                        }
+                      </div>
                       <span class="font-medium text-slate-800">{{ item.san_pham?.TenSanPham ?? '—' }}</span>
                     </div>
                   </td>

@@ -224,99 +224,141 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
       <!-- ================= DOANH THU VÀ LỢI NHUẬN ================= -->
       @if (data(); as d) {
         <div [class]="loading() ? 'opacity-60 transition' : 'transition'">
-          <!-- Hai con số chính -->
-          <div [class]="d.quyen.xem_loi_nhuan ? 'grid gap-4 md:grid-cols-2' : 'grid gap-4'">
-            <section class="rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-500 p-6 text-white shadow-sm">
-              <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-emerald-50">Doanh thu</span>
-                <i class="pi pi-wallet text-emerald-100"></i>
+          <!-- Dải tổng quan: doanh thu + chỉ số phụ -->
+          <section class="rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-500 p-6 text-white shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-x-8 gap-y-5">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2 text-sm font-medium text-emerald-50">
+                  <i class="pi pi-wallet"></i>
+                  Doanh thu
+                  @if (changes()?.rev; as c) {
+                    <span
+                      class="rounded-full px-2.5 py-1 text-xs font-medium"
+                      [class]="c.up ? 'bg-white/20 text-white' : 'bg-red-900/40 text-red-100'"
+                    >
+                      {{ c.text }}
+                    </span>
+                  }
+                </div>
+                <div class="mt-2 break-words text-3xl font-bold sm:text-4xl">{{ money(d.tong_hop.doanh_thu) }} ₫</div>
+                <p class="mt-2 text-sm text-emerald-50">
+                  Tiền thực thu từ {{ d.tong_hop.so_hoa_don }} hóa đơn đã thanh toán
+                </p>
               </div>
-              <div class="mt-2 break-words text-3xl font-bold sm:text-4xl">{{ money(d.tong_hop.doanh_thu) }} ₫</div>
 
-              @if (changes()?.rev; as c) {
-                <span
-                  class="mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium"
-                  [class]="c.up ? 'bg-white/20 text-white' : 'bg-red-900/40 text-red-100'"
-                >
-                  {{ c.text }}
-                </span>
-              }
-              <p class="mt-3 text-sm text-emerald-50">
-                Tiền thực thu từ {{ d.tong_hop.so_hoa_don }} hóa đơn đã thanh toán
-              </p>
-            </section>
+              <div class="grid w-full grid-cols-3 gap-3 sm:w-auto">
+                <div class="rounded-xl bg-white/10 px-4 py-3">
+                  <div class="text-xs text-emerald-100">Số hóa đơn</div>
+                  <div class="mt-0.5 text-lg font-semibold">{{ d.tong_hop.so_hoa_don.toLocaleString('vi-VN') }}</div>
+                  @if (changes()?.inv; as c) {
+                    <div class="text-xs" [class]="c.up ? 'text-emerald-100' : 'text-red-100'">{{ c.text }}</div>
+                  }
+                </div>
+                <div class="rounded-xl bg-white/10 px-4 py-3">
+                  <div class="text-xs text-emerald-100">Trung bình/hóa đơn</div>
+                  <div class="mt-0.5 text-lg font-semibold">{{ money(d.tong_hop.trung_binh) }} ₫</div>
+                  @if (changes()?.avg; as c) {
+                    <div class="text-xs" [class]="c.up ? 'text-emerald-100' : 'text-red-100'">{{ c.text }}</div>
+                  }
+                </div>
+                <div class="rounded-xl bg-white/10 px-4 py-3">
+                  <div class="text-xs text-emerald-100">Giảm giá đã cho</div>
+                  <div class="mt-0.5 text-lg font-semibold">{{ money(d.tong_hop.giam_gia) }} ₫</div>
+                  <div class="text-xs text-emerald-100">Chi phí khuyến mãi</div>
+                </div>
+              </div>
+            </div>
+          </section>
 
-            @if (d.quyen.xem_loi_nhuan) {
-              <section class="rounded-2xl bg-slate-900 p-6 text-white shadow-sm">
+          <!-- Ba chỉ số chính (chỉ chủ: liên quan giá vốn / hao hụt) -->
+          @if (kpi(); as k) {
+            <div class="mt-4 grid gap-4 md:grid-cols-3">
+              <section class="rounded-2xl bg-slate-900 p-5 text-white shadow-sm">
                 <div class="flex items-center justify-between">
                   <span class="text-sm font-medium text-slate-300">Lợi nhuận gộp</span>
                   <i class="pi pi-chart-line text-slate-400"></i>
                 </div>
                 <div
-                  class="mt-2 break-words text-3xl font-bold sm:text-4xl"
+                  class="mt-2 break-words text-2xl font-bold sm:text-3xl"
                   [class]="(d.tong_hop.loi_nhuan ?? 0) >= 0 ? 'text-emerald-300' : 'text-red-300'"
                 >
                   {{ money(d.tong_hop.loi_nhuan ?? 0) }} ₫
                 </div>
 
-                <div class="mt-3 flex flex-wrap gap-2">
+                <div class="mt-3 flex flex-wrap gap-2 text-xs">
                   @if (changes()?.profit; as c) {
                     <span
-                      class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium"
+                      class="inline-flex rounded-full px-2.5 py-1 font-medium"
                       [class]="c.up ? 'bg-emerald-500/20 text-emerald-200' : 'bg-red-500/20 text-red-200'"
                     >
                       {{ c.text }}
                     </span>
                   }
-                  <span class="inline-flex rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-slate-200">
+                  <span class="inline-flex rounded-full bg-white/10 px-2.5 py-1 font-medium text-slate-200">
                     Biên lợi nhuận {{ (d.tong_hop.bien_loi_nhuan ?? 0).toLocaleString('vi-VN') }}%
                   </span>
                 </div>
 
                 @if (split(); as s) {
                   <div class="mt-4">
-                    <div class="flex h-3 overflow-hidden rounded-full bg-white/10">
+                    <div class="flex h-2.5 overflow-hidden rounded-full bg-white/10">
                       <div class="h-full bg-slate-400" [style.width.%]="s.costPct"></div>
                       <div class="h-full bg-emerald-400" [style.width.%]="s.profitPct"></div>
                     </div>
                     <div class="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs text-slate-300">
-                      <span class="flex items-center gap-1.5">
-                        <span class="inline-block h-2 w-2 rounded-full bg-slate-400"></span>
-                        Giá vốn {{ money(s.cost) }} ₫ ({{ s.costPct.toLocaleString('vi-VN') }}%)
-                      </span>
-                      <span class="flex items-center gap-1.5">
-                        <span class="inline-block h-2 w-2 rounded-full" [class]="s.loss ? 'bg-red-400' : 'bg-emerald-400'"></span>
+                      <span>Giá vốn {{ money(s.cost) }} ₫ ({{ s.costPct.toLocaleString('vi-VN') }}%)</span>
+                      <span [class]="s.loss ? 'text-red-300' : ''">
                         {{ s.loss ? 'Đang lỗ' : 'Lợi nhuận ' + s.profitPct.toLocaleString('vi-VN') + '%' }}
                       </span>
                     </div>
                   </div>
                 }
               </section>
-            }
-          </div>
 
-          <!-- Chỉ số phụ -->
-          <div class="mt-4 grid grid-cols-2 gap-4 rounded-2xl bg-white p-4 shadow-sm sm:grid-cols-3">
-            <div>
-              <div class="text-xs text-slate-500">Số hóa đơn</div>
-              <div class="mt-0.5 text-xl font-semibold text-slate-800">{{ d.tong_hop.so_hoa_don.toLocaleString('vi-VN') }}</div>
-              @if (changes()?.inv; as c) {
-                <div class="text-xs" [class]="c.up ? 'text-emerald-600' : 'text-red-600'">{{ c.text }}</div>
-              }
+              <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-red-100">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-slate-500">Hao hụt hết hạn</span>
+                  <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500">
+                    <i class="pi pi-trash text-sm"></i>
+                  </span>
+                </div>
+                <div class="mt-2 break-words text-2xl font-bold text-red-600 sm:text-3xl">{{ k.huy > 0 ? '−' : '' }}{{ money(k.huy) }} ₫</div>
+                <p class="mt-1 text-xs text-slate-500">
+                  {{ k.soLo }} lô · {{ k.soLuong.toLocaleString('vi-VN') }} sản phẩm bị loại trong kỳ
+                </p>
+                @if (k.huyChange; as c) {
+                  <span
+                    class="mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium"
+                    [class]="c.up ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'"
+                  >
+                    {{ c.text }}
+                  </span>
+                }
+              </section>
+
+              <section class="rounded-2xl bg-white p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-slate-500">Lãi thực sau hao hụt</span>
+                  <i class="pi pi-verified text-slate-300"></i>
+                </div>
+                <div
+                  class="mt-2 break-words text-2xl font-bold sm:text-3xl"
+                  [class]="k.amThuc ? 'text-red-600' : 'text-emerald-700'"
+                >
+                  {{ money(k.laiThuc) }} ₫
+                </div>
+                <p class="mt-1 text-xs text-slate-500">Lợi nhuận gộp − hao hụt hết hạn</p>
+                @if (k.laiThucChange; as c) {
+                  <span
+                    class="mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium"
+                    [class]="c.up ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'"
+                  >
+                    {{ c.text }}
+                  </span>
+                }
+              </section>
             </div>
-            <div>
-              <div class="text-xs text-slate-500">Trung bình mỗi hóa đơn</div>
-              <div class="mt-0.5 text-xl font-semibold text-slate-800">{{ money(d.tong_hop.trung_binh) }} ₫</div>
-              @if (changes()?.avg; as c) {
-                <div class="text-xs" [class]="c.up ? 'text-emerald-600' : 'text-red-600'">{{ c.text }}</div>
-              }
-            </div>
-            <div class="col-span-2 sm:col-span-1">
-              <div class="text-xs text-slate-500">Giảm giá đã cho khách</div>
-              <div class="mt-0.5 text-xl font-semibold text-slate-800">{{ money(d.tong_hop.giam_gia) }} ₫</div>
-              <div class="text-xs text-slate-500">Chi phí khuyến mãi trong kỳ</div>
-            </div>
-          </div>
+          }
 
           @if (d.dang_cho.so_hoa_don > 0) {
             <div class="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -353,25 +395,166 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
             }
           </section>
 
-          <!-- Thanh toán -->
-          <section class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
-            <h2 class="mb-4 font-semibold text-slate-800">Thanh toán bằng gì</h2>
-            @for (m of d.phuong_thuc; track m.ten) {
-              <div class="mb-4 last:mb-0">
-                <div class="mb-1.5 flex items-baseline justify-between text-sm">
-                  <span class="font-medium text-slate-700">
-                    {{ m.ten }} <span class="font-normal text-slate-400">· {{ m.so_hoa_don }} hóa đơn</span>
-                  </span>
-                  <span class="text-slate-800">{{ money(m.doanh_thu) }} ₫ <span class="text-slate-400">({{ percent(m.doanh_thu) }}%)</span></span>
+          <!-- Tiền đi đâu: doanh thu chia thành vốn, hao hụt, lãi thực -->
+          @if (phanBo(); as b) {
+            <section class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 class="font-semibold text-slate-800">Tiền đi đâu?</h2>
+                <span class="text-xs text-slate-400">Doanh thu được chia thành vốn, hao hụt và lãi thực</span>
+              </div>
+              <div class="flex h-4 overflow-hidden rounded-full bg-slate-100">
+                <div class="h-full bg-slate-400" [style.width.%]="b.vonPct"></div>
+                <div class="h-full bg-red-400" [style.width.%]="b.huyPct"></div>
+                @if (!b.am) {
+                  <div class="h-full bg-emerald-500" [style.width.%]="b.laiPct"></div>
+                }
+              </div>
+              <div class="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+                <div>
+                  <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span class="inline-block h-2.5 w-2.5 rounded-sm bg-slate-400"></span>Giá vốn hàng bán
+                  </div>
+                  <div class="mt-0.5 font-semibold text-slate-800">{{ money(b.von) }} ₫</div>
+                  <div class="text-xs text-slate-400">{{ b.vonCua.toLocaleString('vi-VN') }}% doanh thu</div>
                 </div>
-                <div class="h-2 rounded-full bg-slate-100">
-                  <div class="h-2 rounded-full bg-emerald-500" [style.width.%]="percent(m.doanh_thu)"></div>
+                <div>
+                  <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span class="inline-block h-2.5 w-2.5 rounded-sm bg-red-400"></span>Hao hụt hết hạn
+                  </div>
+                  <div class="mt-0.5 font-semibold text-red-600">{{ money(b.huy) }} ₫</div>
+                  <div class="text-xs text-slate-400">{{ b.huyCua.toLocaleString('vi-VN') }}% doanh thu</div>
+                </div>
+                <div>
+                  <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span class="inline-block h-2.5 w-2.5 rounded-sm" [class]="b.am ? 'bg-amber-400' : 'bg-emerald-500'"></span>
+                    Lãi thực sau hao hụt
+                  </div>
+                  <div class="mt-0.5 font-semibold" [class]="b.am ? 'text-red-600' : 'text-emerald-700'">{{ money(b.lai) }} ₫</div>
+                  <div class="text-xs text-slate-400">{{ b.laiCua.toLocaleString('vi-VN') }}% doanh thu</div>
                 </div>
               </div>
-            } @empty {
-              <p class="text-sm text-slate-400">Chưa có dữ liệu.</p>
-            }
-          </section>
+              @if (b.am) {
+                <p class="mt-3 flex items-start gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <i class="pi pi-exclamation-triangle mt-0.5"></i>
+                  Giá vốn và hao hụt vượt doanh thu trong kỳ này.
+                </p>
+              }
+            </section>
+          }
+
+          <!-- Hàng hủy do hết hạn (chỉ chủ thấy giá vốn) -->
+          @if (hetHan(); as hh) {
+            <section class="mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
+              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+                <div class="flex items-center gap-2.5">
+                  <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500">
+                    <i class="pi pi-trash"></i>
+                  </span>
+                  <div>
+                    <h2 class="font-semibold text-slate-800">Hàng hủy do hết hạn</h2>
+                    <p class="text-xs text-slate-500">Các lô hết hạn bị hệ thống tự động loại trong kỳ</p>
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 text-xs">
+                  <span class="rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-600">{{ hh.tong.so_lo }} lô</span>
+                  <span class="rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-600">
+                    {{ hh.tong.so_luong_loai.toLocaleString('vi-VN') }} sản phẩm
+                  </span>
+                  <span class="rounded-full bg-red-50 px-3 py-1.5 font-semibold text-red-600">{{ hh.tong.lo_huy > 0 ? '−' : '' }}{{ money(hh.tong.lo_huy) }} ₫</span>
+                </div>
+              </div>
+
+              @if (hh.tong.so_lo === 0) {
+                <div class="flex flex-col items-center gap-2 py-10 text-center text-slate-400">
+                  <i class="pi pi-check-circle text-4xl text-emerald-300"></i>
+                  <p class="text-sm">Không có lô nào bị loại do hết hạn trong kỳ này.</p>
+                </div>
+              } @else {
+                <div class="grid gap-5 p-5 lg:grid-cols-2">
+                  <div>
+                    <h3 class="mb-2 text-sm font-medium text-slate-600">Giá trị lỗ theo {{ lossChartDonVi() }}</h3>
+                    <ng-container
+                      [ngTemplateOutlet]="chartTpl"
+                      [ngTemplateOutletContext]="{ $implicit: huyChart(), color: '#ef4444' }"
+                    ></ng-container>
+                  </div>
+                  <div>
+                    <h3 class="mb-3 text-sm font-medium text-slate-600">Sản phẩm thiệt hại nhiều nhất</h3>
+                    @for (p of hh.san_pham; track p.MaSanPham) {
+                      <div class="mb-3 last:mb-0">
+                        <div class="mb-1 flex items-baseline justify-between gap-3 text-sm">
+                          <span class="truncate font-medium text-slate-700">{{ p.TenSanPham }}</span>
+                          <span class="shrink-0 text-red-600">
+                            {{ money(p.gia_tri) }} ₫ <span class="text-slate-400">· {{ p.so_luong }} cái</span>
+                          </span>
+                        </div>
+                        <div class="h-2 rounded-full bg-slate-100">
+                          <div class="h-2 rounded-full bg-red-400" [style.width.%]="huyPercent(p.gia_tri)"></div>
+                        </div>
+                      </div>
+                    } @empty {
+                      <p class="text-sm text-slate-400">Chưa có dữ liệu.</p>
+                    }
+                  </div>
+                </div>
+
+                <div class="overflow-x-auto px-5 pb-5">
+                  <table class="w-full min-w-[54rem] text-sm">
+                    <thead>
+                      <tr class="border-b text-left text-slate-500">
+                        <th class="py-2">Lô</th>
+                        <th>Sản phẩm</th>
+                        <th>HSD</th>
+                        <th class="text-right">SL nhập</th>
+                        <th class="text-right">Đã bán</th>
+                        <th class="text-right">Doanh thu lô</th>
+                        <th class="text-right">Giá trị nhập</th>
+                        <th class="text-right">Lỗ hết hạn</th>
+                        <th class="text-right">Lãi/lỗ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (l of hh.theo_lo; track l.MaLoHang) {
+                        <tr class="border-b border-slate-100 align-top">
+                          <td class="py-2.5">
+                            <div class="font-medium text-slate-800">{{ l.MaLo }}</div>
+                            <div class="text-xs text-slate-400">Loại {{ l.ThoiGianLoai }}</div>
+                          </td>
+                          <td class="text-slate-700">{{ l.TenSanPham }}</td>
+                          <td class="whitespace-nowrap text-slate-600">{{ l.HanSuDung ? displayDate(l.HanSuDung) : '—' }}</td>
+                          <td class="text-right">{{ l.SoLuongNhap.toLocaleString('vi-VN') }}</td>
+                          <td class="text-right">{{ l.so_luong_ban.toLocaleString('vi-VN') }}</td>
+                          <td class="text-right">{{ money(l.doanh_thu) }} ₫</td>
+                          <td class="text-right text-slate-500">{{ money(l.gia_tri_nhap) }} ₫</td>
+                          <td class="text-right font-medium text-red-600">−{{ money(l.lo_huy) }} ₫</td>
+                          <td class="text-right font-semibold" [class]="l.lai >= 0 ? 'text-emerald-700' : 'text-red-600'">
+                            {{ money(l.lai) }} ₫
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                    <tfoot>
+                      <tr class="bg-slate-50 font-semibold text-slate-700">
+                        <td class="py-2.5" colspan="3">Tổng cộng</td>
+                        <td class="text-right">{{ hh.tong.so_luong_nhap.toLocaleString('vi-VN') }}</td>
+                        <td class="text-right">{{ hh.tong.so_luong_ban.toLocaleString('vi-VN') }}</td>
+                        <td class="text-right">{{ money(hh.tong.doanh_thu) }} ₫</td>
+                        <td class="text-right">{{ money(hh.tong.gia_tri_nhap) }} ₫</td>
+                        <td class="text-right text-red-600">{{ hh.tong.lo_huy > 0 ? '−' : '' }}{{ money(hh.tong.lo_huy) }} ₫</td>
+                        <td class="text-right" [class]="hh.tong.lai >= 0 ? 'text-emerald-700' : 'text-red-600'">
+                          {{ money(hh.tong.lai) }} ₫
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                  <p class="mt-2 text-xs text-slate-400">
+                    Doanh thu lô tính trên toàn bộ hóa đơn đã thanh toán có bán từ lô này (kể cả trước kỳ báo cáo).
+                    Lãi/lỗ = doanh thu − vốn phần đã bán − giá trị phần bị loại.
+                  </p>
+                </div>
+              }
+            </section>
+          }
 
           <!-- Sản phẩm -->
           <section class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
@@ -498,6 +681,14 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                 <p>
                   <b>Lợi nhuận gộp</b> = doanh thu − giá vốn hàng bán (giá nhập tại lúc bán). Chưa trừ lương, mặt bằng, điện nước,
                   hàng hủy hoặc hết hạn.
+                </p>
+                <p>
+                  <b>Hao hụt hết hạn</b> = số lượng lô bị loại × đơn giá nhập của lô, tính theo thời điểm hệ thống tự loại lô.
+                  <b>Lãi thực sau hao hụt</b> = lợi nhuận gộp − hao hụt hết hạn.
+                </p>
+                <p>
+                  Với từng lô trong bảng hàng hủy: <b>doanh thu lô</b> là phần tiền của các hóa đơn đã thanh toán có bán từ lô đó;
+                  <b>lãi/lỗ</b> = doanh thu lô − vốn phần đã bán − giá trị phần bị loại.
                 </p>
               }
               <p>
@@ -898,6 +1089,71 @@ export class RevenueReport_ {
     };
   });
 
+  // Ba chỉ số chính của chủ: lợi nhuận gộp (dùng tong_hop), hao hụt, lãi thực sau hao hụt
+  readonly kpi = computed(() => {
+    const d = this.data();
+    if (!d?.quyen.xem_loi_nhuan) return null;
+    const huy = d.tong_hop.gia_tri_huy ?? 0;
+    const laiThuc = d.tong_hop.lai_sau_huy ?? 0;
+
+    return {
+      huy,
+      huyChange: this.change(huy, d.tong_hop_truoc.gia_tri_huy ?? 0),
+      laiThuc,
+      laiThucChange: this.change(laiThuc, d.tong_hop_truoc.lai_sau_huy ?? 0),
+      soLo: d.het_han?.tong.so_lo ?? 0,
+      soLuong: d.het_han?.tong.so_luong_loai ?? 0,
+      amThuc: laiThuc < 0,
+    };
+  });
+
+  readonly hetHan = computed(() => this.data()?.het_han ?? null);
+
+  readonly lossChartDonVi = computed(() => {
+    const g = this.data()?.ky.nhom;
+    return g === 'gio' ? 'giờ' : g === 'thang' ? 'tháng' : 'ngày';
+  });
+
+  readonly huyChart = computed(() =>
+    buildChart(
+      (this.hetHan()?.chuoi ?? []).map((p) => ({
+        label: p.nhan,
+        value: p.gia_tri,
+        tip: `${p.nhan}: lỗ ${money(p.gia_tri)} ₫`,
+      })),
+      false,
+    ),
+  );
+
+  // Thanh xếp lớp "Tiền đi đâu": tỉ lệ tính trên doanh thu, nhưng nếu vốn + hao hụt vượt doanh thu
+  // thì lấy tổng chi phí làm mốc để thanh không tràn khỏi khung
+  readonly phanBo = computed(() => {
+    const d = this.data();
+    if (!d?.quyen.xem_loi_nhuan || !d.tong_hop.doanh_thu) return null;
+
+    const rev = d.tong_hop.doanh_thu;
+    const von = d.tong_hop.gia_von ?? 0;
+    const huy = d.tong_hop.gia_tri_huy ?? 0;
+    const lai = d.tong_hop.lai_sau_huy ?? 0;
+    const base = Math.max(rev, von + huy, 1);
+
+    const rong = (v: number) => round1((Math.max(0, v) / base) * 100);
+    const cua = (v: number) => round1((v / rev) * 100);
+
+    return {
+      von,
+      huy,
+      lai,
+      vonPct: rong(von),
+      huyPct: rong(huy),
+      laiPct: rong(lai),
+      vonCua: cua(von),
+      huyCua: cua(huy),
+      laiCua: cua(lai),
+      am: lai < 0,
+    };
+  });
+
   readonly chart = computed(() => {
     const d = this.data();
     const showProfit = !!d?.quyen.xem_loi_nhuan;
@@ -1028,9 +1284,10 @@ export class RevenueReport_ {
     });
   }
 
-  percent(v: number): number {
-    const total = this.data()?.tong_hop.doanh_thu ?? 0;
-    return total > 0 ? Math.round((v / total) * 1000) / 10 : 0;
+  // Tỉ lệ thiệt hại của một sản phẩm trong tổng giá trị lỗ hết hạn
+  huyPercent(v: number): number {
+    const tong = this.hetHan()?.tong.lo_huy ?? 0;
+    return tong > 0 ? Math.round((v / tong) * 1000) / 10 : 0;
   }
 
   impPercent(v: number): number {

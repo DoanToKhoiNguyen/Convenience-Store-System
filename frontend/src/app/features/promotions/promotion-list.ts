@@ -13,6 +13,7 @@ import { formatDate } from '../shifts/week.util';
 import { Promotion, PromotionPayload, PromoType } from './promotion.model';
 import { PromotionService } from './promotion.service';
 import { ConfirmService } from '../../core/ui/confirm.service';
+import { plainEnter } from '../../core/ui/enter';
 
 function promoRules(g: AbstractControl): ValidationErrors | null {
   const errors: ValidationErrors = {};
@@ -194,6 +195,7 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
       [modal]="true"
       [visible]="dialogOpen()"
       (visibleChange)="dialogOpen.set($event)"
+      (keydown.enter)="onEnter($event)"
       [style]="{ width: '36rem', maxWidth: '94vw' }"
     >
       <form [formGroup]="form" class="space-y-4">
@@ -483,6 +485,12 @@ export class PromotionList {
       TrangThai: this.isOn(p),
     });
     this.dialogOpen.set(true);
+  }
+
+  onEnter(e: Event) {
+    if (!plainEnter(e) || this.form.invalid || this.busy()) return;
+    e.preventDefault();
+    this.save();
   }
 
   save() {

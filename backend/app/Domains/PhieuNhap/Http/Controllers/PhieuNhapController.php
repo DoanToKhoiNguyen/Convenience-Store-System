@@ -203,10 +203,48 @@ class PhieuNhapController extends Controller
         try {
             $laNhanVien = (int) $request->user()->MaVaiTro === 3;
 
+            $tuNgay = $this->ngayHopLe($request->query('TuNgay'));
+            $denNgay = $this->ngayHopLe($request->query('DenNgay'));
+            $maNhaCungCap = (int) $request->query('MaNhaCungCap');
+            $tim = trim((string) $request->query('Tim', ''));
+
+            // Bộ lọc của người dùng — áp cho cả danh sách lẫn số đếm theo trạng thái
+            $loc = function ($query) use ($tuNgay, $denNgay, $maNhaCungCap, $tim) {
+                if ($tuNgay) {
+                    $query->whereDate('NgayLap', '>=', $tuNgay);
+                }
+                if ($denNgay) {
+                    $query->whereDate('NgayLap', '<=', $denNgay);
+                }
+                if ($maNhaCungCap > 0) {
+                    $query->where('MaNhaCungCap', $maNhaCungCap);
+                }
+                if ($tim !== '') {
+                    // Mã phiếu mặc định có tiền tố PN nên chỉ gõ phần số vẫn tìm được
+                    $maPhieuLike = preg_match('/^pn/i', $tim) ? $tim : 'PN' . $tim;
+                    $tokens = preg_split('/\s+/u', $tim, -1, PREG_SPLIT_NO_EMPTY);
+
+                    $query->where(function ($q2) use ($maPhieuLike, $tokens) {
+                        $q2->where('MaPhieuNhap', 'ilike', $maPhieuLike . '%')
+                            ->orWhereHas('chiTietPhieuNhap.sanPham', function ($sp) use ($tokens) {
+                                // Khớp đầu từ trong tên SP, bỏ dấu, không phân biệt hoa/thường
+                                foreach ($tokens as $t) {
+                                    $sp->whereRaw(
+                                        'EXISTS (SELECT 1 FROM regexp_split_to_table(unaccent(lower("TenSanPham")), \'[^a-z0-9]+\') AS w'
+                                        . ' WHERE w LIKE unaccent(lower(?)) || \'%\')',
+                                        [$t]
+                                    );
+                                }
+                            });
+                    });
+                }
+            };
+
             $dem = PhieuNhap::query();
             if ($laNhanVien) {
                 $dem->whereIn('TrangThai', [2, 4]);
             }
+            $loc($dem);
             $dem = $dem->selectRaw('"TrangThai", COUNT(*) as so')
                 ->groupBy('TrangThai')
                 ->pluck('so', 'TrangThai')
@@ -235,6 +273,8 @@ class PhieuNhapController extends Controller
                 $query->whereIn('TrangThai', [2, 4]);
             }
 
+            $loc($query);
+
             $trangThai = (int) $request->query('TrangThai');
             if (in_array($trangThai, [1, 2, 3, 4], true)) {
                 $query->where('TrangThai', $trangThai);
@@ -254,6 +294,11 @@ class PhieuNhapController extends Controller
                 'message' => 'Lấy danh sách thất bại: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function ngayHopLe($value): ?string
+    {
+        return is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : null;
     }
 
     public function xacNhanNhanHang(Request $request, LoHangService $loHang, $id)

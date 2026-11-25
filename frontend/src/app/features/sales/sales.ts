@@ -448,6 +448,7 @@ const COLORS = [
       [modal]="true"
       [closable]="false"
       [visible]="!!pending()"
+      (keydown.enter)="onEnter($event)"
       [style]="{ width: '24rem', maxWidth: '92vw' }"
     >
       @if (pending(); as p) {
@@ -838,6 +839,13 @@ export class Sales {
       next: (invoice) => this.done(invoice, method, given),
       error: (e) => this.fail(e),
     });
+  }
+
+  // Dialog QR không có ô nhập nên Enter luôn = "Đã nhận tiền"
+  onEnter(e: Event) {
+    if (!this.pending() || this.busy()) return;
+    e.preventDefault();
+    this.confirmTransfer();
   }
 
   confirmTransfer() {

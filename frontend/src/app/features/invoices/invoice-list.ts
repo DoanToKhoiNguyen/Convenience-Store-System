@@ -6,6 +6,7 @@ import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
 import { environment } from '../../../environments/environment';
+import { plainEnter } from '../../core/ui/enter';
 import { SalesService } from '../sales/sales.service';
 import { InvoiceItem } from './invoice.model';
 import { InvoiceService } from './invoice.service';
@@ -290,6 +291,7 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
       [closable]="!busy()"
       [visible]="!!paying()"
       (visibleChange)="!$event && closePay()"
+      (keydown.enter)="onEnter($event)"
       [style]="{ width: '26rem', maxWidth: '92vw' }"
     >
       @if (paying(); as inv) {
@@ -515,6 +517,12 @@ export class InvoiceList {
 
   closePay() {
     if (!this.busy()) this.paying.set(null);
+  }
+
+  onEnter(e: Event) {
+    if (!plainEnter(e) || !this.canConfirm() || this.busy()) return;
+    e.preventDefault();
+    this.confirmPay();
   }
 
   confirmPay() {

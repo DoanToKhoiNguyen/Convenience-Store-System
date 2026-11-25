@@ -12,6 +12,9 @@ class BaoCaoController extends Controller
 {
     private const NGAY_NHAN = 'COALESCE(lo."NgayNhap", pn."NgayLap")';
 
+    // Đơn giá nhập của lô: ưu tiên dòng phiếu nhập, lô tồn đầu kỳ thì lấy giá nhập hiện tại của sản phẩm
+    private const DON_GIA_LO = 'COALESCE(ct."DonGia", sp."DonGiaNhap", 0)';
+
     public function doanhThu(Request $request): JsonResponse
     {
         $request->validate([
@@ -54,7 +57,6 @@ class BaoCaoController extends Controller
             'tong_hop'       => $this->tongHop($tu, $denTruoc, $laChu),
             'tong_hop_truoc' => $this->tongHop($kyTruocTu, $tu, $laChu),
             'chuoi'          => $this->chuoi($tu, $den, $denTruoc, $nhom, $laChu),
-            'phuong_thuc'    => $this->phuongThuc($tu, $denTruoc),
             'dang_cho'       => $this->dangCho(),
         ];
 
@@ -62,6 +64,7 @@ class BaoCaoController extends Controller
         $out['ban_chay'] = $banChay;
         if ($laChu) {
             $out['sinh_loi'] = $sinhLoi;
+            $out['het_han'] = $this->hetHan($tu, $den, $denTruoc, $nhom);
         }
         $out['ban_cham'] = $this->banCham($tu, $denTruoc, $laChu);
 
@@ -112,6 +115,10 @@ class BaoCaoController extends Controller
             $kq['bien_loi_nhuan'] = $kq['doanh_thu'] > 0
                 ? round($kq['loi_nhuan'] / $kq['doanh_thu'] * 100, 1)
                 : 0;
+
+            // Hàng hết hạn bị loại trong kỳ được trừ thêm khỏi lợi nhuận
+            $kq['gia_tri_huy'] = $this->giaTriHuy($tu, $denTruoc);
+            $kq['lai_sau_huy'] = $kq['loi_nhuan'] - $kq['gia_tri_huy'];
         }
 
         return $kq;
@@ -177,24 +184,6 @@ class BaoCaoController extends Controller
 
         return $chuoi;
     }
-
-    private function phuongThuc(Carbon $tu, Carbon $denTruoc): array
-    {
-        $ten = "COALESCE(hd.\"TenGiaoDich\", 'Khác')";
-
-        return $this->hoaDonHopLe(DB::table('hoa_don as hd'), $tu, $denTruoc)
-            ->selectRaw("$ten as ten, COUNT(*) as so_hoa_don, COALESCE(SUM(hd.\"TongTien\"), 0) as doanh_thu")
-            ->groupByRaw($ten)
-            ->orderByDesc('doanh_thu')
-            ->get()
-            ->map(fn ($r) => [
-                'ten'        => $r->ten,
-                'so_hoa_don' => (int) $r->so_hoa_don,
-                'doanh_thu'  => (float) $r->doanh_thu,
-            ])
-            ->all();
-    }
-
 
     /** Hóa đơn đang chờ thanh toán (đang giữ hàng), không phụ thuộc kỳ báo cáo. */
     private function dangCho(): array
@@ -280,6 +269,177 @@ class BaoCaoController extends Controller
                 return $m;
             })
             ->all();
+    }
+
+    /** Danh sách lô bị loại do hết hạn trong kỳ, kèm đơn giá nhập của lô (alias: dl, lh, ct, sp). */
+    private function loBiLoai(Carbon $tu, Carbon $denTruoc)
+    {
+        return DB::table('lo_hang_da_loai as dl')
+            ->leftJoin('lo_hang as lh', 'lh.MaLoHang', '=', 'dl.MaLoHang')
+            ->leftJoin('chi_tiet_phieu_nhap as ct', 'ct.MaChiTietPhieuNhap', '=', 'lh.MaChiTietPhieuNhap')
+            ->leftJoin('san_pham as sp', 'sp.MaSanPham', '=', 'dl.MaSanPham')
+            ->where('dl.ThoiGianLoai', '>=', $tu)
+            ->where('dl.ThoiGianLoai', '<', $denTruoc);
+    }
+
+    /** Giá trị hàng bị loại do hết hạn trong kỳ (số lượng loại × đơn giá nhập). */
+    private function giaTriHuy(Carbon $tu, Carbon $denTruoc): float
+    {
+        $r = $this->loBiLoai($tu, $denTruoc)
+            ->selectRaw('COALESCE(SUM(dl."SoLuongLoai" * ' . self::DON_GIA_LO . '), 0) as gia_tri')
+            ->first();
+
+        return (float) $r->gia_tri;
+    }
+
+    /** Các mốc thời gian của biểu đồ: đủ giờ/ngày/tháng kể cả mốc không phát sinh. */
+    private function mocChuoi(Carbon $tu, Carbon $den, string $nhom): array
+    {
+        $keys = [];
+        if ($nhom === 'gio') {
+            for ($h = 0; $h < 24; $h++) {
+                $keys[] = sprintf('%02d', $h);
+            }
+        } elseif ($nhom === 'ngay') {
+            for ($d = $tu->copy(); $d->lte($den); $d->addDay()) {
+                $keys[] = $d->format('Y-m-d');
+            }
+        } else {
+            for ($d = $tu->copy()->startOfMonth(); $d->lte($den); $d->addMonth()) {
+                $keys[] = $d->format('Y-m');
+            }
+        }
+
+        return $keys;
+    }
+
+    private function nhanMoc(string $k, string $nhom): string
+    {
+        return match ($nhom) {
+            'gio'   => $k . 'h',
+            'thang' => substr($k, 5, 2) . '/' . substr($k, 0, 4),
+            default => substr($k, 8, 2) . '/' . substr($k, 5, 2),
+        };
+    }
+
+    /**
+     * Hao hụt do hết hạn trong kỳ: tổng, từng lô (doanh thu đã bán − vốn đã bán − giá trị bị loại),
+     * top sản phẩm thiệt hại và chuỗi giá trị lỗ theo mốc thời gian. Chỉ chủ doanh nghiệp xem.
+     */
+    private function hetHan(Carbon $tu, Carbon $den, Carbon $denTruoc, string $nhom): array
+    {
+        $rows = $this->loBiLoai($tu, $denTruoc)
+            ->selectRaw('dl."MaLoHang", dl."MaLo", dl."MaSanPham", dl."TenSanPham",
+                        dl."HanSuDung", dl."SoLuongLoai", dl."ThoiGianLoai",
+                        COALESCE(lh."SoLuongNhap", dl."SoLuongLoai") as "SoLuongNhap",
+                        ' . self::DON_GIA_LO . ' as "DonGia"')
+            ->orderByDesc('dl.ThoiGianLoai')
+            ->orderByDesc('dl.MaLoai')
+            ->get();
+
+        // Doanh thu từng lô: phần ThanhTien của dòng hóa đơn chia theo số lượng lấy từ lô đó
+        $ids = $rows->pluck('MaLoHang')->map(fn ($v) => (int) $v)->all();
+        $ban = collect();
+        if ($ids) {
+            $ban = DB::table('hoa_don_lo as hl')
+                ->join('chi_tiet_hoa_don as cthd', 'cthd.MaChiTietHoaDon', '=', 'hl.MaChiTietHoaDon')
+                ->join('hoa_don as hd', 'hd.MaHoaDon', '=', 'cthd.MaHoaDon')
+                ->whereIn('hl.MaLoHang', $ids)
+                ->where('hd.DaHuy', false)
+                ->where('hd.TrangThaiHoaDon', true)
+                ->groupBy('hl.MaLoHang')
+                ->selectRaw('hl."MaLoHang", SUM(hl."SoLuong") as da_ban,
+                             COALESCE(SUM(cthd."ThanhTien" * hl."SoLuong" / NULLIF(cthd."SoLuong", 0)), 0) as doanh_thu')
+                ->get()
+                ->keyBy(fn ($r) => (int) $r->MaLoHang);
+        }
+
+        $tong = [
+            'so_lo'         => 0,
+            'so_luong_nhap' => 0,
+            'so_luong_ban'  => 0,
+            'so_luong_loai' => 0,
+            'gia_tri_nhap'  => 0.0,
+            'doanh_thu'     => 0.0,
+            'lo_huy'        => 0.0,
+            'lai'           => 0.0,
+        ];
+
+        $theoLo = $rows->map(function ($r) use ($ban, &$tong) {
+            $donGia    = (float) $r->DonGia;
+            $nhap      = (int) $r->SoLuongNhap;
+            $biLoai    = (int) $r->SoLuongLoai;
+            $b         = $ban->get((int) $r->MaLoHang);
+            $daBan     = (int) ($b->da_ban ?? 0);
+            $doanhThu  = (float) ($b->doanh_thu ?? 0);
+            $giaTriNhap = $nhap * $donGia;
+            $loHuy     = $biLoai * $donGia;
+            $lai       = $doanhThu - $daBan * $donGia - $loHuy;
+
+            $tong['so_lo']++;
+            $tong['so_luong_nhap'] += $nhap;
+            $tong['so_luong_ban'] += $daBan;
+            $tong['so_luong_loai'] += $biLoai;
+            $tong['gia_tri_nhap'] += $giaTriNhap;
+            $tong['doanh_thu'] += $doanhThu;
+            $tong['lo_huy'] += $loHuy;
+            $tong['lai'] += $lai;
+
+            return [
+                'MaLoHang'      => (int) $r->MaLoHang,
+                'MaLo'          => $r->MaLo,
+                'MaSanPham'     => (int) $r->MaSanPham,
+                'TenSanPham'    => $r->TenSanPham,
+                'HanSuDung'     => $r->HanSuDung ? Carbon::parse($r->HanSuDung)->format('Y-m-d') : null,
+                'ThoiGianLoai'  => Carbon::parse($r->ThoiGianLoai)->format('d/m/Y H:i'),
+                'SoLuongNhap'   => $nhap,
+                'so_luong_ban'  => $daBan,
+                'so_luong_loai' => $biLoai,
+                'don_gia'       => $donGia,
+                'gia_tri_nhap'  => $giaTriNhap,
+                'doanh_thu'     => $doanhThu,
+                'lo_huy'        => $loHuy,
+                'lai'           => $lai,
+            ];
+        })->sortByDesc('lo_huy')->values()->all();
+
+        $sanPham = $this->loBiLoai($tu, $denTruoc)
+            ->selectRaw('dl."MaSanPham", dl."TenSanPham", SUM(dl."SoLuongLoai") as so_luong,
+                        COALESCE(SUM(dl."SoLuongLoai" * ' . self::DON_GIA_LO . '), 0) as gia_tri')
+            ->groupByRaw('dl."MaSanPham", dl."TenSanPham"')
+            ->orderByDesc('gia_tri')
+            ->limit(5)
+            ->get()
+            ->map(fn ($r) => [
+                'MaSanPham'  => (int) $r->MaSanPham,
+                'TenSanPham' => $r->TenSanPham,
+                'so_luong'   => (int) $r->so_luong,
+                'gia_tri'    => (float) $r->gia_tri,
+            ])
+            ->all();
+
+        $expr = match ($nhom) {
+            'gio'   => "to_char(dl.\"ThoiGianLoai\", 'HH24')",
+            'thang' => "to_char(dl.\"ThoiGianLoai\", 'YYYY-MM')",
+            default => "to_char(dl.\"ThoiGianLoai\", 'YYYY-MM-DD')",
+        };
+
+        $theoMoc = $this->loBiLoai($tu, $denTruoc)
+            ->selectRaw("$expr as k, COALESCE(SUM(dl.\"SoLuongLoai\" * " . self::DON_GIA_LO . '), 0) as gia_tri')
+            ->groupByRaw($expr)
+            ->get()
+            ->pluck('gia_tri', 'k');
+
+        $chuoi = [];
+        foreach ($this->mocChuoi($tu, $den, $nhom) as $k) {
+            $chuoi[] = [
+                'k'       => $k,
+                'nhan'    => $this->nhanMoc($k, $nhom),
+                'gia_tri' => (float) ($theoMoc[$k] ?? 0),
+            ];
+        }
+
+        return ['tong' => $tong, 'theo_lo' => $theoLo, 'san_pham' => $sanPham, 'chuoi' => $chuoi];
     }
 
     /** Báo cáo nhập hàng: chỉ chủ xem (route nằm trong nhóm role:1). */

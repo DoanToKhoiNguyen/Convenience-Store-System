@@ -7,11 +7,15 @@ import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { InputTextModule } from 'primeng/inputtext';
 import { ConfirmationService } from 'primeng/api';
 import { PurchaseCounts, PurchaseDetail, PurchaseOrder } from './purchase.model';
 import { PurchaseService } from './purchase.service';
+import { SupplierService } from '../suppliers/supplier.service';
+import { SupplierItem } from '../suppliers/supplier.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE } from '../../core/auth/roles';
+import { plainEnter } from '../../core/ui/enter';
 import { formatDate } from '../shifts/week.util';
 
 type Severity = 'warn' | 'info' | 'danger' | 'success';
@@ -25,7 +29,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
 
 @Component({
   selector: 'app-purchase-list',
-  imports: [TableModule, TagModule, ButtonModule, DialogModule, ConfirmDialogModule, DatePipe, DecimalPipe],
+  imports: [TableModule, TagModule, ButtonModule, DialogModule, ConfirmDialogModule, InputTextModule, DatePipe, DecimalPipe],
   providers: [ConfirmationService],
   template: `
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -79,6 +83,84 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
       }
     </div>
 
+    <!-- Bộ lọc tìm kiếm -->
+    <div class="mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="relative min-w-0 flex-1 sm:max-w-sm">
+          <i class="pi pi-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+          <input
+            pInputText
+            type="text"
+            placeholder="Tìm mã phiếu hoặc tên sản phẩm..."
+            class="w-full pl-8!"
+            [value]="tuKhoa()"
+            (input)="setTuKhoa($any($event.target).value)"
+            (keydown.enter)="timNgay()"
+          />
+        </div>
+
+        <select
+          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 sm:w-52"
+          [value]="maNhaCungCap() ?? ''"
+          (change)="setNhaCungCap($any($event.target).value)"
+        >
+          <option value="">Tất cả nhà cung cấp</option>
+          @for (s of suppliers(); track s.MaNhaCungCap) {
+            <option [value]="s.MaNhaCungCap">{{ s.TenNhaCungCap }}</option>
+          }
+        </select>
+
+        <div class="flex flex-wrap items-center gap-1.5 sm:ml-auto">
+          <button
+            type="button"
+            class="rounded-full border px-3 py-1.5 text-xs font-medium transition"
+            [class]="laHomNay()
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+            (click)="chonNhanh('hom-nay')"
+          >
+            Hôm nay
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-3 py-1.5 text-xs font-medium transition"
+            [class]="laTuanNay()
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+            (click)="chonNhanh('tuan-nay')"
+          >
+            Tuần này
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-3 py-1.5 text-xs font-medium transition"
+            [class]="laThangNay()
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+            (click)="chonNhanh('thang-nay')"
+          >
+            Tháng này
+          </button>
+          @if (coLoc()) {
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              (click)="xoaLoc()"
+            >
+              <i class="pi pi-times text-[10px]"></i>
+              Xóa lọc
+            </button>
+          }
+        </div>
+      </div>
+      @if (laHomNay() || laTuanNay() || laThangNay()) {
+        <div class="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+          <i class="pi pi-calendar text-[10px] text-slate-400"></i>
+          Đang lọc ngày lập: {{ tuNgay() | date: 'dd/MM/yyyy' }} – {{ denNgay() | date: 'dd/MM/yyyy' }}
+        </div>
+      }
+    </div>
+
     <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
         <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -98,6 +180,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
         [loading]="loading()"
         (onLazyLoad)="onLazyLoad($event)"
         dataKey="MaPhieuNhap"
+        [expandedRowKeys]="moRong()"
         [tableStyle]="{ 'min-width': '56rem' }"
       >
         <ng-template #header>
@@ -138,10 +221,20 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
                   </div>
                   <div class="min-w-0">
                     <div class="max-w-[16rem] truncate font-medium text-slate-800">{{ d.TenSanPham }}</div>
-                    <div class="text-xs text-slate-500">
-                      SL {{ tongSoLuong(o) }}
+                    <div class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                      <span>SL {{ tongSoLuong(o) }}</span>
                       @if (soMatHangKhac(o) > 0) {
-                        · {{ soMatHangKhac(o) }} mặt hàng khác
+                        <span class="text-slate-300">·</span>
+                        <button
+                          type="button"
+                          class="-ml-0.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-emerald-700 transition-colors hover:bg-emerald-50"
+                          [attr.aria-expanded]="!!moRong()[o.MaPhieuNhap]"
+                          [attr.aria-label]="moRong()[o.MaPhieuNhap] ? 'Thu gọn danh sách sản phẩm' : 'Xem thêm ' + soMatHangKhac(o) + ' mặt hàng khác'"
+                          (click)="toggleChiTiet(o)"
+                        >
+                          <i class="pi pi-chevron-right text-[9px] transition-transform" [class.rotate-90]="moRong()[o.MaPhieuNhap]"></i>
+                          {{ moRong()[o.MaPhieuNhap] ? 'Thu gọn' : soMatHangKhac(o) + ' mặt hàng khác' }}
+                        </button>
                       }
                     </div>
                   </div>
@@ -150,7 +243,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
                 <span class="text-slate-400">—</span>
               }
             </td>
-            <td class="px-4 py-3 text-right font-medium tabular-nums text-slate-800">{{ o.TongGiaTri | number: '1.0-0' }} ₫</td>
+            <td class="px-4 py-3 text-right! font-medium tabular-nums text-slate-800">{{ o.TongGiaTri | number: '1.0-0' }} ₫</td>
             <td class="px-4 py-3"><p-tag [value]="status(o).label" [severity]="status(o).severity" /></td>
             <td class="px-4 py-3 text-center">
               <div class="flex items-center justify-center gap-1">
@@ -158,6 +251,55 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
                   <p-button label="Nhận hàng" size="small" [disabled]="busy()" (onClick)="openReceive(o)" />
                 } @else {
                   <p-button label="Xem" size="small" [text]="true" (onClick)="openView(o)" />
+                }
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #expandedrow let-o>
+          <tr>
+            <td [attr.colspan]="6" class="bg-slate-50/80 px-4 py-4 sm:px-6">
+              <div class="mb-3 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-700">
+                <i class="pi pi-box text-xs text-slate-400"></i>
+                Chi tiết {{ soMatHang(o) }} mặt hàng
+                <span class="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-slate-200">
+                  {{ tongSoLuong(o) }} sản phẩm
+                </span>
+                <button
+                  type="button"
+                  class="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-slate-500 transition-colors hover:bg-white hover:text-emerald-700"
+                  (click)="toggleChiTiet(o)"
+                >
+                  <i class="pi pi-chevron-up text-[9px]"></i>
+                  Thu gọn
+                </button>
+              </div>
+
+              <div class="grid gap-2 sm:grid-cols-2">
+                @for (d of o.chi_tiet_phieu_nhap ?? []; track d.MaChiTietPhieuNhap) {
+                  <div class="flex items-center gap-3 rounded-xl border border-slate-200/70 bg-white px-3 py-2.5 shadow-sm shadow-slate-200/40">
+                    <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200/70">
+                      @if (anh(d); as url) {
+                        <img [src]="url" alt="" class="h-full w-full object-cover" />
+                      } @else {
+                        <div class="flex h-full w-full items-center justify-center text-slate-400">
+                          <i class="pi pi-image text-xs"></i>
+                        </div>
+                      }
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-sm font-medium text-slate-800">{{ d.TenSanPham }}</div>
+                      <div class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                        <span class="inline-flex items-center rounded-md bg-emerald-50 px-1.5 py-0.5 font-semibold text-emerald-700">SL {{ d.SoLuong }}</span>
+                        <span class="text-slate-300">·</span>
+                        <span>{{ d.DonGia | number: '1.0-0' }} ₫/sp</span>
+                      </div>
+                    </div>
+                    <div class="shrink-0 text-right text-sm font-semibold tabular-nums text-slate-800">
+                      {{ d.TongGia | number: '1.0-0' }} ₫
+                    </div>
+                  </div>
                 }
               </div>
             </td>
@@ -178,7 +320,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
                     <i class="pi pi-inbox text-xl"></i>
                   </div>
                   <span class="text-sm text-slate-500">
-                    {{ statusFilter() !== null ? 'Không có phiếu ở trạng thái này.' : 'Chưa có phiếu nhập nào.' }}
+                    {{ coLoc() ? 'Không có phiếu khớp bộ lọc.' : statusFilter() !== null ? 'Không có phiếu ở trạng thái này.' : 'Chưa có phiếu nhập nào.' }}
                   </span>
                 </div>
               }
@@ -193,6 +335,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
       [modal]="true"
       [visible]="!!selected()"
       (visibleChange)="!$event && selected.set(null)"
+      (keydown.enter)="onEnter($event)"
       [style]="{ width: '42rem', maxWidth: '94vw' }"
     >
       @if (selected(); as o) {
@@ -337,6 +480,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
 })
 export class PurchaseList {
   private service = inject(PurchaseService);
+  private supplierService = inject(SupplierService);
 
   private auth = inject(AuthService);
   private confirm = inject(ConfirmationService);
@@ -354,12 +498,54 @@ export class PurchaseList {
   readonly statusFilter = signal<number | null>(null);
   readonly first = signal(0);
 
+  // Bộ lọc tìm kiếm
+  readonly suppliers = signal<SupplierItem[]>([]);
+  readonly tuKhoa = signal('');
+  readonly maNhaCungCap = signal<number | null>(null);
+  readonly tuNgay = signal<string | null>(null);
+  readonly denNgay = signal<string | null>(null);
+  private debounceTimer?: ReturnType<typeof setTimeout>;
+
+  readonly coLoc = computed(
+    () =>
+      !!this.tuKhoa().trim() ||
+      this.maNhaCungCap() !== null ||
+      this.tuNgay() !== null ||
+      this.denNgay() !== null,
+  );
+
+  readonly laHomNay = computed(() => {
+    const r = this.homNay();
+    return this.tuNgay() === r.tu && this.denNgay() === r.den;
+  });
+
+  readonly laTuanNay = computed(() => {
+    const r = this.khoangTuanNay();
+    return this.tuNgay() === r.tu && this.denNgay() === r.den;
+  });
+
+  readonly laThangNay = computed(() => {
+    const r = this.khoangThangNay();
+    return this.tuNgay() === r.tu && this.denNgay() === r.den;
+  });
+
   readonly selected = signal<PurchaseOrder | null>(null);
   readonly mode = signal<'view' | 'receive'>('view');
   readonly dates = signal<Record<number, string>>({});
   readonly today = formatDate(new Date());
 
+  // Dòng nào đang mở phần chi tiết sản phẩm (chỉ dành cho phiếu có từ 2 mặt hàng)
+  readonly moRong = signal<Record<string, boolean>>({});
+
   private page = 1;
+  private lanYeuCau = 0;
+
+  constructor() {
+    this.supplierService.list().subscribe({
+      next: (list) => this.suppliers.set(list),
+      error: () => this.suppliers.set([]),
+    });
+  }
 
   readonly dialogTitle = computed(() => {
     const id = this.selected()?.MaPhieuNhap;
@@ -392,8 +578,22 @@ export class PurchaseList {
     return (o.chi_tiet_phieu_nhap ?? []).reduce((s, d) => s + Number(d.SoLuong), 0);
   }
 
+  soMatHang(o: PurchaseOrder): number {
+    return o.chi_tiet_phieu_nhap?.length ?? 0;
+  }
+
   soMatHangKhac(o: PurchaseOrder): number {
-    return Math.max((o.chi_tiet_phieu_nhap?.length ?? 0) - 1, 0);
+    return Math.max(this.soMatHang(o) - 1, 0);
+  }
+
+  toggleChiTiet(o: PurchaseOrder) {
+    const key = o.MaPhieuNhap;
+    this.moRong.update((e) => {
+      const next = { ...e };
+      if (next[key]) delete next[key];
+      else next[key] = true;
+      return next;
+    });
   }
 
   private dinhDangNgay(v?: string | null): string {
@@ -431,9 +631,76 @@ export class PurchaseList {
   chonTag(value: number | null) {
     if (this.statusFilter() === value) return;
     this.statusFilter.set(value);
+    this.veTrangDau();
+  }
+
+  setTuKhoa(v: string) {
+    this.tuKhoa.set(v);
+    this.choGoTim();
+  }
+
+  timNgay() {
+    clearTimeout(this.debounceTimer);
+    this.veTrangDau();
+  }
+
+  setNhaCungCap(v: string) {
+    this.maNhaCungCap.set(v ? Number(v) : null);
+    this.veTrangDau();
+  }
+
+  chonNhanh(k: 'hom-nay' | 'tuan-nay' | 'thang-nay') {
+    const r = k === 'hom-nay' ? this.homNay() : k === 'tuan-nay' ? this.khoangTuanNay() : this.khoangThangNay();
+    this.tuNgay.set(r.tu);
+    this.denNgay.set(r.den);
+    clearTimeout(this.debounceTimer);
+    this.veTrangDau();
+  }
+
+  xoaLoc() {
+    this.tuKhoa.set('');
+    this.maNhaCungCap.set(null);
+    this.tuNgay.set(null);
+    this.denNgay.set(null);
+    clearTimeout(this.debounceTimer);
+    this.veTrangDau();
+  }
+
+  private choGoTim() {
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => this.veTrangDau(), 200);
+  }
+
+  private veTrangDau() {
     this.first.set(0);
     this.page = 1;
     this.load();
+  }
+
+  private ymd(d: Date): string {
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }
+
+  private homNay(): { tu: string; den: string } {
+    const t = this.ymd(new Date());
+    return { tu: t, den: t };
+  }
+
+  private khoangTuanNay(): { tu: string; den: string } {
+    const now = new Date();
+    const lechThuHai = (now.getDay() + 6) % 7;
+    const tu = new Date(now.getFullYear(), now.getMonth(), now.getDate() - lechThuHai);
+    const den = new Date(tu.getFullYear(), tu.getMonth(), tu.getDate() + 6);
+    return { tu: this.ymd(tu), den: this.ymd(den) };
+  }
+
+  private khoangThangNay(): { tu: string; den: string } {
+    const n = new Date();
+    return {
+      tu: this.ymd(new Date(n.getFullYear(), n.getMonth(), 1)),
+      den: this.ymd(new Date(n.getFullYear(), n.getMonth() + 1, 0)),
+    };
   }
 
   onLazyLoad(e: TableLazyLoadEvent) {
@@ -443,15 +710,27 @@ export class PurchaseList {
   }
 
   load() {
+    const lanGui = ++this.lanYeuCau;
     this.loading.set(true);
-    this.service.list(this.page, this.statusFilter()).subscribe({
+    this.service
+      .list(this.page, {
+        trangThai: this.statusFilter(),
+        tuNgay: this.tuNgay(),
+        denNgay: this.denNgay(),
+        maNhaCungCap: this.maNhaCungCap(),
+        tim: this.tuKhoa().trim() || null,
+      })
+      .subscribe({
       next: (p) => {
+        // Bỏ qua phản hồi cũ khi đã có yêu cầu mới hơn (gõ nhanh, đổi bộ lọc liên tiếp)
+        if (lanGui !== this.lanYeuCau) return;
         this.orders.set(p.data ?? []);
         this.total.set(p.total ?? 0);
         if (p.counts) this.counts.set(p.counts);
         this.loading.set(false);
       },
       error: (e) => {
+        if (lanGui !== this.lanYeuCau) return;
         this.loading.set(false);
         this.fail(e, 'Không tải được danh sách phiếu nhập.');
       },
@@ -499,6 +778,12 @@ export class PurchaseList {
           this.selected.set(null),
         ),
     });
+  }
+
+  onEnter(e: Event) {
+    if (!plainEnter(e) || this.mode() !== 'receive' || !this.canConfirm() || this.busy()) return;
+    e.preventDefault();
+    this.confirmReceive();
   }
 
   confirmReceive() {

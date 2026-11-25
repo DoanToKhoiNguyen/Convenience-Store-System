@@ -8,6 +8,8 @@ export interface Summary {
     gia_von?: number;
     loi_nhuan?: number;
     bien_loi_nhuan?: number;
+    gia_tri_huy?: number;
+    lai_sau_huy?: number;
 }
 
 export interface SeriesPoint {
@@ -37,10 +39,53 @@ export interface SlowProduct {
     von_ton?: number;
 }
 
-export interface MethodStat {
-    ten: string;
-    so_hoa_don: number;
+/** Một lô hết hạn bị loại trong kỳ: bán được bao nhiêu, vốn bao nhiêu, lỗ bao nhiêu. */
+export interface LossLot {
+    MaLoHang: number;
+    MaLo: string;
+    MaSanPham: number;
+    TenSanPham: string;
+    HanSuDung: string | null;
+    ThoiGianLoai: string;
+    SoLuongNhap: number;
+    so_luong_ban: number;
+    so_luong_loai: number;
+    don_gia: number;
+    gia_tri_nhap: number;
     doanh_thu: number;
+    lo_huy: number;
+    lai: number;
+}
+
+export interface LossProduct {
+    MaSanPham: number;
+    TenSanPham: string;
+    so_luong: number;
+    gia_tri: number;
+}
+
+export interface LossTotals {
+    so_lo: number;
+    so_luong_nhap: number;
+    so_luong_ban: number;
+    so_luong_loai: number;
+    gia_tri_nhap: number;
+    doanh_thu: number;
+    lo_huy: number;
+    lai: number;
+}
+
+export interface LossPoint {
+    k: string;
+    nhan: string;
+    gia_tri: number;
+}
+
+export interface ExpiredLoss {
+    tong: LossTotals;
+    theo_lo: LossLot[];
+    san_pham: LossProduct[];
+    chuoi: LossPoint[];
 }
 
 export interface StaffStat {
@@ -57,11 +102,11 @@ export interface RevenueReport {
     tong_hop: Summary;
     tong_hop_truoc: Summary;
     chuoi: SeriesPoint[];
-    phuong_thuc: MethodStat[];
     nhan_vien: StaffStat[];
     ban_chay: ProductStat[];
     sinh_loi?: ProductStat[];
     ban_cham: SlowProduct[];
+    het_han?: ExpiredLoss;
     dang_cho: { so_hoa_don: number; tong_tien: number };
 }
 export interface ImportSummary {

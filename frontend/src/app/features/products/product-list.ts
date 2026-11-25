@@ -14,6 +14,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE } from '../../core/auth/roles';
 import { ConfirmService } from '../../core/ui/confirm.service';
+import { plainEnter } from '../../core/ui/enter';
 import { Product, ProductPayload, Supplier } from './product.model';
 import { ProductService } from './product.service';
 import { Category } from '../categories/category.model';
@@ -56,7 +57,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
           <input
             pInputText
             type="search"
-            placeholder="Tìm theo tên hoặc mã sản phẩm, mã lô..."
+            placeholder="Tìm theo tên hoặc mã lô..."
             class="w-full"
             [value]="keyword()"
             (input)="onSearch($any($event.target).value)"
@@ -388,6 +389,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
       [modal]="true"
       [visible]="dialogOpen()"
       (visibleChange)="dialogOpen.set($event)"
+      (keydown.enter)="onEnter($event)"
       [style]="{ width: '42rem', maxWidth: '95vw' }"
     >
       <form [formGroup]="form" class="space-y-4">
@@ -594,6 +596,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
       [modal]="true"
       [visible]="!!lotTarget()"
       (visibleChange)="!$event && lotTarget.set(null)"
+      (keydown.enter)="onLotEnter($event)"
       [style]="{ width: '24rem', maxWidth: '92vw' }"
     >
       @if (lotTarget(); as l) {
@@ -723,8 +726,9 @@ export class ProductList {
     return this.products().filter((p) => {
       if (f !== 'all' && p.trang_thai_hsd !== f) return false;
       if (words.length === 0) return true;
-      const haystack = this.haystack(p);
-      return words.every((w) => haystack.includes(w));
+      if (this.khopMaLo(p)) return true;
+      const ten = this.tuTen(p);
+      return words.every((w) => ten.some((t) => t.startsWith(w)));
     });
   });
 
@@ -794,13 +798,18 @@ export class ProductList {
     });
   }
 
-  // Tìm theo tên, thương hiệu, mã sản phẩm, tiền tố và mã các lô
-  private haystack(p: Product): string {
-    return normalize(
-      [p.TenSanPham, p.TenThuongHieu, p.TienToLo, String(p.MaSanPham), ...(p.lo_hang ?? []).map((l) => l.MaLo)]
-        .filter(Boolean)
-        .join(' '),
-    );
+  // Tách tên sản phẩm thành từng "từ" (bỏ dấu, viết thường) để so khớp theo đầu từ.
+  // Không dò thương hiệu hay mã sản phẩm.
+  private tuTen(p: Product): string[] {
+    return normalize(p.TenSanPham ?? '')
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean);
+  }
+
+  // Khớp mã lô: mã lô bắt đầu bằng từ khóa (gõ "BQC" hay "BQC-001" đều ra)
+  private khopMaLo(p: Product): boolean {
+    const q = normalize(this.keyword().trim());
+    return q !== '' && (p.lo_hang ?? []).some((l) => normalize(l.MaLo ?? '').startsWith(q));
   }
 
   onSearch(v: string) {
@@ -864,6 +873,12 @@ export class ProductList {
     this.lotTarget.set(l);
     this.lotDate.set(l.HanSuDung ?? '');
     this.lotError.set(null);
+  }
+
+  onLotEnter(e: Event) {
+    if (!plainEnter(e) || !this.lotTarget() || this.lotBusy()) return;
+    e.preventDefault();
+    this.saveLotExpiry();
   }
 
   saveLotExpiry() {
@@ -960,6 +975,12 @@ export class ProductList {
       ThanhPhan: p.ThanhPhan ?? '',
     });
     this.dialogOpen.set(true);
+  }
+
+  onEnter(e: Event) {
+    if (!plainEnter(e) || this.form.invalid || this.busy()) return;
+    e.preventDefault();
+    this.save();
   }
 
   save() {
@@ -1069,7 +1090,7 @@ export class ProductList {
   }
 
   private errorText(e: HttpErrorResponse): string {
-    const errs = e.error?.errors as Record<string, string[]> | undefined;
+    const errs = e.error?.errors as Record<string, string[] | undefined>;
     if (errs) return Object.values(errs).flat().join(' ');
     return e.error?.message ?? 'Có lỗi xảy ra, vui lòng thử lại.';
   }

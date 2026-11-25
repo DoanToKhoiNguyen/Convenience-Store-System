@@ -11,6 +11,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmationService } from 'primeng/api';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE, ROLE_LABEL } from '../../core/auth/roles';
+import { plainEnter } from '../../core/ui/enter';
 import { Staff, StaffPayload } from './staff.model';
 import { StaffService } from './staff.service';
 
@@ -195,6 +196,7 @@ import { StaffService } from './staff.service';
       [modal]="true"
       [visible]="dialogOpen()"
       (visibleChange)="dialogOpen.set($event)"
+      (keydown.enter)="onEnter($event)"
       [style]="{ width: '32rem', maxWidth: '94vw' }"
     >
       <form [formGroup]="form" class="space-y-4">
@@ -405,6 +407,12 @@ export class StaffList {
       this.form.controls.TrangThai.enable();
     }
     this.dialogOpen.set(true);
+  }
+
+  onEnter(e: Event) {
+    if (!plainEnter(e) || this.form.invalid || this.busy()) return;
+    e.preventDefault();
+    this.save();
   }
 
   save() {

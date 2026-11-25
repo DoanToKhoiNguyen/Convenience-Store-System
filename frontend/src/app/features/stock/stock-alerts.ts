@@ -281,6 +281,7 @@ interface Group {
       [modal]="true"
       [visible]="dialogOpen()"
       (visibleChange)="dialogOpen.set($event)"
+      (keydown.enter)="onEnter($event)"
       [style]="{ width: '40rem', maxWidth: '94vw' }"
     >
       <div class="mb-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -493,6 +494,13 @@ export class StockAlerts {
   }
   supplierActive(p: AlertProduct) {
     return Number(p.nha_cung_cap?.TrangThai ?? 1) === 1;
+  }
+
+  // Dialog chỉ đọc + nút ở footer nên Enter luôn = xác nhận lập phiếu
+  onEnter(e: Event) {
+    if (this.busy() || this.groups().length === 0) return;
+    e.preventDefault();
+    this.submit();
   }
 
   submit() {

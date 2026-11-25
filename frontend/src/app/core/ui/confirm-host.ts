@@ -20,6 +20,7 @@ const LOOK: Record<ConfirmTone, { icon: string; box: string }> = {
       [dismissableMask]="true"
       [visible]="!!service.state()"
       (visibleChange)="!$event && service.answer(false)"
+      (keydown.enter)="onEnter($event)"
       [style]="{ width: 'min(28rem, 94vw)' }"
     >
       @if (service.state(); as s) {
@@ -53,4 +54,21 @@ export class ConfirmHost {
         const t = this.service.state()?.tone;
         return t === 'danger' ? 'danger' : t === 'warn' ? 'warn' : undefined;
     });
+
+    // Enter = đồng ý với hộp xác nhận của ứng dụng
+    onEnter(e: Event) {
+        e.preventDefault();
+        this.service.answer(true);
+    }
+
+    constructor() {
+        // Enter = đồng ý với p-confirmdialog của PrimeNG (không phải component của mình)
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            const accept = document.querySelector<HTMLElement>('.p-confirmdialog .p-confirmdialog-accept-button');
+            if (!accept) return;
+            e.preventDefault();
+            accept.click();
+        });
+    }
 }

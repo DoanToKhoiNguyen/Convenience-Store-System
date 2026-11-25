@@ -5,15 +5,27 @@ import { environment } from '../../../environments/environment';
 import { Page, PurchaseOrder } from './purchase.model';
 import { NoticeService } from '../../core/ui/notice.service';
 
+export interface PurchaseFilters {
+    trangThai?: number | null;
+    tuNgay?: string | null;
+    denNgay?: string | null;
+    maNhaCungCap?: number | null;
+    tim?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PurchaseService {
     private http = inject(HttpClient);
     private notice = inject(NoticeService);
     private url = `${environment.apiUrl}/phieu-nhap`;
 
-    list(page: number, trangThai: number | null = null) {
-        const params: Record<string, number> = { page };
-        if (trangThai !== null) params['TrangThai'] = trangThai;
+    list(page: number, f: PurchaseFilters = {}) {
+        const params: Record<string, string | number> = { page };
+        if (f.trangThai != null) params['TrangThai'] = f.trangThai;
+        if (f.tuNgay) params['TuNgay'] = f.tuNgay;
+        if (f.denNgay) params['DenNgay'] = f.denNgay;
+        if (f.maNhaCungCap != null) params['MaNhaCungCap'] = f.maNhaCungCap;
+        if (f.tim) params['Tim'] = f.tim;
 
         return this.http.get<any>(this.url, { params }).pipe(
             map((res): Page<PurchaseOrder> => {

@@ -7,19 +7,24 @@ import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 import { Product } from '../products/product.model';
 import { ProductService } from '../products/product.service';
+import { plainEnter } from '../../core/ui/enter';
 
 type Filter = 'all' | 'low' | 'out';
 type Severity = 'success' | 'warn' | 'danger';
 
 // Bỏ dấu để gõ "nuoc ngot" vẫn tìm ra "Nước ngọt"
 const normalize = (s: string) =>
-  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase();
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/đ/g, 'd');
+
+const OTHER = 'Khác';
+const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
 
 @Component({
   selector: 'app-stock-update',
-  imports: [ReactiveFormsModule, RouterLink, TableModule, TagModule, ButtonModule, DialogModule, InputTextModule],
+  imports: [ReactiveFormsModule, RouterLink, TableModule, TagModule, ButtonModule, DialogModule, InputTextModule, TooltipModule],
   template: `
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
@@ -42,7 +47,7 @@ const normalize = (s: string) =>
         <input
           pInputText
           type="text"
-          placeholder="Tìm theo tên hoặc mã sản phẩm..."
+          placeholder="Tìm theo tên sản phẩm..."
           class="w-full pl-9"
           [value]="keyword()"
           (input)="keyword.set($any($event.target).value)"
@@ -62,6 +67,35 @@ const normalize = (s: string) =>
         </button>
       }
     </div>
+
+    <!-- Lọc theo danh mục -->
+    @if (categoryChips().length > 1) {
+      <div class="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
+        <span class="shrink-0 self-center pr-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Danh mục</span>
+        <button
+          type="button"
+          class="shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition"
+          [class]="category() === null
+            ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+          (click)="onCategory(null)"
+        >
+          Tất cả ({{ base().length }})
+        </button>
+        @for (c of categoryChips(); track c.name) {
+          <button
+            type="button"
+            class="shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition"
+            [class]="category() === c.name
+              ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+            (click)="onCategory(c.name)"
+          >
+            {{ c.name }} ({{ c.count }})
+          </button>
+        }
+      </div>
+    }
 
     @if (success()) {
       <div class="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
@@ -92,15 +126,14 @@ const normalize = (s: string) =>
         [rows]="10"
         [rowsPerPageOptions]="[10, 20, 50]"
         dataKey="MaSanPham"
-        [tableStyle]="{ 'min-width': '50rem' }"
+        [tableStyle]="{ 'min-width': '46rem' }"
       >
         <ng-template #header>
           <tr class="bg-slate-50/80">
-            <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Mã</th>
             <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Sản phẩm</th>
             <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Loại</th>
-            <th class="px-4 py-3 text-right! text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tồn hiện tại</th>
-            <th class="px-4 py-3 text-right! text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tối thiểu / Tối đa</th>
+            <th class="px-4 py-3 text-center! text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tồn hiện tại</th>
+            <th class="px-4 py-3 text-center! text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tối thiểu / Tối đa</th>
             <th class="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Trạng thái</th>
             <th class="px-4 py-3 text-right! text-[11px] font-semibold uppercase tracking-wider text-slate-500">Thao tác</th>
           </tr>
@@ -109,19 +142,18 @@ const normalize = (s: string) =>
         <ng-template #body let-p>
           <tr class="transition-colors hover:bg-emerald-100/60!">
             <td class="px-4 py-3">
-              <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-500">
-                {{ p.MaSanPham }}
-              </span>
-            </td>
-            <td class="px-4 py-3">
-              <div class="flex items-center gap-2.5">
-                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-                  <i class="pi pi-box text-xs"></i>
+              <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200/60">
+                  @if (p.hinh_anh_url) {
+                    <img [src]="p.hinh_anh_url" alt="" class="h-full w-full object-cover" />
+                  } @else {
+                    <i class="pi pi-image text-slate-300"></i>
+                  }
                 </div>
-                <div>
-                  <div class="font-medium text-slate-800">{{ p.TenSanPham }}</div>
+                <div class="min-w-0">
+                  <div class="truncate font-medium text-slate-800">{{ p.TenSanPham }}</div>
                   @if (p.TenThuongHieu) {
-                    <div class="text-xs text-slate-500">{{ p.TenThuongHieu }}</div>
+                    <div class="truncate text-xs text-slate-500">{{ p.TenThuongHieu }}</div>
                   }
                 </div>
               </div>
@@ -131,18 +163,26 @@ const normalize = (s: string) =>
                 {{ p.LoaiSanPham ?? '—' }}
               </span>
             </td>
-              <td class="px-4 py-3 text-right">
-                <span
-                    class="text-base font-semibold tabular-nums"
-                    [class]="status(p).severity === 'danger' ? 'text-red-600' : 'text-slate-800'"
-                  >{{ p.SoLuongHienTai }}
-                </span>
+            <td class="px-4 py-3 text-center!">
+              <span
+                class="text-base font-semibold tabular-nums"
+                [class]="status(p).severity === 'danger' ? 'text-red-600' : 'text-slate-800'"
+              >{{ p.SoLuongHienTai }}</span>
             </td>
-            <td class="px-4 py-3 text-right tabular-nums text-slate-600">{{ p.TonKhoToiThieu ?? 0 }} / {{ p.TonKhoToiDa ?? '—' }}</td>
+            <td class="px-4 py-3 text-center! tabular-nums text-slate-600">{{ p.TonKhoToiThieu ?? 0 }} / {{ p.TonKhoToiDa ?? '—' }}</td>
             <td class="px-4 py-3"><p-tag [value]="status(p).label" [severity]="status(p).severity" /></td>
             <td class="px-4 py-3">
               <div class="flex justify-end">
-                <p-button label="Cập nhật" icon="pi pi-pencil" size="small" [outlined]="true" (onClick)="open(p)" />
+                <p-button
+                  icon="pi pi-pencil"
+                  ariaLabel="Cập nhật tồn kho"
+                  pTooltip="Cập nhật tồn kho"
+                  tooltipPosition="top"
+                  size="small"
+                  [text]="true"
+                  [rounded]="true"
+                  (onClick)="open(p)"
+                />
               </div>
             </td>
           </tr>
@@ -150,7 +190,7 @@ const normalize = (s: string) =>
 
         <ng-template #emptymessage>
           <tr>
-            <td colspan="7" class="px-4 py-12">
+            <td colspan="6" class="px-4 py-12">
               @if (loading()) {
                 <div class="flex flex-col items-center gap-2 text-slate-400">
                   <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
@@ -175,6 +215,7 @@ const normalize = (s: string) =>
       [modal]="true"
       [visible]="!!target()"
       (visibleChange)="!$event && close()"
+      (keydown.enter)="onEnter($event)"
       [style]="{ width: '30rem', maxWidth: '94vw' }"
     >
       @if (target(); as p) {
@@ -273,6 +314,7 @@ export class StockUpdate {
   readonly products = signal<Product[]>([]);
   readonly keyword = signal('');
   readonly filter = signal<Filter>('all');
+  readonly category = signal<string | null>(null);
   readonly loading = signal(true);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
@@ -290,13 +332,28 @@ export class StockUpdate {
   // Sản phẩm đã ẩn không cần cập nhật tồn kho
   readonly active = computed(() => this.products().filter((p) => Number(p.TrangThai ?? 1) === 1));
 
+  // Đã lọc theo từ khóa và trạng thái, chưa lọc theo danh mục (để đếm số lượng mỗi danh mục)
+  readonly base = computed(() => {
+    const words = normalize(this.keyword().trim()).split(/\s+/).filter(Boolean);
+    const f = this.filter();
+    return this.active().filter((p) => this.matches(p, f) && this.khopTen(p, words));
+  });
+
+  readonly categoryChips = computed(() => {
+    const counts = new Map<string, number>();
+    for (const p of this.active()) counts.set(categoryOf(p), 0);
+    for (const p of this.base()) counts.set(categoryOf(p), (counts.get(categoryOf(p)) ?? 0) + 1);
+
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) =>
+        a.name === OTHER ? 1 : b.name === OTHER ? -1 : a.name.localeCompare(b.name, 'vi'),
+      );
+  });
+
   readonly filtered = computed(() => {
-    const k = normalize(this.keyword().trim());
-    return this.active().filter(
-      (p) =>
-        this.matches(p, this.filter()) &&
-        (!k || normalize(p.TenSanPham).includes(k) || normalize(String(p.MaSanPham)).includes(k)),
-    );
+    const cat = this.category();
+    return this.base().filter((p) => !cat || categoryOf(p) === cat);
   });
 
   constructor() {
@@ -323,6 +380,19 @@ export class StockUpdate {
     if (f === 'out') return stock <= 0;
     if (f === 'low') return stock > 0 && stock <= min;
     return true;
+  }
+
+  // Khớp đầu từ trong tên sản phẩm (gõ "u" vẫn ra "Đồ uống"); bỏ dấu, không phân biệt hoa/thường
+  private khopTen(p: Product, words: string[]): boolean {
+    if (words.length === 0) return true;
+    const ten = normalize(p.TenSanPham ?? '')
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean);
+    return words.every((w) => ten.some((t) => t.startsWith(w)));
+  }
+
+  onCategory(name: string | null) {
+    this.category.set(name);
   }
 
   count(f: Filter): number {
@@ -365,6 +435,12 @@ export class StockUpdate {
     return !p || this.form.invalid || this.busy() || this.overMax(p);
   }
 
+
+  onEnter(e: Event) {
+    if (!plainEnter(e) || this.cannotSave()) return;
+    e.preventDefault();
+    this.save();
+  }
 
   save() {
     const p = this.target();

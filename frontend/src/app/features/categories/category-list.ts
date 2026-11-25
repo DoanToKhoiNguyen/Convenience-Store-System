@@ -8,10 +8,11 @@ import { TooltipModule } from 'primeng/tooltip';
 import { Category } from './category.model';
 import { CategoryService } from './category.service';
 import { ConfirmService } from '../../core/ui/confirm.service';
+import { plainEnter } from '../../core/ui/enter';
 
 // Bỏ dấu để gõ "do uong" vẫn tìm ra "Đồ uống"
 const normalize = (s: string) =>
-  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase();
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/đ/g, 'd');
 
 @Component({
   selector: 'app-category-list',
@@ -166,6 +167,7 @@ const normalize = (s: string) =>
       [modal]="true"
       [visible]="dialogOpen()"
       (visibleChange)="dialogOpen.set($event)"
+      (keydown.enter)="onEnter($event)"
       [style]="{ width: '30rem', maxWidth: '92vw' }"
     >
       <form [formGroup]="form" class="space-y-4" (ngSubmit)="save()">
@@ -237,11 +239,18 @@ export class CategoryList {
   readonly editing = signal<Category | null>(null);
   readonly formError = signal<string | null>(null);
 
+  // Khớp đầu từ: mỗi từ khóa phải trùng phần đầu của một từ bất kỳ trong tên
+  // (gõ "u" vẫn ra "Đồ uống"; hoa/thường và dấu được bỏ qua)
   readonly filtered = computed(() => {
-    const k = normalize(this.keyword().trim());
-    if (!k) return this.items();
-    //return this.items().filter((c) => normalize(c.TenDanhMuc).includes(k));
-    return this.items().filter((c) => normalize(c.TenDanhMuc).startsWith(k));
+    const words = normalize(this.keyword().trim()).split(/\s+/).filter(Boolean);
+    if (words.length === 0) return this.items();
+
+    return this.items().filter((c) => {
+      const ten = normalize(c.TenDanhMuc)
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean);
+      return words.every((w) => ten.some((t) => t.startsWith(w)));
+    });
   });
 
   readonly form = this.fb.nonNullable.group({
@@ -282,6 +291,12 @@ export class CategoryList {
     this.formError.set(null);
     this.form.reset({ TenDanhMuc: c.TenDanhMuc });
     this.dialogOpen.set(true);
+  }
+
+  onEnter(e: Event) {
+    if (!plainEnter(e) || this.form.invalid || this.busy()) return;
+    e.preventDefault();
+    this.save();
   }
 
   save() {
