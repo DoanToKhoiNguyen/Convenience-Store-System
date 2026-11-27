@@ -62,7 +62,6 @@ interface Group {
             [attr.aria-label]="khoLabel()"
           >
             <i class="pi pi-bell text-[9px]"></i>
-            {{ khoChuaNhap() }}
           </span>
         }
       </span>
@@ -72,14 +71,13 @@ interface Group {
       >
         <i class="pi pi-clock text-xs"></i>
         Sắp hết hạn
-        @if (expiryMoi() ? expiryTotal() : 0; as n) {
+        @if (expiryMoi()) {
           <span
             class="inline-flex h-5 min-w-5 items-center justify-center gap-1 rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white shadow-sm shadow-red-500/40"
             [title]="expiryLabel()"
             [attr.aria-label]="expiryLabel()"
           >
             <i class="pi pi-bell text-[9px]"></i>
-            {{ n }}
           </span>
         }
       </a>

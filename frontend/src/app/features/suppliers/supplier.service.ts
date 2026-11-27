@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { SupplierItem, SupplierPayload } from './supplier.model';
+import { SupplierItem, SupplierPayload, SupplierProduct } from './supplier.model';
 
 @Injectable({ providedIn: 'root' })
 export class SupplierService {
@@ -16,6 +16,12 @@ export class SupplierService {
                 return (Array.isArray(d) ? d : Object.values(d ?? {})) as SupplierItem[];
             }),
         );
+    }
+
+    products(id: number) {
+        return this.http
+            .get<{ data: SupplierProduct[] }>(`${this.url}/${id}/san-pham`)
+            .pipe(map((res) => res?.data ?? []));
     }
 
     create(body: SupplierPayload) {

@@ -45,6 +45,7 @@ Route::middleware(['auth:sanctum' , 'active'])->group(function () {
         Route::post('/san-pham/{id}/hien-thi', [SanPhamController::class, 'hienLai']);
         Route::get('/nha-cung-cap', [NhaCungCapController::class, 'index']);
         Route::post('/nha-cung-cap', [NhaCungCapController::class, 'store']);
+        Route::get('/nha-cung-cap/{id}/san-pham', [NhaCungCapController::class, 'sanPham']);
         Route::put('/nha-cung-cap/{id}', [NhaCungCapController::class, 'update']);
         Route::delete('/nha-cung-cap/{id}', [NhaCungCapController::class, 'destroy']);
         Route::post('/nha-cung-cap/{id}/hien-thi', [NhaCungCapController::class, 'hienLai']);

@@ -12,7 +12,7 @@ import { ConfirmService } from '../../core/ui/confirm.service';
 import { plainEnter } from '../../core/ui/enter';
 import { Category } from '../categories/category.model';
 import { CategoryService } from '../categories/category.service';
-import { SupplierItem } from './supplier.model';
+import { SupplierItem, SupplierProduct } from './supplier.model';
 import { SupplierService } from './supplier.service';
 
 const normalize = (s: string) =>
@@ -190,6 +190,16 @@ const normalize = (s: string) =>
             </td>
             <td class="px-4 py-3 text-right">
               <div class="flex justify-end gap-1">
+                <p-button
+                  icon="pi pi-box"
+                  size="small"
+                  [text]="true"
+                  [rounded]="true"
+                  ariaLabel="Sản phẩm đã cung cấp"
+                  pTooltip="Sản phẩm đã cung cấp"
+                  tooltipPosition="top"
+                  (onClick)="openProducts(s)"
+                />
                 <p-button
                   icon="pi pi-pencil"
                   size="small"
@@ -389,6 +399,138 @@ const normalize = (s: string) =>
         />
       </ng-template>
     </p-dialog>
+
+    <!-- Sản phẩm đã cung cấp -->
+    <p-dialog
+      header="Sản phẩm đã cung cấp"
+      [modal]="true"
+      [visible]="productOpen()"
+      (visibleChange)="productOpen.set($event)"
+      [style]="{ width: '58rem', maxWidth: '94vw' }"
+    >
+      @if (productOf(); as s) {
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <i class="pi pi-building text-sm"></i>
+            </div>
+            <div>
+              <div class="font-semibold text-slate-800">{{ s.TenNhaCungCap }}</div>
+              <div class="text-xs text-slate-500">{{ productFiltered().length }} sản phẩm</div>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <span class="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">
+              Đang cung cấp: {{ productDangCungCap() }}
+            </span>
+            <span class="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
+              Chỉ có trong lịch sử nhập: {{ productChiLichSu() }}
+            </span>
+          </div>
+        </div>
+
+        <div class="w-full sm:w-80">
+          <input
+            pInputText
+            type="text"
+            placeholder="Tìm sản phẩm..."
+            class="w-full"
+            [value]="productKeyword()"
+            (input)="productKeyword.set($any($event.target).value)"
+          />
+        </div>
+
+        @if (productError()) {
+          <div class="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <i class="pi pi-exclamation-circle mt-0.5"></i>
+            <span>{{ productError() }}</span>
+          </div>
+        }
+
+        <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200/70">
+          <table class="w-full min-w-[36rem] text-sm">
+            <thead class="bg-slate-50/80 text-[11px] uppercase tracking-wider text-slate-500">
+              <tr>
+                <th class="px-4 py-2.5 text-left font-semibold">Sản phẩm</th>
+                <th class="px-4 py-2.5 text-left font-semibold">Quan hệ</th>
+                <th class="px-4 py-2.5 text-right font-semibold">Tổng đã nhập</th>
+                <th class="px-4 py-2.5 text-right font-semibold">Số phiếu</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              @if (productLoading()) {
+                <tr>
+                  <td colspan="4" class="px-4 py-10">
+                    <div class="flex flex-col items-center gap-2 text-slate-400">
+                      <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                      <span class="text-sm">Đang tải...</span>
+                    </div>
+                  </td>
+                </tr>
+              } @else {
+                @for (p of productFiltered(); track p.MaSanPham) {
+                  <tr class="transition-colors hover:bg-emerald-50/40">
+                    <td class="px-4 py-2.5">
+                      <div class="flex items-center gap-2.5">
+                        @if (p.hinh_anh_url) {
+                          <img
+                            [src]="p.hinh_anh_url"
+                            [alt]="p.TenSanPham"
+                            class="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
+                          />
+                        } @else {
+                          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+                            <i class="pi pi-image text-xs"></i>
+                          </div>
+                        }
+                        <div>
+                          <div class="font-medium text-slate-800">{{ p.TenSanPham }}</div>
+                          @if (!p.dang_ban) {
+                            <div class="mt-0.5 text-xs text-amber-600">Ngừng bán</div>
+                          }
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-2.5">
+                      <p-tag
+                        [value]="p.dang_cung_cap ? 'Đang cung cấp' : 'Chỉ trong lịch sử'"
+                        [severity]="p.dang_cung_cap ? 'success' : 'secondary'"
+                      />
+                    </td>
+                    <td class="px-4 py-2.5 text-right tabular-nums text-slate-700">{{ p.tong_so_luong }}</td>
+                    <td class="px-4 py-2.5 text-right tabular-nums text-slate-700">{{ p.so_phieu }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4" class="px-4 py-10">
+                      <div class="flex flex-col items-center gap-2 text-slate-400">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                          <i class="pi pi-inbox text-xl"></i>
+                        </div>
+                        <span class="text-sm text-slate-500">
+                          {{ products().length > 0
+                            ? 'Không có sản phẩm phù hợp từ khóa.'
+                            : 'Nhà cung cấp này chưa cung cấp sản phẩm nào.' }}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <p class="mt-2 text-xs text-slate-400">
+          "Chỉ trong lịch sử" là sản phẩm từng nhập từ nhà cung cấp này nhưng hiện không còn trực thuộc.
+          Số liệu nhập chỉ tính phiếu đã duyệt hoặc đã nhận hàng.
+        </p>
+      }
+
+      <ng-template #footer>
+        <p-button label="Đóng" [text]="true" (onClick)="productOpen.set(false)" />
+      </ng-template>
+    </p-dialog>
   `,
 })
 export class SupplierList {
@@ -410,6 +552,23 @@ export class SupplierList {
   readonly editing = signal<SupplierItem | null>(null);
   readonly formError = signal<string | null>(null);
   readonly picked = signal<number[]>([]);
+
+  // Dialog "Sản phẩm đã cung cấp" (chỉ đọc)
+  readonly productOpen = signal(false);
+  readonly productOf = signal<SupplierItem | null>(null);
+  readonly products = signal<SupplierProduct[]>([]);
+  readonly productLoading = signal(false);
+  readonly productError = signal<string | null>(null);
+  readonly productKeyword = signal('');
+
+  readonly productFiltered = computed(() => {
+    const k = normalize(this.productKeyword().trim());
+    return k ? this.products().filter((p) => normalize(p.TenSanPham).includes(k)) : this.products();
+  });
+  readonly productDangCungCap = computed(() => this.products().filter((p) => p.dang_cung_cap).length);
+  readonly productChiLichSu = computed(
+    () => this.products().filter((p) => !p.dang_cung_cap && p.so_phieu > 0).length,
+  );
 
   // Số NCC theo từng danh mục (chỉ đếm NCC đang có trong danh sách)
   readonly catCounts = computed(() => {
@@ -508,6 +667,26 @@ export class SupplierList {
       SoDienThoai: s.SoDienThoai,
     });
     this.dialogOpen.set(true);
+  }
+
+  openProducts(s: SupplierItem) {
+    this.productOf.set(s);
+    this.productOpen.set(true);
+    this.productKeyword.set('');
+    this.productError.set(null);
+    this.products.set([]);
+    this.productLoading.set(true);
+
+    this.service.products(s.MaNhaCungCap).subscribe({
+      next: (data) => {
+        this.products.set(data);
+        this.productLoading.set(false);
+      },
+      error: (e: HttpErrorResponse) => {
+        this.productLoading.set(false);
+        this.productError.set(e.error?.message ?? 'Không tải được sản phẩm của nhà cung cấp.');
+      },
+    });
   }
 
   onEnter(e: Event) {

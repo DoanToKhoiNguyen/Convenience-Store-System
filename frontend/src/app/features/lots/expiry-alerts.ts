@@ -59,13 +59,14 @@ type Tab = 'sap_het_han' | 'da_loai';
       >
         <i class="pi pi-clock text-xs"></i>
         Sắp hết hạn
-        @if (notice.moiHan() ? soon() : 0; as n) {
+        @if (notice.moiHan()) {
           <span
-            class="inline-flex h-5 min-w-5 items-center justify-center gap-1 rounded-full px-1.5 text-[10px] font-semibold leading-none"
+            class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold leading-none"
             [class]="tab() === 'sap_het_han' ? 'bg-white/25 text-white' : 'bg-amber-100 text-amber-700'"
+            [title]="soon() + ' lô sắp hết hạn'"
+            [attr.aria-label]="soon() + ' lô sắp hết hạn'"
           >
             <i class="pi pi-bell text-[9px]"></i>
-            {{ n }}
           </span>
         }
       </button>
@@ -77,13 +78,14 @@ type Tab = 'sap_het_han' | 'da_loai';
       >
         <i class="pi pi-inbox text-xs"></i>
         Đã loại
-        @if (notice.moiDaLoai() ? removedCount() : 0; as n) {
+        @if (notice.moiDaLoai()) {
           <span
-            class="inline-flex h-5 min-w-5 items-center justify-center gap-1 rounded-full px-1.5 text-[10px] font-semibold leading-none"
+            class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold leading-none"
             [class]="tab() === 'da_loai' ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'"
+            [title]="removedCount() + ' lô đã bị loại'"
+            [attr.aria-label]="removedCount() + ' lô đã bị loại'"
           >
             <i class="pi pi-bell text-[9px]"></i>
-            {{ n }}
           </span>
         }
       </button>

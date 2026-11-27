@@ -172,7 +172,7 @@ Nếu không chạy scheduler, chức năng không mất hẳn nhưng có độ 
 
 ### 6.4. Chạy nhanh khi đã cài đặt xong
 
-Mở 2 terminal tại thư mục gốc dự án:
+Mở 3 terminal tại thư mục gốc dự án:
 
 ```bash
 # Terminal 1 - frontend
@@ -182,6 +182,7 @@ ng serve --proxy-config proxy.conf.json
 # Terminal 2 - backend
 cd backend
 docker compose exec backend php artisan serve
+docker compose exec backend php artisan schedule:work
 ```
 
 - `ng serve --proxy-config proxy.conf.json` chạy Angular ở http://localhost:4200 và chuyển tiếp `/api`, `/storage` sang http://localhost:8000, nên phải chạy từ thư mục `frontend` (nơi có `proxy.conf.json`).
@@ -229,4 +230,5 @@ Lần chạy gần nhất: **19 test, 99 assertion — OK**; frontend build thà
 - Ca làm: `GET|PUT /api/dang-ky-ca/tuan-sau`, `GET /api/lich-lam-viec`.
 - Chấm báo: `GET /api/thong-bao` (trả `canh_bao_kho`, `phieu_cho_duyet`, `phieu_cho_nhan`).
 
+Phân quyền route theo vai trò 1 (chủ), 2 (quản lý), 3 (nhân viên) qua middleware `role`.
 Phân quyền route theo vai trò 1 (chủ), 2 (quản lý), 3 (nhân viên) qua middleware `role`.

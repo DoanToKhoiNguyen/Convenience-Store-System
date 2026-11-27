@@ -38,6 +38,52 @@ class NhaCungCapController extends Controller
         ]);
     }
 
+    /**
+     * Sản phẩm gắn với nhà cung cấp: đang phụ trách + từng có trong phiếu nhập đã duyệt/đã nhận.
+     * Phiếu chờ duyệt (1) và đã hủy (3) không tính là đã cung cấp.
+     */
+    public function sanPham($id): JsonResponse
+    {
+        $nhaCungCap = NhaCungCap::find($id);
+        if (!$nhaCungCap) {
+            return response()->json(['message' => 'Không tìm thấy nhà cung cấp.'], 404);
+        }
+
+        $lichSu = DB::table('chi_tiet_phieu_nhap as ct')
+            ->join('phieu_nhap as pn', 'pn.MaPhieuNhap', '=', 'ct.MaPhieuNhap')
+            ->where('pn.MaNhaCungCap', $id)
+            ->whereIn('pn.TrangThai', [2, 4])
+            ->groupBy(DB::raw('"ct"."MaSanPham"'))
+            ->selectRaw('"ct"."MaSanPham", COUNT(DISTINCT "pn"."MaPhieuNhap") as so_phieu,
+                SUM("ct"."SoLuong") as tong_so_luong, MAX("pn"."NgayLap") as lan_nhap_cuoi')
+            ->get()
+            ->keyBy('MaSanPham');
+
+        $ds = SanPham::where('MaNhaCungCap', $id)
+            ->orWhereIn('MaSanPham', $lichSu->keys())
+            ->get(['MaSanPham', 'TenSanPham', 'TrangThai', 'MaNhaCungCap', 'HinhAnh'])
+            ->map(function ($sp) use ($id, $lichSu) {
+                $ls = $lichSu[$sp->MaSanPham] ?? null;
+
+                return [
+                    'MaSanPham'     => (int) $sp->MaSanPham,
+                    'TenSanPham'    => $sp->TenSanPham,
+                    'hinh_anh_url'  => $sp->hinh_anh_url,
+                    'dang_ban'      => $sp->TrangThai !== false,
+                    'dang_cung_cap' => (int) $sp->MaNhaCungCap === (int) $id,
+                    'so_phieu'      => (int) ($ls->so_phieu ?? 0),
+                    'tong_so_luong' => (int) ($ls->tong_so_luong ?? 0),
+                ];
+            })
+            ->sortBy([['dang_cung_cap', 'desc'], ['so_phieu', 'desc'], ['TenSanPham', 'asc']])
+            ->values();
+
+        return response()->json([
+            'message' => 'Lấy sản phẩm của nhà cung cấp thành công',
+            'data'    => $ds,
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $data = $this->duLieu($request);

@@ -144,8 +144,7 @@ function readCollapsed(): boolean {
                       [attr.aria-label]="badgeLabel(item.link, n)"
                       [title]="badgeLabel(item.link, n)"
                     >
-                      <i class="pi pi-bell text-[9px]" [class]="collapsed() ? 'lg:hidden' : ''"></i>
-                      <span [class]="collapsed() ? 'lg:hidden' : ''">{{ n }}</span>
+                      <i class="pi pi-bell text-[9px]" [class]="collapsed() ? 'lg:text-[8px]' : ''"></i>
                     </span>
                   }
                 </a>
@@ -403,7 +402,7 @@ export class AdminLayout {
     const base =
       'ml-auto inline-flex h-5 min-w-5 shrink-0 items-center justify-center gap-1 rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white shadow-sm shadow-red-500/40';
     return this.collapsed()
-      ? base + ' lg:absolute lg:right-1 lg:top-1 lg:ml-0 lg:h-2.5 lg:min-w-2.5 lg:gap-0 lg:px-0'
+      ? base + ' lg:absolute lg:right-1 lg:top-1 lg:ml-0 lg:h-4 lg:min-w-4 lg:gap-0 lg:px-0'
       : base;
   }
 
