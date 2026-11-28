@@ -109,49 +109,43 @@ class LoHangService
     }
 
     /**
-     * Cập nhật tồn kho thủ công.
-     * - Có chọn lô: thay đổi áp dụng cho lô đó.
-     * - Không chọn, giảm: trừ lô nhập trước nhất (kể cả lô đã hết hạn).
-     * - Không chọn, tăng: cộng vào lô mới nhất.
+     * Cập nhật tồn kho thủ công: chỉ cho phép giảm.
+     * Mọi phần bị giảm đều ghi vào sổ hao hụt (lo_hang_da_loai) theo từng lô bị trừ.
+     * - Có chọn lô: trừ đúng lô đó.
+     * - Không chọn: trừ lô nhập trước nhất (kể cả lô đã hết hạn).
      */
     public function capNhatThuCong(int $maSanPham, int $soLuongMoi, ?int $maLo, string $lyDo, int $maTaiKhoan): SanPham
     {
         $sp = $this->khoaSanPham($maSanPham);
-        $delta = $soLuongMoi - (int) $sp->SoLuongHienTai;
+        $hienTai = (int) $sp->SoLuongHienTai;
 
-        if ($delta === 0) {
+        if ($soLuongMoi === $hienTai) {
             throw new \DomainException('Số lượng mới đang bằng số lượng hiện tại.', 422);
         }
-        if ($sp->TonKhoToiDa && $soLuongMoi > $sp->TonKhoToiDa) {
-            throw new \DomainException("Số lượng tồn kho vượt quá mức tối đa cho phép ({$sp->TonKhoToiDa}).", 422);
+        if ($soLuongMoi > $hienTai) {
+            throw new \DomainException('Chỉ được phép giảm số lượng tồn kho.', 422);
         }
+
+        $giam = $hienTai - $soLuongMoi;
 
         if ($maLo) {
             $lo = LoHang::where('MaLoHang', $maLo)->where('MaSanPham', $maSanPham)->lockForUpdate()->first();
             if (!$lo) {
                 throw new \DomainException('Lô hàng không thuộc sản phẩm này.', 422);
             }
-            if ((int) $lo->SoLuongCon + $delta < 0) {
-                $giam = -$delta;
+            if ((int) $lo->SoLuongCon < $giam) {
                 throw new \DomainException("Lô {$lo->MaLo} chỉ còn {$lo->SoLuongCon}, không thể giảm {$giam}.", 422);
             }
-            $lo->SoLuongCon = (int) $lo->SoLuongCon + $delta;
+            $lo->SoLuongCon = (int) $lo->SoLuongCon - $giam;
             $lo->save();
+            $chia = [['MaLoHang' => (int) $lo->MaLoHang, 'MaLo' => $lo->MaLo, 'SoLuong' => $giam]];
             $lyDo .= " (lô {$lo->MaLo})";
-        } elseif ($delta > 0) {
-            $lo = $this->loMoiNhat($maSanPham);
-            if ($lo) {
-                $lo->SoLuongCon = (int) $lo->SoLuongCon + $delta;
-                $lo->save();
-                $lyDo .= " (lô {$lo->MaLo})";
-            } else {
-                $this->taoLoNoiBo($sp, $delta, null, null, null);
-            }
         } else {
-            $this->rutTuCacLo($sp, -$delta, false);
+            $chia = $this->rutTuCacLo($sp, $giam, false);
         }
 
-        $this->ghiTon($sp, $delta, $lyDo, $maTaiKhoan);
+        $this->ghiHaoHut($sp, $chia, $lyDo, $maTaiKhoan);
+        $this->ghiTon($sp, -$giam, $lyDo, $maTaiKhoan);
 
         return $sp;
     }
@@ -383,6 +377,30 @@ class LoHangService
         }
 
         return $chia;
+    }
+
+    /** Ghi sổ hao hụt cho phần tồn kho bị giảm thủ công, tách theo từng lô bị trừ. */
+    private function ghiHaoHut(SanPham $sp, array $chia, string $lyDo, ?int $maTaiKhoan): void
+    {
+        $los = LoHang::whereIn('MaLoHang', array_column($chia, 'MaLoHang'))
+            ->get()
+            ->keyBy('MaLoHang');
+
+        foreach ($chia as $phan) {
+            $lo = $los->get($phan['MaLoHang']);
+
+            LoHangDaLoai::create([
+                'MaLoHang'     => (int) $phan['MaLoHang'],
+                'MaSanPham'    => (int) $sp->MaSanPham,
+                'TenSanPham'   => $sp->TenSanPham,
+                'MaLo'         => $lo?->MaLo ?? ($phan['MaLo'] ?? null),
+                'HanSuDung'    => $lo?->HanSuDung?->toDateString(),
+                'SoLuongLoai'  => (int) $phan['SoLuong'],
+                'ThoiGianLoai' => now(),
+                'MaTaiKhoan'   => $maTaiKhoan,
+                'LyDo'         => Str::limit("Điều chỉnh tồn kho: {$lyDo}", 250, ''),
+            ]);
+        }
     }
 
     private function ghiTon(SanPham $sp, int $delta, string $lyDo, ?int $maTaiKhoan): void

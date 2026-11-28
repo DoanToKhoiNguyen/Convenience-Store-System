@@ -20,7 +20,7 @@ const normalize = (s: string) =>
   template: `
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
-        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20">
           <i class="pi pi-tags text-lg"></i>
         </span>
         <div>
@@ -42,7 +42,7 @@ const normalize = (s: string) =>
         </div>
         <button
           type="button"
-          class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-600 hover:to-teal-700 hover:shadow-emerald-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 active:scale-[0.98]"
+          class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-600 hover:to-violet-700 hover:shadow-indigo-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 active:scale-[0.98]"
           (click)="openCreate()"
         >
           <i class="pi pi-plus text-xs"></i>
@@ -67,9 +67,9 @@ const normalize = (s: string) =>
     <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-3.5">
         <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <i class="pi pi-list text-emerald-500"></i>
+          <i class="pi pi-list text-indigo-500"></i>
           Danh sách danh mục
-          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ filtered().length }}</span>
+          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{{ filtered().length }}</span>
         </div>
       </div>
 
@@ -84,10 +84,10 @@ const normalize = (s: string) =>
           </thead>
           <tbody class="divide-y divide-slate-100">
             @for (c of filtered(); track c.MaDanhMuc) {
-              <tr class="transition-colors hover:bg-emerald-100/60">
+              <tr class="transition-colors hover:bg-indigo-100/60">
                 <td class="px-5 py-3.5">
                   <div class="flex items-center gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
                       <i class="pi pi-tag text-sm"></i>
                     </span>
                     <span class="font-medium text-slate-800">{{ c.TenDanhMuc }}</span>
@@ -95,11 +95,11 @@ const normalize = (s: string) =>
                 </td>
                 <td class="px-5 py-3.5 text-center">
                   @if ((c.san_pham_count ?? 0) > 0) {
-                    <span class="inline-flex min-w-8 items-center justify-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                    <span class="inline-flex min-w-8 items-center justify-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">
                       {{ c.san_pham_count }}
                     </span>
                   } @else {
-                    <span class="inline-flex min-w-8 items-center justify-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                    <span class="inline-flex min-w-8 items-center justify-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
                       0
                     </span>
                   }
@@ -136,7 +136,7 @@ const normalize = (s: string) =>
                 <td colspan="3" class="px-5 py-16 text-center">
                   @if (loading()) {
                     <div class="flex flex-col items-center gap-3 text-slate-400">
-                      <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                      <i class="pi pi-spin pi-spinner text-2xl text-indigo-500"></i>
                       <span class="text-sm">Đang tải danh mục...</span>
                     </div>
                   } @else {
@@ -180,7 +180,7 @@ const normalize = (s: string) =>
 
         <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <i class="pi pi-info-circle text-emerald-500"></i>
+            <i class="pi pi-info-circle text-indigo-500"></i>
             Thông tin danh mục
           </div>
 

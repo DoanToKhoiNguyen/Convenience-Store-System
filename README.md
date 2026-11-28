@@ -182,6 +182,9 @@ ng serve --proxy-config proxy.conf.json
 # Terminal 2 - backend
 cd backend
 docker compose exec backend php artisan serve
+
+# Terminal 3 - backend
+cd backend
 docker compose exec backend php artisan schedule:work
 ```
 
@@ -230,5 +233,4 @@ Lần chạy gần nhất: **19 test, 99 assertion — OK**; frontend build thà
 - Ca làm: `GET|PUT /api/dang-ky-ca/tuan-sau`, `GET /api/lich-lam-viec`.
 - Chấm báo: `GET /api/thong-bao` (trả `canh_bao_kho`, `phieu_cho_duyet`, `phieu_cho_nhan`).
 
-Phân quyền route theo vai trò 1 (chủ), 2 (quản lý), 3 (nhân viên) qua middleware `role`.
 Phân quyền route theo vai trò 1 (chủ), 2 (quản lý), 3 (nhân viên) qua middleware `role`.

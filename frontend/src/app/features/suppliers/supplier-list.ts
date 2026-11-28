@@ -24,7 +24,7 @@ const normalize = (s: string) =>
   template: `
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20">
           <i class="pi pi-building text-lg"></i>
         </div>
         <div>
@@ -46,7 +46,7 @@ const normalize = (s: string) =>
         </div>
         <button
           type="button"
-          class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-600 hover:to-teal-700 hover:shadow-emerald-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 active:scale-[0.98]"
+          class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-600 hover:to-violet-700 hover:shadow-indigo-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 active:scale-[0.98]"
           (click)="openCreate()"
         >
           <i class="pi pi-plus text-xs"></i>
@@ -76,16 +76,16 @@ const normalize = (s: string) =>
         </span>
         <button
           type="button"
-          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition"
+          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition"
           [class]="categoryFilter() === null
-            ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10'
-            : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/40'"
+            ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-500/10'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/40'"
           (click)="categoryFilter.set(null)"
         >
           Tất cả
           <span
             class="rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none"
-            [class]="categoryFilter() === null ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+            [class]="categoryFilter() === null ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'"
           >
             {{ suppliers().length }}
           </span>
@@ -93,16 +93,16 @@ const normalize = (s: string) =>
         @for (c of catChips(); track c.MaDanhMuc) {
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition"
+            class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition"
             [class]="categoryFilter() === c.MaDanhMuc
-              ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10'
-              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/40'"
+              ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-500/10'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/40'"
             (click)="toggleCategory(c.MaDanhMuc)"
           >
             {{ c.TenDanhMuc }}
             <span
               class="rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none"
-              [class]="categoryFilter() === c.MaDanhMuc ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+              [class]="categoryFilter() === c.MaDanhMuc ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'"
             >
               {{ c.count }}
             </span>
@@ -114,14 +114,14 @@ const normalize = (s: string) =>
     <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
         <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <i class="pi pi-list text-emerald-500"></i>
+          <i class="pi pi-list text-indigo-500"></i>
           Danh sách nhà cung cấp
-          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ filtered().length }}</span>
+          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{{ filtered().length }}</span>
         </div>
         @if (categoryFilter() !== null) {
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+            class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
             (click)="categoryFilter.set(null)"
           >
             <i class="pi pi-times text-[10px]"></i>
@@ -150,10 +150,10 @@ const normalize = (s: string) =>
         </ng-template>
 
         <ng-template #body let-s>
-          <tr class="transition-colors hover:bg-emerald-100/60!">
+          <tr class="transition-colors hover:bg-indigo-100/60!">
             <td class="whitespace-normal! px-4 py-3">
               <div class="flex items-start gap-2.5">
-                <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
                   <i class="pi pi-building text-xs"></i>
                 </div>
                 <span class="font-medium text-slate-800">{{ s.TenNhaCungCap }}</span>
@@ -162,7 +162,7 @@ const normalize = (s: string) =>
             <td class="whitespace-normal! px-4 py-3">
               <div class="flex flex-wrap gap-1">
                 @for (c of s.danh_muc ?? []; track c.MaDanhMuc) {
-                  <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                  <span class="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
                     {{ c.TenDanhMuc }}
                   </span>
                 } @empty {
@@ -247,7 +247,7 @@ const normalize = (s: string) =>
             <td colspan="6" class="px-4 py-12">
               @if (loading()) {
                 <div class="flex flex-col items-center gap-2 text-slate-400">
-                  <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                  <i class="pi pi-spin pi-spinner text-2xl text-indigo-500"></i>
                   <span class="text-sm">Đang tải...</span>
                 </div>
               } @else {
@@ -285,7 +285,7 @@ const normalize = (s: string) =>
         <!-- Thông tin nhà cung cấp -->
         <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <i class="pi pi-building text-emerald-500"></i>
+            <i class="pi pi-building text-indigo-500"></i>
             Thông tin nhà cung cấp
           </div>
 
@@ -339,13 +339,13 @@ const normalize = (s: string) =>
         <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <i class="pi pi-tags text-emerald-500"></i>
+              <i class="pi pi-tags text-indigo-500"></i>
               Danh mục cung cấp <span class="text-red-500">*</span>
             </div>
             <span
-              class="rounded-full px-2.5 py-0.5 text-xs font-medium transition"
+              class="rounded-full px-2.5 py-0.5 text-xs font-semibold transition"
               [class]="picked().length > 0
-                ? 'bg-emerald-100 text-emerald-700'
+                ? 'bg-indigo-100 text-indigo-700'
                 : 'bg-slate-200 text-slate-600'"
             >
               {{ picked().length }} đã chọn
@@ -367,10 +367,10 @@ const normalize = (s: string) =>
                   type="button"
                   role="checkbox"
                   [attr.aria-checked]="isPicked(c.MaDanhMuc)"
-                  class="inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm font-medium transition"
+                  class="inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm font-semibold transition"
                   [class]="isPicked(c.MaDanhMuc)
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/40'"
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-500/10'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/40'"
                   (click)="togglePick(c.MaDanhMuc)"
                 >
                   <i [class]="isPicked(c.MaDanhMuc) ? 'pi pi-check-circle' : 'pi pi-circle'"></i>
@@ -411,7 +411,7 @@ const normalize = (s: string) =>
       @if (productOf(); as s) {
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2.5">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
               <i class="pi pi-building text-sm"></i>
             </div>
             <div>
@@ -420,7 +420,7 @@ const normalize = (s: string) =>
             </div>
           </div>
           <div class="flex flex-wrap gap-2 text-xs">
-            <span class="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">
+            <span class="rounded-full bg-indigo-50 px-2.5 py-1 font-medium text-indigo-700">
               Đang cung cấp: {{ productDangCungCap() }}
             </span>
             <span class="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
@@ -462,14 +462,14 @@ const normalize = (s: string) =>
                 <tr>
                   <td colspan="4" class="px-4 py-10">
                     <div class="flex flex-col items-center gap-2 text-slate-400">
-                      <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                      <i class="pi pi-spin pi-spinner text-2xl text-indigo-500"></i>
                       <span class="text-sm">Đang tải...</span>
                     </div>
                   </td>
                 </tr>
               } @else {
                 @for (p of productFiltered(); track p.MaSanPham) {
-                  <tr class="transition-colors hover:bg-emerald-50/40">
+                  <tr class="transition-colors hover:bg-indigo-50/40">
                     <td class="px-4 py-2.5">
                       <div class="flex items-center gap-2.5">
                         @if (p.hinh_anh_url) {

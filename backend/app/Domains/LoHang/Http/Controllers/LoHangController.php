@@ -51,7 +51,7 @@ class LoHangController extends Controller
         return response()->json(['data' => $ds]);
     }
 
-    /** Nhật ký các lô đã bị hệ thống tự động loại khi hết hạn (mọi vai trò đều xem được). */
+    /** Nhật ký hàng bị loại khỏi tồn kho: lô hết hạn tự động và các lần giảm tại trang cập nhật tồn kho (mọi vai trò đều xem được). */
     public function daLoai(): JsonResponse
     {
         $this->service->loaiLoHetHan();
@@ -68,6 +68,7 @@ class LoHangController extends Controller
                 'SoLuongLoai'   => (int) $r->SoLuongLoai,
                 'ThoiGianLoai'  => $r->ThoiGianLoai?->toDateTimeString(),
                 'NguoiThucHien' => $r->taiKhoan?->HoTen ?? 'Hệ thống',
+                'LyDo'          => $r->LyDo,
             ]);
 
         return response()->json(['data' => $ds]);

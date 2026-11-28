@@ -11,7 +11,7 @@ import { addDays, displayDate, slotKey, timeShort, weekDays } from './week.util'
   template: `
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/20">
           <i class="pi pi-calendar-plus text-lg"></i>
         </div>
         <div>
@@ -27,7 +27,7 @@ import { addDays, displayDate, slotKey, timeShort, weekDays } from './week.util'
       @if (open()) {
         <div class="flex items-center gap-3 rounded-xl border border-slate-200/70 bg-white px-3 py-2 shadow-sm">
           <span class="text-sm text-slate-600">
-            Đã chọn <b class="text-emerald-700">{{ selected().size }}</b> ca
+            Đã chọn <b class="text-indigo-700">{{ selected().size }}</b> ca
           </span>
           <p-button
             label="Lưu đăng ký"
@@ -42,7 +42,7 @@ import { addDays, displayDate, slotKey, timeShort, weekDays } from './week.util'
 
     @if (data(); as d) {
       @if (open()) {
-        <div class="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div class="mb-4 flex items-start gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
           <i class="pi pi-check-circle mt-0.5"></i>
           <span>
             Đang mở đăng ký cho tuần sau. Hạn đăng ký: <b>23:59 thứ 7, {{ deadline() }}</b>.
@@ -136,7 +136,7 @@ import { addDays, displayDate, slotKey, timeShort, weekDays } from './week.util'
         </div>
 
         <div class="mt-3 flex items-start gap-2.5 rounded-xl border border-slate-200/70 bg-white px-4 py-3 text-xs text-slate-500 shadow-sm">
-          <i class="pi pi-info-circle mt-0.5 text-emerald-500"></i>
+          <i class="pi pi-info-circle mt-0.5 text-indigo-500"></i>
           <span>
             Bấm vào ô để chọn hoặc bỏ chọn ca. Mỗi ca tối đa <b class="text-slate-700">{{ maxStaff() }} nhân viên</b>;
             quản lý/chủ có thể đăng ký chung ca với nhân viên (tổng tối đa
@@ -148,7 +148,7 @@ import { addDays, displayDate, slotKey, timeShort, weekDays } from './week.util'
       }
     } @else if (loading()) {
       <div class="flex items-center gap-2 rounded-2xl border border-slate-200/70 bg-white px-4 py-6 text-sm text-slate-500 shadow-sm">
-        <i class="pi pi-spin pi-spinner text-emerald-500"></i>
+        <i class="pi pi-spin pi-spinner text-indigo-500"></i>
         Đang tải...
       </div>
     }
@@ -270,7 +270,7 @@ export class ShiftRegister {
   cellClass(date: string, ca: number): string {
     const base = 'flex h-16 w-full flex-col items-center justify-center gap-1 rounded-xl border text-lg transition ';
     if (this.has(date, ca)) {
-      return base + 'border-emerald-600 bg-emerald-600 text-white shadow-sm';
+      return base + 'border-indigo-600 bg-indigo-600 text-white shadow-sm';
     }
     if (this.blocked(date, ca)) {
       return base + 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300';
@@ -278,7 +278,7 @@ export class ShiftRegister {
     return (
       base +
       (this.open()
-        ? 'border-slate-200 bg-slate-50 text-slate-300 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-600'
+        ? 'border-slate-200 bg-slate-50 text-slate-300 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-600'
         : 'border-slate-100 bg-slate-50 text-slate-200')
     );
   }

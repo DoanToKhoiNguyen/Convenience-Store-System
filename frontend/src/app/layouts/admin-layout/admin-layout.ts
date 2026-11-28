@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { afterEveryRender, Component, computed, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
@@ -13,10 +13,46 @@ interface MenuItem {
   roles?: number[]; // không khai báo = ai đăng nhập cũng thấy
 }
 
+type Accent = 'sky' | 'amber' | 'violet' | 'indigo';
+
 interface MenuGroup {
   title: string;
+  accent: Accent;
   items: MenuItem[];
 }
+
+// Màu accent của từng nhóm menu (class phải viết đủ để Tailwind quét được)
+// "drop" là giọt màu trượt theo mục menu đang chọn
+const ACCENTS: Record<Accent, { title: string; icon: string; active: string; activeIcon: string; drop: string }> = {
+  sky: {
+    title: 'text-sky-300',
+    icon: 'text-sky-400/80',
+    active: 'text-white',
+    activeIcon: 'text-sky-200',
+    drop: 'bg-sky-400/25 backdrop-blur-[3px] shadow-[0_0_28px_-6px_rgba(56,189,248,0.9)]',
+  },
+  amber: {
+    title: 'text-amber-300',
+    icon: 'text-amber-400/80',
+    active: 'text-white',
+    activeIcon: 'text-amber-200',
+    drop: 'bg-amber-400/25 backdrop-blur-[3px] shadow-[0_0_28px_-6px_rgba(251,191,36,0.9)]',
+  },
+  violet: {
+    title: 'text-violet-300',
+    icon: 'text-violet-400/80',
+    active: 'text-white',
+    activeIcon: 'text-violet-200',
+    drop: 'bg-violet-400/25 backdrop-blur-[3px] shadow-[0_0_28px_-6px_rgba(167,139,250,0.9)]',
+  },
+  indigo: {
+    title: 'text-indigo-300',
+    icon: 'text-indigo-400/80',
+    active: 'text-white',
+    activeIcon: 'text-indigo-200',
+    drop: 'bg-indigo-400/30 backdrop-blur-[3px] shadow-[0_0_28px_-6px_rgba(129,140,248,0.95)]',
+  },
+};
 
 const ALL = [ROLE.OWNER, ROLE.MANAGER, ROLE.STAFF];
 const MANAGERS = [ROLE.OWNER, ROLE.MANAGER];
@@ -25,6 +61,7 @@ const MANAGERS = [ROLE.OWNER, ROLE.MANAGER];
 const GROUPS: MenuGroup[] = [
   {
     title: 'Bán hàng',
+    accent: 'sky',
     items: [
       { label: 'Bán hàng (POS)', icon: 'pi pi-shopping-cart', link: '/admin/sales', roles: ALL },
       { label: 'Hóa đơn', icon: 'pi pi-receipt', link: '/admin/invoices', roles: ALL },
@@ -33,6 +70,7 @@ const GROUPS: MenuGroup[] = [
   },
   {
     title: 'Kho hàng',
+    accent: 'amber',
     items: [
       { label: 'Sản phẩm', icon: 'pi pi-box', link: '/admin/products' },
       { label: 'Danh mục', icon: 'pi pi-tags', link: '/admin/categories', roles: MANAGERS },
@@ -45,6 +83,7 @@ const GROUPS: MenuGroup[] = [
   },
   {
     title: 'Nhân sự',
+    accent: 'violet',
     items: [
       { label: 'Thời khóa biểu', icon: 'pi pi-calendar', link: '/admin/timetable', roles: MANAGERS },
       { label: 'Đăng ký ca làm', icon: 'pi pi-calendar-plus', link: '/admin/shift-register', roles: ALL },
@@ -53,6 +92,7 @@ const GROUPS: MenuGroup[] = [
   },
   {
     title: 'Báo cáo',
+    accent: 'indigo',
     items: [{ label: 'Báo cáo doanh thu', icon: 'pi pi-chart-line', link: '/admin/reports', roles: MANAGERS }],
   },
 ];
@@ -73,25 +113,27 @@ function readCollapsed(): boolean {
   host: {
     '(document:click)': 'userMenuOpen.set(false)',
     '(document:keydown.escape)': 'closeAll()',
+    '(window:resize)': 'placeDrop()',
   },
   template: `
-    <div class="flex h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-emerald-50/40">
+    <div class="flex h-screen bg-gradient-to-br from-slate-100 via-indigo-50/40 to-sky-50/50">
       <!-- Lớp phủ khi mở menu trên điện thoại -->
       @if (mobileOpen()) {
         <div class="fixed inset-0 z-30 bg-slate-950/50 backdrop-blur-sm lg:hidden" (click)="mobileOpen.set(false)"></div>
       }
 
       <!-- Thanh bên -->
-      <aside [class]="asideClass()">
-        <div class="relative flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-emerald-950">
+      <aside [class]="asideClass()" (transitionend)="onAsideTransitionEnd($event)">
+        <div class="relative flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-b from-slate-800 via-slate-800 to-indigo-900">
           <!-- Ánh sáng trang trí -->
           <div class="pointer-events-none absolute inset-0">
-            <div class="absolute -left-12 top-8 h-44 w-44 rounded-full bg-emerald-500/15 blur-3xl"></div>
-            <div class="absolute -right-16 bottom-12 h-52 w-52 rounded-full bg-teal-400/10 blur-3xl"></div>
+            <div class="absolute -left-12 top-8 h-44 w-44 rounded-full bg-sky-400/15 blur-3xl"></div>
+            <div class="absolute -right-16 top-1/2 h-52 w-52 rounded-full bg-amber-300/10 blur-3xl"></div>
+            <div class="absolute -left-10 bottom-8 h-48 w-48 rounded-full bg-violet-500/15 blur-3xl"></div>
           </div>
 
           <div class="relative flex h-16 shrink-0 items-center gap-3 border-b border-white/5 px-4">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-white/20">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-400 to-violet-600 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-white/20">
               <i class="pi pi-shop text-lg"></i>
             </span>
             <div [class]="collapsed() ? 'min-w-0 lg:hidden' : 'min-w-0'">
@@ -108,35 +150,33 @@ function readCollapsed(): boolean {
             </button>
           </div>
 
-          <nav class="relative flex-1 overflow-y-auto px-2.5 pb-5 text-slate-300 [scrollbar-color:#334155_transparent] [scrollbar-width:thin]">
+          <nav #navList class="relative flex-1 overflow-y-auto px-2.5 pb-5 text-slate-300 [scrollbar-color:#334155_transparent] [scrollbar-width:thin]">
+            <!-- Giọt màu trượt theo mục đang chọn -->
+            <div
+              aria-hidden="true"
+              [class]="dropClass()"
+              [style.top.px]="dropTop()"
+              [style.height.px]="dropHeight()"
+            ></div>
+
             @for (g of groups(); track g.title; let first = $first) {
               @if (!first) {
                 <div [class]="collapsed() ? 'mx-3 my-3 hidden border-t border-white/10 lg:block' : 'hidden'"></div>
               }
-              <div
-                [class]="'px-3 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 ' + (collapsed() ? 'lg:hidden' : '')"
-              >
+              <div [class]="groupTitleClass(g.accent)">
                 {{ g.title }}
               </div>
 
               @for (item of g.items; track item.link) {
                 <a
                   [routerLink]="item.link"
-                  routerLinkActive="bg-gradient-to-r from-emerald-500/25 via-emerald-500/10 to-transparent text-white ring-1 ring-emerald-400/20"
+                  routerLinkActive
                   #rla="routerLinkActive"
                   [title]="item.label"
-                  [class]="'group relative my-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150 hover:bg-white/5 hover:text-white' + (collapsed() ? ' lg:justify-center lg:px-0' : '')"
+                  [class]="linkClass(g.accent, rla.isActive)"
                 >
-                  <span
-                    class="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]"
-                    [class.hidden]="!rla.isActive"
-                  ></span>
-                  <i
-                    [class]="item.icon + ' w-5 shrink-0 text-center text-[15px] transition-colors'"
-                    [class.text-emerald-300]="rla.isActive"
-                    [class.text-slate-400]="!rla.isActive"
-                  ></i>
-                  <span [class]="collapsed() ? 'truncate lg:hidden' : 'truncate'">{{ item.label }}</span>
+                  <i [class]="iconClass(item.icon, g.accent, rla.isActive)"></i>
+                  <span [class]="labelClass(rla.isActive)">{{ item.label }}</span>
 
                   @if (coMoi(item.link) ? badgeCount(item.link) : 0; as n) {
                     <span
@@ -190,7 +230,7 @@ function readCollapsed(): boolean {
             <a
               routerLink="/"
               target="_blank"
-              class="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 sm:inline-flex"
+              class="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 sm:inline-flex"
               title="Mở trang khách xem sản phẩm"
             >
               <i class="pi pi-external-link text-xs"></i> Trang khách
@@ -206,7 +246,7 @@ function readCollapsed(): boolean {
                 [attr.aria-expanded]="userMenuOpen()"
                 (click)="toggleUserMenu($event)"
               >
-                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-semibold text-white shadow-md shadow-emerald-500/20 ring-2 ring-white">
+                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-semibold text-white shadow-md shadow-indigo-500/25 ring-2 ring-white">
                   {{ initials() }}
                 </span>
                 <span class="hidden text-left sm:block">
@@ -222,8 +262,8 @@ function readCollapsed(): boolean {
                   role="menu"
                   (click)="$event.stopPropagation()"
                 >
-                  <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-br from-emerald-50 to-white px-4 py-3.5">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-semibold text-white">
+                  <div class="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-br from-indigo-50 to-white px-4 py-3.5">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-semibold text-white">
                       {{ initials() }}
                     </span>
                     <div class="min-w-0">
@@ -238,7 +278,7 @@ function readCollapsed(): boolean {
                       role="menuitem"
                       class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
                     >
-                      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-emerald-100 group-hover:text-emerald-600">
+                      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-indigo-100 group-hover:text-indigo-600">
                         <i class="pi pi-user-edit text-xs"></i>
                       </span>
                       Thông tin cá nhân
@@ -249,7 +289,7 @@ function readCollapsed(): boolean {
                       role="menuitem"
                       class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50 sm:hidden"
                     >
-                      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-emerald-100 group-hover:text-emerald-600">
+                      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-indigo-100 group-hover:text-indigo-600">
                         <i class="pi pi-external-link text-xs"></i>
                       </span>
                       Trang khách
@@ -285,10 +325,10 @@ function readCollapsed(): boolean {
       <!-- Thông báo nổi khi có việc mới -->
       @if (notice.thongBaoMoi(); as tb) {
         <div
-          class="fixed bottom-4 right-4 z-50 flex w-[min(22rem,calc(100vw-2rem))] items-start gap-3 rounded-2xl border border-emerald-200 bg-white p-3.5 shadow-xl shadow-slate-900/10"
+          class="fixed bottom-4 right-4 z-50 flex w-[min(22rem,calc(100vw-2rem))] items-start gap-3 rounded-2xl border border-indigo-200 bg-white p-3.5 shadow-xl shadow-slate-900/10"
           role="status"
         >
-          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
             <i class="pi pi-bell text-sm"></i>
           </span>
           <div class="min-w-0 flex-1">
@@ -331,6 +371,87 @@ export class AdminLayout {
       items: g.items.filter((i) => !i.roles || this.auth.hasAnyRole(i.roles)),
     })).filter((g) => g.items.length > 0),
   );
+
+  private readonly navList = viewChild<ElementRef<HTMLElement>>('navList');
+
+  readonly dropTop = signal(0);
+  readonly dropHeight = signal(0);
+  private readonly dropReady = signal(false);
+  private readonly dropAnimate = signal(false);
+  private readonly dropAccent = signal<Accent>('indigo');
+
+  groupTitleClass(accent: Accent): string {
+    return (
+      'relative z-10 px-3 pb-1.5 pt-5 text-xs font-extrabold uppercase tracking-[0.1em] ' +
+      ACCENTS[accent].title +
+      (this.collapsed() ? ' lg:hidden' : '')
+    );
+  }
+
+  linkClass(accent: Accent, active: boolean): string {
+    return (
+      'group relative z-10 my-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 hover:bg-white/5 hover:text-white' +
+      (this.collapsed() ? ' lg:justify-center lg:px-0' : '') +
+      (active ? ' nav-on ' + ACCENTS[accent].active : '')
+    );
+  }
+
+  // Mục đang chọn: chữ đậm, trắng và có quầng sáng nhẹ cho nổi bật
+  labelClass(active: boolean): string {
+    return (
+      'truncate transition-all duration-300' +
+      (this.collapsed() ? ' lg:hidden' : '') +
+      (active ? ' font-extrabold tracking-wide text-white drop-shadow-[0_0_7px_rgba(255,255,255,0.45)]' : '')
+    );
+  }
+
+  dropClass(): string {
+    return (
+      'nav-drop pointer-events-none absolute left-2.5 right-2.5 z-0 rounded-xl ' +
+      ACCENTS[this.dropAccent()].drop +
+      (this.dropAnimate() ? '' : ' nav-drop-init') +
+      (this.dropReady() ? '' : ' opacity-0')
+    );
+  }
+
+  // Đo mục đang chọn rồi đặt giọt màu đúng vị trí để nó trượt sang mục mới
+  protected placeDrop(): void {
+    const nav = this.navList()?.nativeElement;
+    if (!nav) return;
+    const active = nav.querySelector<HTMLElement>('a.nav-on');
+    if (!active) {
+      if (this.dropReady()) this.dropReady.set(false);
+      return;
+    }
+    const navRect = nav.getBoundingClientRect();
+    const rect = active.getBoundingClientRect();
+    const top = Math.round(rect.top - navRect.top + nav.scrollTop);
+    const height = Math.round(rect.height);
+    const accent = this.accentForUrl();
+    if (this.dropTop() !== top) this.dropTop.set(top);
+    if (this.dropHeight() !== height) this.dropHeight.set(height);
+    if (this.dropAccent() !== accent) this.dropAccent.set(accent);
+    if (!this.dropReady()) this.dropReady.set(true);
+    if (!this.dropAnimate()) setTimeout(() => this.dropAnimate.set(true), 0);
+  }
+
+  protected onAsideTransitionEnd(e: TransitionEvent): void {
+    if (e.propertyName === 'width') this.placeDrop();
+  }
+
+  private accentForUrl(): Accent {
+    const url = this.url().split(/[?#]/)[0];
+    const g = this.groups().find((gr) => gr.items.some((i) => url === i.link || url.startsWith(i.link + '/')));
+    return g?.accent ?? 'indigo';
+  }
+
+  iconClass(icon: string, accent: Accent, active: boolean): string {
+    return (
+      icon +
+      ' w-5 shrink-0 text-center text-[15px] transition-colors ' +
+      (active ? ACCENTS[accent].activeIcon : ACCENTS[accent].icon)
+    );
+  }
 
   // Badge chỉ hiện khi có việc CHƯA XEM; xem rồi thì ẩn cả chấm lẫn số
   private readonly badges = computed<Record<string, number>>(() => ({
@@ -379,6 +500,9 @@ export class AdminLayout {
         this.danhDauDaXem(e.urlAfterRedirects);
         this.notice.refresh();
       });
+
+    // Sau mỗi lần render (đổi trang / thu gọn menu) đo lại vị trí mục active
+    afterEveryRender(() => this.placeDrop());
   }
 
   // Chỉ cảnh báo lô sắp hết hạn mới "xem là tắt": badge giữ số, ẩn chuông.

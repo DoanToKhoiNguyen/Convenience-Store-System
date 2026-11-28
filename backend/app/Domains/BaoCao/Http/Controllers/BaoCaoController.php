@@ -271,7 +271,7 @@ class BaoCaoController extends Controller
             ->all();
     }
 
-    /** Danh sách lô bị loại do hết hạn trong kỳ, kèm đơn giá nhập của lô (alias: dl, lh, ct, sp). */
+    /** Danh sách lô bị loại trong kỳ (hết hạn tự động hoặc giảm tại trang cập nhật tồn kho), kèm đơn giá nhập của lô (alias: dl, lh, ct, sp). */
     private function loBiLoai(Carbon $tu, Carbon $denTruoc)
     {
         return DB::table('lo_hang_da_loai as dl')
@@ -282,7 +282,7 @@ class BaoCaoController extends Controller
             ->where('dl.ThoiGianLoai', '<', $denTruoc);
     }
 
-    /** Giá trị hàng bị loại do hết hạn trong kỳ (số lượng loại × đơn giá nhập). */
+    /** Giá trị hàng bị loại trong kỳ (số lượng loại × đơn giá nhập của lô). */
     private function giaTriHuy(Carbon $tu, Carbon $denTruoc): float
     {
         $r = $this->loBiLoai($tu, $denTruoc)
@@ -323,18 +323,22 @@ class BaoCaoController extends Controller
     }
 
     /**
-     * Hao hụt do hết hạn trong kỳ: tổng, từng lô (doanh thu đã bán − vốn đã bán − giá trị bị loại),
-     * top sản phẩm thiệt hại và chuỗi giá trị lỗ theo mốc thời gian. Chỉ chủ doanh nghiệp xem.
+     * Hao hụt trong kỳ (hết hạn tự động + giảm tồn kho thủ công): tổng, từng lô
+     * (doanh thu đã bán − vốn đã bán − giá trị bị loại), top sản phẩm thiệt hại và chuỗi giá trị lỗ theo mốc thời gian.
+     * Chỉ chủ doanh nghiệp xem.
      */
     private function hetHan(Carbon $tu, Carbon $den, Carbon $denTruoc, string $nhom): array
     {
+        // Một lô có thể bị ghi sổ nhiều lần trong kỳ (giảm tay từng phần) nên gộp theo lô
+        // để doanh thu/vốn của lô không bị nhân đôi; thời gian loại lấy lần gần nhất.
         $rows = $this->loBiLoai($tu, $denTruoc)
-            ->selectRaw('dl."MaLoHang", dl."MaLo", dl."MaSanPham", dl."TenSanPham",
-                        dl."HanSuDung", dl."SoLuongLoai", dl."ThoiGianLoai",
-                        COALESCE(lh."SoLuongNhap", dl."SoLuongLoai") as "SoLuongNhap",
+            ->selectRaw('dl."MaLoHang", MAX(dl."MaLo") as "MaLo", MAX(dl."MaSanPham") as "MaSanPham",
+                        MAX(dl."TenSanPham") as "TenSanPham", MAX(dl."HanSuDung") as "HanSuDung",
+                        SUM(dl."SoLuongLoai") as "SoLuongLoai", MAX(dl."ThoiGianLoai") as "ThoiGianLoai",
+                        COALESCE(lh."SoLuongNhap", SUM(dl."SoLuongLoai")) as "SoLuongNhap",
                         ' . self::DON_GIA_LO . ' as "DonGia"')
-            ->orderByDesc('dl.ThoiGianLoai')
-            ->orderByDesc('dl.MaLoai')
+            ->groupByRaw('dl."MaLoHang", lh."SoLuongNhap", ' . self::DON_GIA_LO)
+            ->orderByRaw('MAX(dl."ThoiGianLoai") desc, dl."MaLoHang" desc')
             ->get();
 
         // Doanh thu từng lô: phần ThanhTien của dòng hóa đơn chia theo số lượng lấy từ lô đó

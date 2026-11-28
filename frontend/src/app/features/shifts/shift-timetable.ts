@@ -11,7 +11,7 @@ import { addDays, displayDate, formatDate, slotKey, timeShort, weekDays } from '
   template: `
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/20">
           <i class="pi pi-calendar text-lg"></i>
         </div>
         <div>
@@ -55,10 +55,10 @@ import { addDays, displayDate, formatDate, slotKey, timeShort, weekDays } from '
               @for (day of days(); track day.date) {
                 <th
                   class="rounded-xl p-2 text-center font-semibold"
-                  [class]="day.date === today ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-50 text-slate-700'"
+                  [class]="day.date === today ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-50 text-slate-700'"
                 >
                   <div>{{ day.label }}</div>
-                  <div class="text-xs font-normal" [class]="day.date === today ? 'text-emerald-50' : 'text-slate-500'">{{ day.short }}</div>
+                  <div class="text-xs font-normal" [class]="day.date === today ? 'text-indigo-50' : 'text-slate-500'">{{ day.short }}</div>
                 </th>
               }
             </tr>
@@ -74,11 +74,11 @@ import { addDays, displayDate, formatDate, slotKey, timeShort, weekDays } from '
                   <td class="p-0 align-top">
                     <div
                       class="min-h-24 rounded-xl border p-2 transition-colors"
-                      [class]="day.date === today ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-200 bg-white'"
+                      [class]="day.date === today ? 'border-indigo-300 bg-indigo-50/50' : 'border-slate-200 bg-white'"
                     >
                       @for (e of cell(day.date, ca.MaCa); track e.MaTaiKhoan) {
                         <div
-                          class="mb-1 truncate rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800 ring-1 ring-emerald-100"
+                          class="mb-1 truncate rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-800 ring-1 ring-indigo-100"
                           [title]="e.HoTen"
                         >
                           {{ e.HoTen }}
@@ -126,7 +126,7 @@ import { addDays, displayDate, formatDate, slotKey, timeShort, weekDays } from '
       @if (summary().length) {
         <div class="mt-4 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
           <div class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <i class="pi pi-users text-emerald-500"></i>
+            <i class="pi pi-users text-indigo-500"></i>
             Tổng số ca của nhân viên
           </div>
           <div class="flex flex-wrap gap-2">
@@ -147,7 +147,7 @@ import { addDays, displayDate, formatDate, slotKey, timeShort, weekDays } from '
       }
     } @else if (loading()) {
       <div class="flex items-center gap-2 rounded-2xl border border-slate-200/70 bg-white px-4 py-6 text-sm text-slate-500 shadow-sm">
-        <i class="pi pi-spin pi-spinner text-emerald-500"></i>
+        <i class="pi pi-spin pi-spinner text-indigo-500"></i>
         Đang tải...
       </div>
     }

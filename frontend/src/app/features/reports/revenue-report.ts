@@ -1,6 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { DatePickerModule } from 'primeng/datepicker';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE } from '../../core/auth/roles';
 import { addDays, displayDate, formatDate, parseDate } from '../shifts/week.util';
@@ -8,7 +10,7 @@ import { Group, ImportReport, RevenueReport } from './report.model';
 import { ReportService } from './report.service';
 
 type View = 'doanh_thu' | 'nhap_hang';
-type Mode = 'ngay' | 'thang' | 'nam' | 'tuy_chon';
+type Mode = 'ngay' | 'tuan' | 'thang' | 'nam' | 'tuy_chon';
 type ProductTab = 'ban_chay' | 'sinh_loi' | 'ban_cham';
 type ImportTab = 'nha_cung_cap' | 'san_pham' | 'phieu_nhap';
 
@@ -45,6 +47,31 @@ const niceCeil = (v: number): number => {
 };
 
 const round1 = (v: number) => Math.round(v * 10) / 10;
+
+// Thứ 2 của tuần chứa ngày s (tuần Việt Nam bắt đầu thứ 2)
+const mondayOf = (s: string): string => addDays(s, -((parseDate(s).getDay() + 6) % 7));
+
+// Chuỗi cho <input type="week">: năm-tuần theo ISO-8601 (W01 là tuần chứa 4/1)
+function weekValueOf(monday: string): string {
+  const thu = parseDate(monday);
+  thu.setDate(thu.getDate() + 3);
+  const year = thu.getFullYear();
+  const jan4 = new Date(year, 0, 4);
+  const week1Mon = new Date(year, 0, 4 - ((jan4.getDay() + 6) % 7));
+  const week = Math.round((thu.getTime() - week1Mon.getTime()) / 604800000) + 1;
+  return `${year}-W${String(week).padStart(2, '0')}`;
+}
+
+function mondayOfWeekValue(v: string): string | null {
+  const m = /^(\d{4})-W(\d{2})$/.exec(v);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const jan4 = new Date(year, 0, 4);
+  const week1Mon = new Date(year, 0, 4 - ((jan4.getDay() + 6) % 7));
+  const d = new Date(week1Mon);
+  d.setDate(week1Mon.getDate() + (Number(m[2]) - 1) * 7);
+  return formatDate(d);
+}
 
 // Tính toạ độ biểu đồ cột (và đường lợi nhuận nếu có) cho cả hai tab
 function buildChart(points: ChartPoint[], showLine: boolean) {
@@ -95,110 +122,127 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
 
 @Component({
   selector: 'app-revenue-report',
-  imports: [DatePipe, NgTemplateOutlet],
+  imports: [DatePipe, NgTemplateOutlet, FormsModule, DatePickerModule],
   template: `
-    <!-- Tiêu đề và chọn thời gian -->
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-      <div>
-        <h1 class="text-2xl font-semibold text-slate-800">
-          {{ view() === 'doanh_thu' ? 'Báo cáo doanh thu' : 'Báo cáo nhập hàng' }}
-        </h1>
-        <p class="text-sm text-slate-500">{{ title() }}</p>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="inline-flex rounded-xl bg-slate-200/70 p-1">
-          @for (m of modes; track m.key) {
-            <button
-              type="button"
-              class="rounded-lg px-3 py-1.5 text-sm font-medium transition"
-              [class]="mode() === m.key ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-              (click)="setMode(m.key)"
-            >
-              {{ m.label }}
-            </button>
-          }
-        </div>
-
-        @if (mode() !== 'tuy_chon') {
-          <div class="inline-flex items-center rounded-xl border border-slate-200 bg-white">
-            <button
-              type="button"
-              class="px-3 py-2 text-slate-500 hover:text-emerald-700"
-              aria-label="Kỳ trước"
-              (click)="shift(-1)"
-            >
-              <i class="pi pi-angle-left"></i>
-            </button>
-
-            @switch (mode()) {
-              @case ('ngay') {
-                <input
-                  type="date"
-                  class="w-36 border-0 bg-transparent py-2 text-center text-sm font-medium text-slate-800 focus:outline-none"
-                  [value]="day()"
-                  [max]="today"
-                  (change)="onDay($any($event.target).value)"
-                />
-              }
-              @case ('thang') {
-                <input
-                  type="month"
-                  class="w-40 border-0 bg-transparent py-2 text-center text-sm font-medium text-slate-800 focus:outline-none"
-                  [value]="month()"
-                  [max]="today.slice(0, 7)"
-                  (change)="onMonth($any($event.target).value)"
-                />
-              }
-              @default {
-                <input
-                  type="number"
-                  min="2000"
-                  max="2100"
-                  class="w-20 border-0 bg-transparent py-2 text-center text-sm font-medium text-slate-800 focus:outline-none"
-                  [value]="year()"
-                  (change)="onYear($any($event.target).value)"
-                />
-              }
-            }
-
-            <button
-              type="button"
-              class="px-3 py-2 text-slate-500 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-slate-500"
-              aria-label="Kỳ sau"
-              [disabled]="!canNext()"
-              (click)="shift(1)"
-            >
-              <i class="pi pi-angle-right"></i>
-            </button>
-          </div>
-        } @else {
-          <div class="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1">
-            <input type="date" class="border-0 bg-transparent py-1.5 text-sm focus:outline-none" [value]="from()" [max]="today" (change)="from.set($any($event.target).value)" />
-            <i class="pi pi-arrow-right text-xs text-slate-400"></i>
-            <input type="date" class="border-0 bg-transparent py-1.5 text-sm focus:outline-none" [value]="to()" [max]="today" (change)="to.set($any($event.target).value)" />
-            <button
-              type="button"
-              class="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700"
-              (click)="load()"
-            >
-              Xem
-            </button>
-          </div>
-        }
-
-        <button
-          type="button"
-          class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-600 hover:text-emerald-700 disabled:opacity-60"
-          title="Tải lại"
-          aria-label="Tải lại"
-          [disabled]="loading()"
-          (click)="load()"
-        >
-          <i [class]="loading() ? 'pi pi-refresh animate-spin' : 'pi pi-refresh'"></i>
-        </button>
-      </div>
+    <!-- Tiêu đề -->
+    <div class="mb-4">
+      <h1 class="text-2xl font-semibold text-slate-800">
+        {{ view() === 'doanh_thu' ? 'Báo cáo doanh thu' : 'Báo cáo nhập hàng' }}
+      </h1>
+      <p class="text-sm text-slate-500">{{ title() }}</p>
     </div>
+
+    <!-- Bộ lọc thời gian -->
+    <section class="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-slate-200/80 bg-white p-2.5 shadow-sm">
+      <div class="inline-flex rounded-xl bg-slate-100 p-1">
+        @for (m of modes; track m.key) {
+          <button
+            type="button"
+            class="rounded-lg px-3 py-1.5 text-sm font-semibold transition"
+            [class]="mode() === m.key ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+            (click)="setMode(m.key)"
+          >
+            {{ m.label }}
+          </button>
+        }
+      </div>
+
+      <div class="hidden h-7 w-px bg-slate-200 sm:block"></div>
+
+      @if (mode() !== 'tuy_chon') {
+        <div class="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50/70">
+          <span class="pl-3 pr-1 text-xs font-semibold text-slate-500">{{ pickerLabel() }}</span>
+          <button
+            type="button"
+            class="px-2.5 py-2 text-slate-500 hover:text-indigo-700"
+            aria-label="Kỳ trước"
+            (click)="shift(-1)"
+          >
+            <i class="pi pi-angle-left"></i>
+          </button>
+
+          @switch (mode()) {
+            @case ('ngay') {
+              <p-datepicker
+                [ngModel]="dayDate()"
+                (onSelect)="onDayPick($event)"
+                [maxDate]="maxDay"
+                dateFormat="dd/mm/yy"
+                placeholder="Chọn ngày"
+                [readonlyInput]="true"
+                [appendTo]="'body'"
+                inputStyleClass="!w-28 !border-0 !bg-transparent !py-2.5 !text-center !text-sm !font-medium !text-slate-800 !shadow-none"
+              />
+            }
+            @case ('tuan') {
+              <input
+                type="week"
+                aria-label="Chọn tuần"
+                class="w-36 border-0 bg-transparent py-2 text-center text-sm font-medium text-slate-800 focus:outline-none"
+                [value]="weekValue()"
+                [max]="maxWeekValue()"
+                (change)="onWeekInput($event)"
+              />
+            }
+            @case ('thang') {
+              <input
+                type="month"
+                aria-label="Chọn tháng"
+                class="w-36 border-0 bg-transparent py-2 text-center text-sm font-medium text-slate-800 focus:outline-none"
+                [value]="month()"
+                [max]="today.slice(0, 7)"
+                (change)="onMonth($any($event.target).value)"
+              />
+            }
+            @default {
+              <input
+                type="number"
+                min="2000"
+                max="2100"
+                aria-label="Chọn năm"
+                class="w-20 border-0 bg-transparent py-2 text-center text-sm font-medium text-slate-800 focus:outline-none"
+                [value]="year()"
+                (change)="onYear($any($event.target).value)"
+              />
+            }
+          }
+
+          <button
+            type="button"
+            class="px-2.5 py-2 text-slate-500 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-slate-500"
+            aria-label="Kỳ sau"
+            [disabled]="!canNext()"
+            (click)="shift(1)"
+          >
+            <i class="pi pi-angle-right"></i>
+          </button>
+        </div>
+      } @else {
+        <div class="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-2.5 py-1.5">
+          <input type="date" aria-label="Từ ngày" class="border-0 bg-transparent text-sm focus:outline-none" [value]="from()" [max]="today" (change)="from.set($any($event.target).value)" />
+          <i class="pi pi-arrow-right text-xs text-slate-400"></i>
+          <input type="date" aria-label="Đến ngày" class="border-0 bg-transparent text-sm focus:outline-none" [value]="to()" [max]="today" (change)="to.set($any($event.target).value)" />
+          <button
+            type="button"
+            class="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+            (click)="load()"
+          >
+            Xem
+          </button>
+        </div>
+      }
+
+      <button
+        type="button"
+        class="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+        title="Tải lại"
+        aria-label="Tải lại"
+        [disabled]="loading()"
+        (click)="load()"
+      >
+        <i class="text-sm" [class]="loading() ? 'pi pi-refresh animate-spin' : 'pi pi-refresh'"></i>
+      </button>
+    </section>
 
     <!-- Chuyển giữa các báo cáo (chỉ chủ thấy tab Nhập hàng) -->
     @if (canImport()) {
@@ -206,8 +250,8 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
         @for (v of views; track v.key) {
           <button
             type="button"
-            class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition"
-            [class]="view() === v.key ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+            class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition"
+            [class]="view() === v.key ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
             (click)="setView(v.key)"
           >
             <i [class]="v.icon"></i>{{ v.label }}
@@ -225,10 +269,10 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
       @if (data(); as d) {
         <div [class]="loading() ? 'opacity-60 transition' : 'transition'">
           <!-- Dải tổng quan: doanh thu + chỉ số phụ -->
-          <section class="rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-500 p-6 text-white shadow-sm">
+          <section class="rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-500 p-6 text-white shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-x-8 gap-y-5">
               <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2 text-sm font-medium text-emerald-50">
+                <div class="flex flex-wrap items-center gap-2 text-sm font-medium text-indigo-50">
                   <i class="pi pi-wallet"></i>
                   Doanh thu
                   @if (changes()?.rev; as c) {
@@ -241,30 +285,30 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                   }
                 </div>
                 <div class="mt-2 break-words text-3xl font-bold sm:text-4xl">{{ money(d.tong_hop.doanh_thu) }} ₫</div>
-                <p class="mt-2 text-sm text-emerald-50">
+                <p class="mt-2 text-sm text-indigo-50">
                   Tiền thực thu từ {{ d.tong_hop.so_hoa_don }} hóa đơn đã thanh toán
                 </p>
               </div>
 
               <div class="grid w-full grid-cols-3 gap-3 sm:w-auto">
                 <div class="rounded-xl bg-white/10 px-4 py-3">
-                  <div class="text-xs text-emerald-100">Số hóa đơn</div>
+                  <div class="text-xs text-indigo-100">Số hóa đơn</div>
                   <div class="mt-0.5 text-lg font-semibold">{{ d.tong_hop.so_hoa_don.toLocaleString('vi-VN') }}</div>
                   @if (changes()?.inv; as c) {
-                    <div class="text-xs" [class]="c.up ? 'text-emerald-100' : 'text-red-100'">{{ c.text }}</div>
+                    <div class="text-xs" [class]="c.up ? 'text-indigo-100' : 'text-red-100'">{{ c.text }}</div>
                   }
                 </div>
                 <div class="rounded-xl bg-white/10 px-4 py-3">
-                  <div class="text-xs text-emerald-100">Trung bình/hóa đơn</div>
+                  <div class="text-xs text-indigo-100">Trung bình/hóa đơn</div>
                   <div class="mt-0.5 text-lg font-semibold">{{ money(d.tong_hop.trung_binh) }} ₫</div>
                   @if (changes()?.avg; as c) {
-                    <div class="text-xs" [class]="c.up ? 'text-emerald-100' : 'text-red-100'">{{ c.text }}</div>
+                    <div class="text-xs" [class]="c.up ? 'text-indigo-100' : 'text-red-100'">{{ c.text }}</div>
                   }
                 </div>
                 <div class="rounded-xl bg-white/10 px-4 py-3">
-                  <div class="text-xs text-emerald-100">Giảm giá đã cho</div>
+                  <div class="text-xs text-indigo-100">Giảm giá đã cho</div>
                   <div class="mt-0.5 text-lg font-semibold">{{ money(d.tong_hop.giam_gia) }} ₫</div>
-                  <div class="text-xs text-emerald-100">Chi phí khuyến mãi</div>
+                  <div class="text-xs text-indigo-100">Chi phí khuyến mãi</div>
                 </div>
               </div>
             </div>
@@ -317,7 +361,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
 
               <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-red-100">
                 <div class="flex items-center justify-between">
-                  <span class="text-sm font-medium text-slate-500">Hao hụt hết hạn</span>
+                  <span class="text-sm font-medium text-slate-500">Hao hụt</span>
                   <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500">
                     <i class="pi pi-trash text-sm"></i>
                   </span>
@@ -347,7 +391,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                 >
                   {{ money(k.laiThuc) }} ₫
                 </div>
-                <p class="mt-1 text-xs text-slate-500">Lợi nhuận gộp − hao hụt hết hạn</p>
+                <p class="mt-1 text-xs text-slate-500">Lợi nhuận gộp − hao hụt</p>
                 @if (k.laiThucChange; as c) {
                   <span
                     class="mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium"
@@ -375,7 +419,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
             <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h2 class="font-semibold text-slate-800">{{ chartTitle() }}</h2>
               <div class="flex items-center gap-4 text-xs text-slate-600">
-                <span class="flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-emerald-500"></span>Doanh thu</span>
+                <span class="flex items-center gap-1.5"><span class="inline-block h-3 w-3 rounded-sm bg-indigo-500"></span>Doanh thu</span>
                 @if (d.quyen.xem_loi_nhuan) {
                   <span class="flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-500"></span>Lợi nhuận gộp</span>
                 }
@@ -390,7 +434,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
             } @else {
               <ng-container
                 [ngTemplateOutlet]="chartTpl"
-                [ngTemplateOutletContext]="{ $implicit: chart(), color: '#10b981' }"
+                [ngTemplateOutletContext]="{ $implicit: chart(), color: '#6366f1' }"
               ></ng-container>
             }
           </section>
@@ -419,7 +463,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                 </div>
                 <div>
                   <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                    <span class="inline-block h-2.5 w-2.5 rounded-sm bg-red-400"></span>Hao hụt hết hạn
+                    <span class="inline-block h-2.5 w-2.5 rounded-sm bg-red-400"></span>Hao hụt
                   </div>
                   <div class="mt-0.5 font-semibold text-red-600">{{ money(b.huy) }} ₫</div>
                   <div class="text-xs text-slate-400">{{ b.huyCua.toLocaleString('vi-VN') }}% doanh thu</div>
@@ -442,7 +486,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
             </section>
           }
 
-          <!-- Hàng hủy do hết hạn (chỉ chủ thấy giá vốn) -->
+          <!-- Hao hụt theo lô (chỉ chủ thấy giá vốn) -->
           @if (hetHan(); as hh) {
             <section class="mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
               <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
@@ -451,8 +495,8 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                     <i class="pi pi-trash"></i>
                   </span>
                   <div>
-                    <h2 class="font-semibold text-slate-800">Hàng hủy do hết hạn</h2>
-                    <p class="text-xs text-slate-500">Các lô hết hạn bị hệ thống tự động loại trong kỳ</p>
+                    <h2 class="font-semibold text-slate-800">Hao hụt theo lô</h2>
+                    <p class="text-xs text-slate-500">Lô hết hạn tự động bị loại hoặc bị giảm tại trang Cập nhật tồn kho trong kỳ</p>
                   </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 text-xs">
@@ -467,7 +511,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
               @if (hh.tong.so_lo === 0) {
                 <div class="flex flex-col items-center gap-2 py-10 text-center text-slate-400">
                   <i class="pi pi-check-circle text-4xl text-emerald-300"></i>
-                  <p class="text-sm">Không có lô nào bị loại do hết hạn trong kỳ này.</p>
+                  <p class="text-sm">Không có lô hàng nào bị loại trong kỳ này.</p>
                 </div>
               } @else {
                 <div class="grid gap-5 p-5 lg:grid-cols-2">
@@ -509,7 +553,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                         <th class="text-right">Đã bán</th>
                         <th class="text-right">Doanh thu lô</th>
                         <th class="text-right">Giá trị nhập</th>
-                        <th class="text-right">Lỗ hết hạn</th>
+                        <th class="text-right">Hao hụt</th>
                         <th class="text-right">Lãi/lỗ</th>
                       </tr>
                     </thead>
@@ -527,7 +571,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                           <td class="text-right">{{ money(l.doanh_thu) }} ₫</td>
                           <td class="text-right text-slate-500">{{ money(l.gia_tri_nhap) }} ₫</td>
                           <td class="text-right font-medium text-red-600">−{{ money(l.lo_huy) }} ₫</td>
-                          <td class="text-right font-semibold" [class]="l.lai >= 0 ? 'text-emerald-700' : 'text-red-600'">
+                          <td class="text-right font-semibold" [class]="l.lai >= 0 ? 'text-indigo-700' : 'text-red-600'">
                             {{ money(l.lai) }} ₫
                           </td>
                         </tr>
@@ -541,7 +585,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                         <td class="text-right">{{ money(hh.tong.doanh_thu) }} ₫</td>
                         <td class="text-right">{{ money(hh.tong.gia_tri_nhap) }} ₫</td>
                         <td class="text-right text-red-600">{{ hh.tong.lo_huy > 0 ? '−' : '' }}{{ money(hh.tong.lo_huy) }} ₫</td>
-                        <td class="text-right" [class]="hh.tong.lai >= 0 ? 'text-emerald-700' : 'text-red-600'">
+                        <td class="text-right" [class]="hh.tong.lai >= 0 ? 'text-indigo-700' : 'text-red-600'">
                           {{ money(hh.tong.lai) }} ₫
                         </td>
                       </tr>
@@ -549,7 +593,8 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                   </table>
                   <p class="mt-2 text-xs text-slate-400">
                     Doanh thu lô tính trên toàn bộ hóa đơn đã thanh toán có bán từ lô này (kể cả trước kỳ báo cáo).
-                    Lãi/lỗ = doanh thu − vốn phần đã bán − giá trị phần bị loại.
+                    Lãi/lỗ = doanh thu − vốn phần đã bán − giá trị phần bị loại. Một lô bị ghi nhận nhiều lần trong kỳ
+                    được gộp thành một dòng, thời gian hiển thị là lần gần nhất.
                   </p>
                 </div>
               }
@@ -564,7 +609,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                   type="button"
                   class="-mb-px border-b-2 px-4 py-2 text-sm font-medium"
                   [class]="productTab() === t.key
-                    ? 'border-emerald-600 text-emerald-700'
+                    ? 'border-indigo-600 text-indigo-700'
                     : 'border-transparent text-slate-500 hover:text-slate-800'"
                   (click)="productTab.set(t.key)"
                 >
@@ -615,7 +660,7 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                         <td class="py-2.5 text-slate-400">{{ i + 1 }}</td>
                         <td class="font-medium text-slate-800">{{ p.TenSanPham }}</td>
                         <td class="text-right">{{ p.so_luong }}</td>
-                        <td class="text-right font-medium" [class]="(p.loi_nhuan ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-600'">
+                        <td class="text-right font-medium" [class]="(p.loi_nhuan ?? 0) >= 0 ? 'text-indigo-700' : 'text-red-600'">
                           {{ money(p.loi_nhuan ?? 0) }} ₫
                         </td>
                       </tr>
@@ -683,11 +728,12 @@ function buildChart(points: ChartPoint[], showLine: boolean) {
                   hàng hủy hoặc hết hạn.
                 </p>
                 <p>
-                  <b>Hao hụt hết hạn</b> = số lượng lô bị loại × đơn giá nhập của lô, tính theo thời điểm hệ thống tự loại lô.
-                  <b>Lãi thực sau hao hụt</b> = lợi nhuận gộp − hao hụt hết hạn.
+                  <b>Hao hụt</b> = số lượng hàng bị loại × đơn giá nhập của lô. Hàng bị loại gồm lô hết hạn được hệ thống
+                  tự loại và phần tồn kho bị giảm tại trang Cập nhật tồn kho, tính theo thời điểm ghi nhận.
+                  <b>Lãi thực sau hao hụt</b> = lợi nhuận gộp − hao hụt.
                 </p>
                 <p>
-                  Với từng lô trong bảng hàng hủy: <b>doanh thu lô</b> là phần tiền của các hóa đơn đã thanh toán có bán từ lô đó;
+                  Với từng lô trong bảng hao hụt: <b>doanh thu lô</b> là phần tiền của các hóa đơn đã thanh toán có bán từ lô đó;
                   <b>lãi/lỗ</b> = doanh thu lô − vốn phần đã bán − giá trị phần bị loại.
                 </p>
               }
@@ -937,6 +983,7 @@ export class RevenueReport_ {
   readonly money = money;
   readonly displayDate = displayDate;
   readonly today = formatDate(new Date());
+  readonly maxDay = parseDate(this.today);
 
   // Chỉ chủ doanh nghiệp xem được báo cáo nhập hàng (giá vốn)
   readonly canImport = computed(() => this.auth.hasAnyRole([ROLE.OWNER]));
@@ -954,6 +1001,7 @@ export class RevenueReport_ {
 
   readonly modes: { key: Mode; label: string }[] = [
     { key: 'ngay', label: 'Ngày' },
+    { key: 'tuan', label: 'Tuần' },
     { key: 'thang', label: 'Tháng' },
     { key: 'nam', label: 'Năm' },
     { key: 'tuy_chon', label: 'Tùy chọn' },
@@ -962,10 +1010,17 @@ export class RevenueReport_ {
   readonly view = signal<View>('doanh_thu');
   readonly mode = signal<Mode>('thang');
   readonly day = signal(this.today);
+  readonly weekStart = signal(mondayOf(this.today));
   readonly month = signal(this.today.slice(0, 7));
   readonly year = signal(new Date().getFullYear());
   readonly from = signal(addDays(this.today, -6));
   readonly to = signal(this.today);
+  readonly dayDate = computed(() => parseDate(this.day()));
+  readonly weekValue = computed(() => weekValueOf(this.weekStart()));
+  readonly maxWeekValue = computed(() => weekValueOf(mondayOf(this.today)));
+  readonly pickerLabel = computed(
+    () => ({ ngay: 'Chọn ngày', tuan: 'Chọn tuần', thang: 'Chọn tháng', nam: 'Chọn năm', tuy_chon: '' })[this.mode()],
+  );
 
   readonly data = signal<RevenueReport | null>(null);
   readonly imp = signal<ImportReport | null>(null);
@@ -981,6 +1036,10 @@ export class RevenueReport_ {
       case 'ngay': {
         const d = this.day();
         return d ? { tu: d, den: d, nhom: 'gio' } : null;
+      }
+      case 'tuan': {
+        const start = this.weekStart();
+        return { tu: start, den: addDays(start, 6), nhom: 'ngay' };
       }
       case 'thang': {
         const m = this.month();
@@ -1007,6 +1066,10 @@ export class RevenueReport_ {
     switch (this.mode()) {
       case 'ngay':
         return `Ngày ${displayDate(this.day())}`;
+      case 'tuan': {
+        const [, sm, sd] = this.weekStart().split('-');
+        return `Tuần ${sd}/${sm} – ${displayDate(addDays(this.weekStart(), 6))}`;
+      }
       case 'thang': {
         const [y, m] = this.month().split('-');
         return `Tháng ${m}/${y}`;
@@ -1033,6 +1096,8 @@ export class RevenueReport_ {
     switch (this.mode()) {
       case 'ngay':
         return this.day() < this.today;
+      case 'tuan':
+        return this.weekStart() < mondayOf(this.today);
       case 'thang':
         return this.month() < this.today.slice(0, 7);
       case 'nam':
@@ -1202,6 +1267,23 @@ export class RevenueReport_ {
     this.load();
   }
 
+  onDayPick(d: Date) {
+    if (!(d instanceof Date)) return;
+    this.onDay(formatDate(d));
+  }
+
+  onWeekInput(e: Event) {
+    const el = e.target as HTMLInputElement;
+    const start = mondayOfWeekValue(el.value);
+    // Ô week là uncontrolled: nếu tuần chọn không hợp lệ/vượt hôm nay thì trả lại giá trị đang xem
+    if (!start || start > mondayOf(this.today)) {
+      el.value = this.weekValue();
+      return;
+    }
+    this.weekStart.set(start);
+    this.load();
+  }
+
   onMonth(v: string) {
     if (!v) return;
     this.month.set(v);
@@ -1222,6 +1304,14 @@ export class RevenueReport_ {
         const next = addDays(this.day(), dir);
         if (next <= this.today) {
           this.day.set(next);
+          this.load();
+        }
+        break;
+      }
+      case 'tuan': {
+        const next = addDays(this.weekStart(), dir * 7);
+        if (next <= mondayOf(this.today)) {
+          this.weekStart.set(next);
           this.load();
         }
         break;

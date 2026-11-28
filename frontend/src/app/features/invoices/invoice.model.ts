@@ -5,6 +5,7 @@ export interface InvoiceLine {
     TenSanPham: string;
     SoLuong: number;
     ThanhTien: number | string;
+    san_pham?: { hinh_anh_url: string | null } | null;
 }
 
 export interface InvoiceItem {

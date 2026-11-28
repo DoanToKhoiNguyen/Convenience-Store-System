@@ -28,16 +28,17 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
   template: `
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20">
           <i class="pi pi-sliders-h text-lg"></i>
         </div>
         <div>
           <h1 class="text-2xl font-semibold tracking-tight text-slate-800">Cập nhật tồn kho</h1>
           <p class="max-w-2xl text-sm text-slate-500">
-            Kiểm kho, ghi nhận hàng hỏng, hết hạn hoặc điều chỉnh số liệu. Mọi thay đổi được lưu vào
+            Kiểm kho, ghi nhận hàng hỏng, hết hạn hoặc thất thoát. Chỉ được giảm số lượng và mọi lần giảm đều được
+            ghi nhận là hao hụt. Lịch sử đầy đủ ở
             <a
               routerLink="/admin/stock-history"
-              class="font-medium text-emerald-600 underline decoration-emerald-300 underline-offset-2 hover:text-emerald-700"
+              class="font-medium text-indigo-600 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-700"
             >lịch sử tồn kho</a>.
           </p>
         </div>
@@ -59,8 +60,8 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
       @for (t of tabs; track t.key) {
         <button
           type="button"
-          class="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-          [class]="filter() === t.key ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-emerald-700'"
+          class="rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+          [class]="filter() === t.key ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-indigo-700'"
           (click)="filter.set(t.key)"
         >
           {{ t.label }} ({{ count(t.key) }})
@@ -74,10 +75,10 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
         <span class="shrink-0 self-center pr-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Danh mục</span>
         <button
           type="button"
-          class="shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition"
+          class="shrink-0 rounded-full border px-4 py-1.5 text-sm font-semibold transition"
           [class]="category() === null
-            ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
-            : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+            ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'"
           (click)="onCategory(null)"
         >
           Tất cả ({{ base().length }})
@@ -85,10 +86,10 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
         @for (c of categoryChips(); track c.name) {
           <button
             type="button"
-            class="shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition"
+            class="shrink-0 rounded-full border px-4 py-1.5 text-sm font-semibold transition"
             [class]="category() === c.name
-              ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
-              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+              ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'"
             (click)="onCategory(c.name)"
           >
             {{ c.name }} ({{ c.count }})
@@ -113,9 +114,9 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
     <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
         <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <i class="pi pi-list text-emerald-500"></i>
+          <i class="pi pi-list text-indigo-500"></i>
           Danh sách sản phẩm
-          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ filtered().length }}</span>
+          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{{ filtered().length }}</span>
         </div>
       </div>
 
@@ -140,7 +141,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
         </ng-template>
 
         <ng-template #body let-p>
-          <tr class="transition-colors hover:bg-emerald-100/60!">
+          <tr class="transition-colors hover:bg-indigo-100/60!">
             <td class="px-4 py-3">
               <div class="flex items-center gap-3">
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200/60">
@@ -159,7 +160,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
               </div>
             </td>
             <td class="px-4 py-3">
-              <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+              <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
                 {{ p.LoaiSanPham ?? '—' }}
               </span>
             </td>
@@ -193,7 +194,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
             <td colspan="6" class="px-4 py-12">
               @if (loading()) {
                 <div class="flex flex-col items-center gap-2 text-slate-400">
-                  <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                  <i class="pi pi-spin pi-spinner text-2xl text-indigo-500"></i>
                   <span class="text-sm">Đang tải...</span>
                 </div>
               } @else {
@@ -227,7 +228,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
             </div>
           }
 
-          <div class="rounded-xl border border-emerald-200/70 bg-emerald-50/70 px-4 py-3">
+          <div class="rounded-xl border border-indigo-200/70 bg-indigo-50/70 px-4 py-3">
             <div class="font-semibold text-slate-800">{{ p.TenSanPham }}</div>
             <div class="mt-0.5 text-sm text-slate-600">
               Tồn hiện tại: <b class="text-slate-800">{{ p.SoLuongHienTai }}</b>
@@ -247,21 +248,17 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
               </button>
             </div>
 
-            <input pInputText type="number" min="0" formControlName="SoLuongMoi" class="w-full" />
+            <input pInputText type="number" min="0" [attr.max]="p.SoLuongHienTai" formControlName="SoLuongMoi" class="w-full" />
 
-            @if (diff(p) !== 0) {
-              <div
-                class="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium"
-                [class]="diff(p) > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'"
-              >
-                <i [class]="diff(p) > 0 ? 'pi pi-arrow-up-right text-[10px]' : 'pi pi-arrow-down-right text-[10px]'"></i>
-                Thay đổi: {{ diff(p) > 0 ? '+' : '' }}{{ diff(p) }}
+            @if (diff(p) > 0) {
+              <div class="mt-2 flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700">
+                <i class="pi pi-lock text-[11px]"></i>
+                Không thể tăng tồn kho — chỉ được phép giảm.
               </div>
-            }
-            @if (overMax(p)) {
-              <div class="mt-2 flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700">
-                <i class="pi pi-exclamation-triangle text-[11px]"></i>
-                Vượt mức tồn kho tối đa ({{ p.TonKhoToiDa }}).
+            } @else if (diff(p) < 0) {
+              <div class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
+                <i class="pi pi-arrow-down-right text-[10px]"></i>
+                Giảm {{ -diff(p) }} · sẽ ghi nhận hao hụt
               </div>
             }
           </div>
@@ -271,9 +268,9 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
               <label class="mb-1 block text-sm font-medium text-slate-700">Áp dụng cho lô</label>
               <select
                 formControlName="MaLoHang"
-                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               >
-                <option [ngValue]="null">Tự động (giảm lô hết hạn sớm nhất, tăng lô mới nhất)</option>
+                <option [ngValue]="null">Tự động (giảm lô nhập trước nhất)</option>
                 @for (l of p.lo_hang; track l.MaLoHang) {
                   <option [ngValue]="l.MaLoHang">{{ l.MaLo }} · còn {{ l.SoLuongCon }}{{ l.HanSuDung ? ' · HSD ' + l.HanSuDung : '' }}</option>
                 }
@@ -425,14 +422,10 @@ export class StockUpdate {
     return Number.isFinite(n) ? n - Number(p.SoLuongHienTai) : 0;
   }
 
-  overMax(p: Product): boolean {
-    const max = Number(p.TonKhoToiDa ?? 0);
-    return max > 0 && this.newQty() > max;
-  }
-
+  // Chỉ được giảm: số lượng mới phải nhỏ hơn tồn hiện tại
   cannotSave(): boolean {
     const p = this.target();
-    return !p || this.form.invalid || this.busy() || this.overMax(p);
+    return !p || this.form.invalid || this.busy() || this.diff(p) >= 0;
   }
 
 
@@ -453,6 +446,10 @@ export class StockUpdate {
       this.formError.set('Số lượng mới đang bằng số lượng hiện tại.');
       return;
     }
+    if (moi > cu) {
+      this.formError.set('Chỉ được phép giảm số lượng tồn kho.');
+      return;
+    }
 
     this.busy.set(true);
     this.formError.set(null);
@@ -470,7 +467,7 @@ export class StockUpdate {
         const canhBao = moi <= Number(p.TonKhoToiThieu ?? 0);
 
         this.notify(
-          `Đã cập nhật "${p.TenSanPham}": ${cu} → ${moi}.` +
+          `Đã cập nhật "${p.TenSanPham}": ${cu} → ${moi}, ghi nhận hao hụt ${cu - moi}.` +
           (canhBao ? ' Sản phẩm này hiện nằm trong mục Cảnh báo kho.' : ''),
         );
 

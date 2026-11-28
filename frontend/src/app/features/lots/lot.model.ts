@@ -26,6 +26,7 @@ export interface RemovedLot {
     SoLuongLoai: number;
     ThoiGianLoai: string | null;
     NguoiThucHien: string;
+    LyDo: string | null;
 }
 
 export function lotText(l: Pick<Lot, 'trang_thai' | 'so_ngay_con_lai'>): string {

@@ -32,7 +32,7 @@ interface Group {
   template: `
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20">
           <i class="pi pi-exclamation-triangle text-lg"></i>
         </div>
         <div>
@@ -52,7 +52,7 @@ interface Group {
     </div>
 
     <div class="mb-4 inline-flex items-center gap-1 rounded-xl border border-slate-200/70 bg-white p-1 shadow-sm">
-      <span class="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
+      <span class="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm">
         <i class="pi pi-exclamation-circle text-xs"></i>
         Sắp hết hàng
         @if (khoChuaNhap() > 0) {
@@ -67,7 +67,7 @@ interface Group {
       </span>
       <a
         routerLink="/admin/expiry-alerts"
-        class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-emerald-700"
+        class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-indigo-700"
       >
         <i class="pi pi-clock text-xs"></i>
         Sắp hết hạn
@@ -103,7 +103,7 @@ interface Group {
         </div>
       </div>
       <div class="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
           <i class="pi pi-shopping-cart"></i>
         </div>
         <div>
@@ -136,12 +136,12 @@ interface Group {
     <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
         <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <i class="pi pi-list text-emerald-500"></i>
+          <i class="pi pi-list text-indigo-500"></i>
           Danh sách sản phẩm
-          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ items().length }}</span>
+          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{{ items().length }}</span>
         </div>
         @if (selectedItems().length > 0) {
-          <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+          <span class="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
             Đã chọn {{ selectedItems().length }} sản phẩm
           </span>
         }
@@ -158,7 +158,7 @@ interface Group {
             <th class="w-12 px-4 py-3">
               <input
                 type="checkbox"
-                class="h-4 w-4 rounded border-slate-300 accent-emerald-600"
+                class="h-4 w-4 rounded border-slate-300 accent-indigo-600"
                 [checked]="allSelected()"
                 [disabled]="selectable().length === 0"
                 (change)="toggleAll()"
@@ -174,11 +174,11 @@ interface Group {
         </ng-template>
 
         <ng-template #body let-p>
-          <tr class="transition-colors hover:bg-emerald-50/40">
+          <tr class="transition-colors hover:bg-indigo-50/40">
             <td class="px-4 py-3">
               <input
                 type="checkbox"
-                class="h-4 w-4 rounded border-slate-300 accent-emerald-600"
+                class="h-4 w-4 rounded border-slate-300 accent-indigo-600"
                 [checked]="isSelected(p)"
                 [disabled]="!canSelect(p)"
                 (change)="toggle(p)"
@@ -233,7 +233,7 @@ interface Group {
                 <input
                   type="number"
                   min="1"
-                  class="w-24 rounded-lg border px-2.5 py-1.5 text-right text-sm tabular-nums outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  class="w-24 rounded-lg border px-2.5 py-1.5 text-right text-sm tabular-nums outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                   [class]="isSelected(p) && qtyOf(p) < 1 ? 'border-red-400 bg-red-50/40' : 'border-slate-300'"
                   [value]="qtyOf(p)"
                   [disabled]="!isSelected(p)"
@@ -249,7 +249,7 @@ interface Group {
             <td colspan="7" class="px-4 py-12">
               @if (loading()) {
                 <div class="flex flex-col items-center gap-2 text-slate-400">
-                  <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                  <i class="pi pi-spin pi-spinner text-2xl text-indigo-500"></i>
                   <span class="text-sm">Đang tải...</span>
                 </div>
               } @else {
@@ -267,7 +267,7 @@ interface Group {
     </div>
 
     <div class="mt-3 flex items-start gap-2.5 rounded-xl border border-slate-200/70 bg-white px-4 py-3 text-xs text-slate-500 shadow-sm">
-      <i class="pi pi-info-circle mt-0.5 text-emerald-500"></i>
+      <i class="pi pi-info-circle mt-0.5 text-indigo-500"></i>
       <p>
         Số lượng cần nhập được gợi ý để đưa tồn kho lên mức tối đa (hoặc gấp đôi mức tối thiểu nếu chưa đặt mức tối đa), bạn có thể sửa.
         Sản phẩm chưa có nhà cung cấp cần được cập nhật trước khi lập phiếu.
@@ -294,10 +294,10 @@ interface Group {
         <div class="mb-3 overflow-hidden rounded-xl border border-slate-200/70">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/60 px-4 py-2.5">
             <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <i class="pi pi-truck text-xs text-emerald-500"></i>
+              <i class="pi pi-truck text-xs text-indigo-500"></i>
               {{ g.supplierName }}
             </div>
-            <span class="rounded-full bg-slate-200/70 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            <span class="rounded-full bg-slate-200/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
               {{ g.lines.length }} sản phẩm
             </span>
           </div>
@@ -328,7 +328,7 @@ interface Group {
           @if (g.total !== null) {
             <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-2 text-sm">
               <span class="text-slate-500">Tổng ước tính:</span>
-              <b class="tabular-nums text-emerald-700">{{ g.total | number: '1.0-0' }} ₫</b>
+              <b class="tabular-nums text-indigo-700">{{ g.total | number: '1.0-0' }} ₫</b>
             </div>
           }
         </div>

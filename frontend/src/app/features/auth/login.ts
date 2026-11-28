@@ -18,20 +18,20 @@ import { AuthService } from '../../core/auth/auth.service';
     PasswordModule
   ],
   template: `
-    <div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#030f0b] px-4 py-10">
+    <div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0b1024] px-4 py-10">
 
       <!-- Nền màu "ảo": mesh gradient + quầng sáng + lưới mờ -->
       <div
         class="pointer-events-none absolute inset-0"
         style="background:
-          radial-gradient(55% 45% at 15% 18%, rgba(16,185,129,0.38), transparent 62%),
-          radial-gradient(50% 40% at 86% 12%, rgba(45,212,191,0.28), transparent 60%),
-          radial-gradient(60% 55% at 82% 88%, rgba(99,102,241,0.30), transparent 65%),
-          radial-gradient(45% 45% at 18% 92%, rgba(20,184,166,0.30), transparent 62%),
-          linear-gradient(160deg, #04140f 0%, #030f0b 45%, #020a08 100%);"
+          radial-gradient(55% 45% at 15% 18%, rgba(99,102,241,0.42), transparent 62%),
+          radial-gradient(50% 40% at 86% 12%, rgba(139,92,246,0.32), transparent 60%),
+          radial-gradient(60% 55% at 82% 88%, rgba(14,165,233,0.32), transparent 65%),
+          radial-gradient(45% 45% at 18% 92%, rgba(45,212,191,0.22), transparent 62%),
+          linear-gradient(160deg, #141c3f 0%, #0b1024 45%, #080c1a 100%);"
       ></div>
-      <div class="pointer-events-none absolute -left-24 top-1/4 h-72 w-72 animate-pulse rounded-full bg-emerald-400/20 blur-3xl"></div>
-      <div class="pointer-events-none absolute -right-20 bottom-1/4 h-80 w-80 rounded-full bg-indigo-500/20 blur-3xl"></div>
+      <div class="pointer-events-none absolute -left-24 top-1/4 h-72 w-72 animate-pulse rounded-full bg-indigo-400/20 blur-3xl"></div>
+      <div class="pointer-events-none absolute -right-20 bottom-1/4 h-80 w-80 rounded-full bg-violet-500/20 blur-3xl"></div>
       <div
         class="pointer-events-none absolute inset-0 opacity-[0.06]"
         style="background-image: linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px); background-size: 56px 56px;"
@@ -47,7 +47,7 @@ import { AuthService } from '../../core/auth/auth.service';
         <!-- Logo and heading -->
         <div class="text-center">
 
-          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-emerald-950 shadow-[0_0_35px_-5px_rgba(52,211,153,0.7)]">
+          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-400 to-violet-500 text-white shadow-[0_0_35px_-5px_rgba(129,140,248,0.7)]">
             <i class="pi pi-shop text-3xl"></i>
           </div>
 
@@ -79,7 +79,7 @@ import { AuthService } from '../../core/auth/auth.service';
         <div class="space-y-2">
           <label
             for="username"
-            class="block text-xs font-semibold tracking-wide text-white/55"
+            class="block text-sm font-semibold tracking-wide text-white/75"
           >
             Tên đăng nhập
             <span class="text-red-400">*</span>
@@ -94,7 +94,7 @@ import { AuthService } from '../../core/auth/auth.service';
               placeholder="Nhập tên đăng nhập"
               autocomplete="username"
               autofocus
-              class="w-full !rounded-full !border !border-white/20 !bg-white/5 !py-3 !pl-11 !pr-5 !text-sm !text-white placeholder:!text-white/35 transition-all focus:!border-emerald-400/60 focus:!ring-2 focus:!ring-emerald-400/25"
+              class="w-full !rounded-full !border !border-white/20 !bg-white/5 !py-3 !pl-11 !pr-5 !text-base !text-white placeholder:!text-white/35 transition-all focus:!border-indigo-400/60 focus:!ring-2 focus:!ring-indigo-400/25"
             />
           </div>
 
@@ -113,7 +113,7 @@ import { AuthService } from '../../core/auth/auth.service';
         <div class="space-y-2">
           <label
             for="password"
-            class="block text-xs font-semibold tracking-wide text-white/55"
+            class="block text-sm font-semibold tracking-wide text-white/75"
           >
             Mật khẩu
             <span class="text-red-400">*</span>
@@ -129,7 +129,7 @@ import { AuthService } from '../../core/auth/auth.service';
               [feedback]="false"
               [toggleMask]="true"
               styleClass="block w-full"
-              inputStyleClass="w-full !rounded-full !border !border-white/20 !bg-white/5 !py-3 !pl-11 !pr-12 !text-sm !text-white placeholder:!text-white/35"
+              inputStyleClass="w-full !rounded-full !border !border-white/20 !bg-white/5 !py-3 !pl-11 !pr-12 !text-base !text-white placeholder:!text-white/35 transition-all focus:!border-indigo-400/60 focus:!ring-2 focus:!ring-indigo-400/25"
               [style]="{ width: '100%' }"
               [inputStyle]="{ width: '100%' }"
             />
@@ -152,7 +152,7 @@ import { AuthService } from '../../core/auth/auth.service';
           label="Đăng nhập"
           icon="pi pi-sign-in"
           iconPos="right"
-          styleClass="w-full !rounded-full !border-0 !bg-gradient-to-r !from-emerald-400 !to-lime-400 !py-3.5 !text-sm !font-bold !text-emerald-950 !shadow-[0_12px_40px_-10px_rgba(52,211,153,0.65)] transition-all hover:!from-emerald-300 hover:!to-lime-300"
+          styleClass="w-full !rounded-full !border-0 !bg-gradient-to-r !from-indigo-500 !to-violet-500 !py-3.5 !text-sm !font-bold !text-white !shadow-[0_12px_40px_-10px_rgba(129,140,248,0.65)] transition-all hover:!from-indigo-400 hover:!to-violet-400"
           [loading]="loading()"
           [disabled]="loading()"
         />

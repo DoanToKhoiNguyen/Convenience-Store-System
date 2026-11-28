@@ -43,7 +43,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
   template: `
     <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div class="flex items-center gap-3">
-        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/25">
           <i class="pi pi-box text-lg"></i>
         </span>
         <div>
@@ -66,13 +66,22 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
         @if (canEdit()) {
           <button
             type="button"
-            class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-600 hover:to-teal-700 hover:shadow-emerald-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 active:scale-[0.98]"
+            class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-600 hover:to-violet-700 hover:shadow-indigo-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 active:scale-[0.98]"
             (click)="openCreate()"
           >
             <i class="pi pi-plus text-xs"></i>
             Thêm sản phẩm
           </button>
         }
+        <p-button
+          icon="pi pi-refresh"
+          ariaLabel="Tải lại"
+          pTooltip="Tải lại"
+          tooltipPosition="top"
+          [outlined]="true"
+          [loading]="loading()"
+          (onClick)="load()"
+        />
       </div>
     </div>
 
@@ -81,10 +90,10 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
       <div class="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1">
         <button
           type="button"
-          class="shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition"
+          class="shrink-0 rounded-full border px-4 py-1.5 text-sm font-semibold transition"
           [class]="category() === null
-            ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
-            : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+            ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'"
           (click)="onCategory(null)"
         >
           Tất cả ({{ base().length }})
@@ -92,10 +101,10 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
         @for (c of categoryChips(); track c.name) {
           <button
             type="button"
-            class="shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition"
+            class="shrink-0 rounded-full border px-4 py-1.5 text-sm font-semibold transition"
             [class]="category() === c.name
-              ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
-              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+              ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'"
             (click)="onCategory(c.name)"
           >
             {{ c.name }} ({{ c.count }})
@@ -110,15 +119,15 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
       <div class="flex flex-wrap items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
         <button
           type="button"
-          class="rounded-lg px-3 py-1.5 text-sm font-medium transition"
-          [class]="hsdFilter() === 'all' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'"
+          class="rounded-lg px-3 py-1.5 text-sm font-semibold transition"
+          [class]="hsdFilter() === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'"
           (click)="onHsd('all')"
         >
           Tất cả
         </button>
         <button
           type="button"
-          class="rounded-lg px-3 py-1.5 text-sm font-medium transition"
+          class="rounded-lg px-3 py-1.5 text-sm font-semibold transition"
           [class]="hsdFilter() === 'sap_het_han' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'"
           (click)="onHsd('sap_het_han')"
         >
@@ -126,7 +135,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
         </button>
         <button
           type="button"
-          class="rounded-lg px-3 py-1.5 text-sm font-medium transition"
+          class="rounded-lg px-3 py-1.5 text-sm font-semibold transition"
           [class]="hsdFilter() === 'het_han' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'"
           (click)="onHsd('het_han')"
         >
@@ -137,7 +146,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
       @if (hasFilter()) {
         <button
           type="button"
-          class="ml-1 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+          class="ml-1 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-indigo-700 transition hover:bg-indigo-50"
           (click)="clearFilters()"
         >
           <i class="pi pi-filter-slash text-xs"></i> Xóa bộ lọc
@@ -161,10 +170,10 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
     <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
         <div class="flex items-center gap-2 text-sm font-medium text-slate-700">
-          <i class="pi pi-list text-emerald-500"></i>
+          <i class="pi pi-list text-amber-500"></i>
           Danh sách sản phẩm
         </div>
-        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
           {{ filtered().length }} sản phẩm
         </span>
       </div>
@@ -200,7 +209,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
         </ng-template>
 
         <ng-template #body let-p>
-          <tr class="transition-colors hover:bg-emerald-100/60!">
+          <tr class="transition-colors hover:bg-indigo-100/60!">
             <td>
               <div class="flex items-center gap-3">
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200/60">
@@ -221,7 +230,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
 
             <td>
               @if (p.LoaiSanPham) {
-                <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
                   {{ p.LoaiSanPham }}
                 </span>
               } @else {
@@ -252,7 +261,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
               }
               <button
                 type="button"
-                class="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 transition hover:bg-emerald-100 hover:text-emerald-700"
+                class="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 transition hover:bg-indigo-100 hover:text-indigo-700"
                 (click)="toggleLots(p)"
               >
                 <i class="pi pi-chevron-right text-[9px] transition-transform" [class.rotate-90]="expanded()[p.MaSanPham]"></i>
@@ -336,7 +345,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                       @for (l of p.lo_hang; track l.MaLoHang) {
-                        <tr class="transition-colors hover:bg-emerald-50/70">
+                        <tr class="transition-colors hover:bg-indigo-50/70">
                           <td class="px-3 py-2 font-medium text-slate-800">{{ l.MaLo }}</td>
                           <td class="px-3 py-2 text-slate-600">{{ l.NgayNhap | date: 'dd/MM/yyyy' }}</td>
                           <td class="px-3 py-2 text-slate-600">{{ l.HanSuDung ? (l.HanSuDung | date: 'dd/MM/yyyy') : '—' }}</td>
@@ -402,7 +411,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
 
         <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <i class="pi pi-info-circle text-emerald-500"></i>
+            <i class="pi pi-info-circle text-sky-500"></i>
             Thông tin cơ bản
           </div>
 
@@ -416,7 +425,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
               <label class="mb-1.5 block text-sm font-medium text-slate-700">Danh mục *</label>
               <select
                 formControlName="MaDanhMuc"
-                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
               >
                 <option [ngValue]="null" disabled>-- Chọn danh mục --</option>
                 @for (c of categories(); track c.MaDanhMuc) {
@@ -434,7 +443,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
             <label class="mb-1.5 block text-sm font-medium text-slate-700">Nhà cung cấp *</label>
             <select
               formControlName="MaNhaCungCap"
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100 disabled:text-slate-400"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-100 disabled:text-slate-400"
               [attr.disabled]="formCategory() == null ? '' : null"
             >
               <option [ngValue]="null" disabled>
@@ -458,7 +467,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
 
         <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <i class="pi pi-tag text-emerald-500"></i>
+            <i class="pi pi-tag text-violet-500"></i>
             Giá bán
           </div>
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -475,7 +484,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
 
         <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <i class="pi pi-sliders-h text-emerald-500"></i>
+            <i class="pi pi-sliders-h text-amber-500"></i>
             Tồn kho &amp; cảnh báo
           </div>
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -508,8 +517,8 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
             </span>
           </div>
         } @else {
-          <div class="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-            <i class="pi pi-info-circle mt-0.5 text-emerald-500"></i>
+          <div class="flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-800">
+            <i class="pi pi-info-circle mt-0.5 text-sky-500"></i>
             <span>
               Sản phẩm mới có tồn kho 0. Số lượng và hạn sử dụng được nhập khi nhập hàng
               (Cảnh báo kho → Lập phiếu nhập → Nhận hàng). Mã lô do hệ thống tự tạo.
@@ -519,13 +528,13 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
 
         <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <i class="pi pi-image text-emerald-500"></i>
+            <i class="pi pi-image text-amber-500"></i>
             Ảnh &amp; mô tả
           </div>
 
           <div class="flex items-start gap-4">
             <label
-              class="group relative flex h-24 w-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-white transition hover:border-emerald-500 hover:bg-emerald-50 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-200"
+              class="group relative flex h-24 w-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-white transition hover:border-indigo-500 hover:bg-indigo-50 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200"
               title="Bấm để chọn ảnh"
             >
               <input
@@ -541,7 +550,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
                   Bấm để đổi ảnh
                 </span>
               } @else {
-                <span class="flex flex-col items-center gap-1 px-2 text-center text-slate-400 group-hover:text-emerald-600">
+                <span class="flex flex-col items-center gap-1 px-2 text-center text-slate-400 group-hover:text-indigo-600">
                   <i class="pi pi-image text-2xl"></i>
                   <span class="text-[11px] font-medium">Bấm để chọn ảnh</span>
                 </span>
@@ -563,7 +572,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
             <textarea
               formControlName="MoTa"
               rows="2"
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
             ></textarea>
           </div>
 
@@ -572,7 +581,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
             <textarea
               formControlName="ThanhPhan"
               rows="2"
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
             ></textarea>
           </div>
         </div>
@@ -615,7 +624,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
             <label class="mb-1.5 block text-sm font-medium text-slate-700">Hạn sử dụng</label>
             <input
               type="date"
-              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
               [value]="lotDate()"
               (input)="lotDate.set($any($event.target).value)"
             />

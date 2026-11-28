@@ -32,7 +32,7 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
   template: `
     <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
-        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shadow-lg shadow-sky-500/20">
           <i class="pi pi-tag text-lg"></i>
         </span>
         <div>
@@ -45,7 +45,7 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
 
       <button
         type="button"
-        class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-600 hover:to-teal-700 hover:shadow-emerald-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 active:scale-[0.98]"
+        class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-600 hover:to-violet-700 hover:shadow-indigo-500/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 active:scale-[0.98]"
         (click)="openCreate()"
       >
         <i class="pi pi-plus text-xs"></i>
@@ -69,10 +69,10 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
     <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
         <div class="flex items-center gap-2 text-sm font-medium text-slate-700">
-          <i class="pi pi-list text-emerald-500"></i>
+          <i class="pi pi-list text-indigo-500"></i>
           Danh sách chương trình
         </div>
-        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
           {{ promos().length }} chương trình
         </span>
       </div>
@@ -92,17 +92,17 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
           </thead>
           <tbody class="divide-y divide-slate-100">
             @for (p of promos(); track p.MaKhuyenMai) {
-              <tr class="transition-colors hover:bg-emerald-100/60">
+              <tr class="transition-colors hover:bg-indigo-100/60">
                 <td class="px-4 py-3.5">
                   <div class="flex items-center gap-2.5">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
                       <i class="pi pi-ticket text-xs"></i>
                     </span>
                     <span class="font-medium text-slate-800">{{ p.TenChuongTrinh }}</span>
                   </div>
                 </td>
                 <td class="px-4 py-3.5">
-                  <span class="inline-flex items-center rounded-lg bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
+                  <span class="inline-flex items-center rounded-lg bg-indigo-50 px-2 py-0.5 font-medium text-indigo-700">
                     {{ discountText(p) }}
                   </span>
                 </td>
@@ -121,7 +121,7 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
                   <p-tag [value]="status(p).label" [severity]="status(p).severity" />
                 </td>
                 <td class="px-4 py-3.5 text-right">
-                  <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                  <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
                     {{ p.hoa_don_count ?? 0 }} hóa đơn
                   </span>
                 </td>
@@ -171,7 +171,7 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
                 <td colspan="7" class="px-4 py-16 text-center">
                   @if (loading()) {
                     <div class="flex flex-col items-center gap-3 text-slate-500">
-                      <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                      <i class="pi pi-spin pi-spinner text-2xl text-indigo-500"></i>
                       <span class="text-sm">Đang tải chương trình...</span>
                     </div>
                   } @else {
@@ -209,7 +209,7 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
         <!-- Thông tin chương trình -->
         <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <i class="pi pi-ticket text-emerald-500"></i>
+            <i class="pi pi-ticket text-indigo-500"></i>
             Thông tin chương trình
           </div>
 
@@ -232,7 +232,7 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
               </label>
               <select
                 formControlName="LoaiGiam"
-                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               >
                 <option value="phan_tram">Giảm theo phần trăm</option>
                 <option value="so_tien">Giảm số tiền cố định</option>
@@ -267,7 +267,7 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
         <!-- Điều kiện áp dụng -->
         <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <i class="pi pi-shopping-bag text-emerald-500"></i>
+            <i class="pi pi-shopping-bag text-indigo-500"></i>
             Điều kiện áp dụng
           </div>
 
@@ -307,7 +307,7 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
         <!-- Thời gian áp dụng -->
         <div class="space-y-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
           <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <i class="pi pi-calendar text-emerald-500"></i>
+            <i class="pi pi-calendar text-indigo-500"></i>
             Thời gian áp dụng
           </div>
 
@@ -337,14 +337,14 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
         <label
           class="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition"
           [class]="form.controls.TrangThai.value
-            ? 'border-emerald-200 bg-emerald-50/70'
+            ? 'border-indigo-200 bg-indigo-50/70'
             : 'border-slate-200 bg-slate-50 hover:border-slate-300'"
         >
           <span class="flex items-center gap-3">
             <span
               class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition"
               [class]="form.controls.TrangThai.value
-                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/30'
+                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/30'
                 : 'bg-slate-200 text-slate-500'"
             >
               <i class="pi pi-power-off text-xs"></i>
@@ -354,7 +354,7 @@ function promoRules(g: AbstractControl): ValidationErrors | null {
               <span class="block text-xs text-slate-500">Chương trình chỉ áp dụng cho hóa đơn mới khi được bật.</span>
             </span>
           </span>
-          <input type="checkbox" formControlName="TrangThai" class="h-5 w-5 shrink-0 rounded accent-emerald-600" />
+          <input type="checkbox" formControlName="TrangThai" class="h-5 w-5 shrink-0 rounded accent-indigo-600" />
         </label>
 
         @if (editing(); as e) {

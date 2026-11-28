@@ -34,13 +34,22 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
   template: `
     <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div class="flex items-start gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20">
           <i class="pi pi-truck text-lg"></i>
         </div>
         <div>
           <h1 class="text-2xl font-semibold tracking-tight text-slate-800">Phiếu nhập</h1>
           <p class="text-sm text-slate-500">{{ total() }} phiếu</p>
         </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <p-button
+          label="Tải lại"
+          icon="pi pi-refresh"
+          [outlined]="true"
+          [loading]="loading()"
+          (onClick)="load()"
+        />
       </div>
     </div>
 
@@ -65,17 +74,17 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
       @for (t of tags(); track t.label) {
         <button
           type="button"
-          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition"
+          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition"
           [class]="statusFilter() === t.value
-            ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10'
-            : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/40'"
+            ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-500/10'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/40'"
           (click)="chonTag(t.value)"
         >
           <i [class]="t.icon" class="text-[11px]"></i>
           {{ t.label }}
           <span
             class="rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none"
-            [class]="statusFilter() === t.value ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+            [class]="statusFilter() === t.value ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'"
           >
             {{ t.count }}
           </span>
@@ -100,7 +109,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
         </div>
 
         <select
-          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 sm:w-52"
+          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 sm:w-52"
           [value]="maNhaCungCap() ?? ''"
           (change)="setNhaCungCap($any($event.target).value)"
         >
@@ -113,30 +122,30 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
         <div class="flex flex-wrap items-center gap-1.5 sm:ml-auto">
           <button
             type="button"
-            class="rounded-full border px-3 py-1.5 text-xs font-medium transition"
+            class="rounded-full border px-3 py-1.5 text-xs font-semibold transition"
             [class]="laHomNay()
-              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+              ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'"
             (click)="chonNhanh('hom-nay')"
           >
             Hôm nay
           </button>
           <button
             type="button"
-            class="rounded-full border px-3 py-1.5 text-xs font-medium transition"
+            class="rounded-full border px-3 py-1.5 text-xs font-semibold transition"
             [class]="laTuanNay()
-              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+              ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'"
             (click)="chonNhanh('tuan-nay')"
           >
             Tuần này
           </button>
           <button
             type="button"
-            class="rounded-full border px-3 py-1.5 text-xs font-medium transition"
+            class="rounded-full border px-3 py-1.5 text-xs font-semibold transition"
             [class]="laThangNay()
-              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'"
+              ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'"
             (click)="chonNhanh('thang-nay')"
           >
             Tháng này
@@ -144,7 +153,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
           @if (coLoc()) {
             <button
               type="button"
-              class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
               (click)="xoaLoc()"
             >
               <i class="pi pi-times text-[10px]"></i>
@@ -164,9 +173,9 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
     <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
         <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <i class="pi pi-list text-emerald-500"></i>
+          <i class="pi pi-list text-indigo-500"></i>
           Danh sách phiếu nhập
-          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ total() }}</span>
+          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{{ total() }}</span>
         </div>
       </div>
 
@@ -195,9 +204,9 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
         </ng-template>
 
         <ng-template #body let-o>
-          <tr class="transition-colors hover:bg-emerald-100/60!">
+          <tr class="transition-colors hover:bg-indigo-100/60!">
             <td class="px-4 py-3">
-              <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 font-mono text-xs font-medium text-emerald-700">
+              <span class="inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 font-mono text-xs font-medium text-indigo-700">
                 {{ o.MaPhieuNhap }}
               </span>
             </td>
@@ -227,7 +236,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
                         <span class="text-slate-300">·</span>
                         <button
                           type="button"
-                          class="-ml-0.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-emerald-700 transition-colors hover:bg-emerald-50"
+                          class="-ml-0.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-indigo-700 transition-colors hover:bg-indigo-50"
                           [attr.aria-expanded]="!!moRong()[o.MaPhieuNhap]"
                           [attr.aria-label]="moRong()[o.MaPhieuNhap] ? 'Thu gọn danh sách sản phẩm' : 'Xem thêm ' + soMatHangKhac(o) + ' mặt hàng khác'"
                           (click)="toggleChiTiet(o)"
@@ -263,12 +272,12 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
               <div class="mb-3 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-700">
                 <i class="pi pi-box text-xs text-slate-400"></i>
                 Chi tiết {{ soMatHang(o) }} mặt hàng
-                <span class="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-slate-200">
+                <span class="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
                   {{ tongSoLuong(o) }} sản phẩm
                 </span>
                 <button
                   type="button"
-                  class="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-slate-500 transition-colors hover:bg-white hover:text-emerald-700"
+                  class="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white hover:text-indigo-700"
                   (click)="toggleChiTiet(o)"
                 >
                   <i class="pi pi-chevron-up text-[9px]"></i>
@@ -291,7 +300,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
                     <div class="min-w-0 flex-1">
                       <div class="truncate text-sm font-medium text-slate-800">{{ d.TenSanPham }}</div>
                       <div class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-                        <span class="inline-flex items-center rounded-md bg-emerald-50 px-1.5 py-0.5 font-semibold text-emerald-700">SL {{ d.SoLuong }}</span>
+                        <span class="inline-flex items-center rounded-md bg-indigo-50 px-1.5 py-0.5 font-semibold text-indigo-700">SL {{ d.SoLuong }}</span>
                         <span class="text-slate-300">·</span>
                         <span>{{ d.DonGia | number: '1.0-0' }} ₫/sp</span>
                       </div>
@@ -311,7 +320,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
             <td colspan="6" class="px-4 py-12">
               @if (loading()) {
                 <div class="flex flex-col items-center gap-2 text-slate-400">
-                  <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                  <i class="pi pi-spin pi-spinner text-2xl text-indigo-500"></i>
                   <span class="text-sm">Đang tải...</span>
                 </div>
               } @else {
@@ -382,7 +391,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
             </thead>
             <tbody class="divide-y divide-slate-100">
               @for (d of o.chi_tiet_phieu_nhap ?? []; track d.MaChiTietPhieuNhap) {
-                <tr class="transition-colors hover:bg-emerald-50/40">
+                <tr class="transition-colors hover:bg-indigo-50/40">
                   @if (mode() === 'view') {
                     <td class="px-4 py-2 text-slate-600">{{ d.lo_hang ? d.lo_hang.MaLo : '—' }}</td>
                   }
@@ -408,7 +417,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
                     <td class="px-4 py-2">
                       <input
                         type="date"
-                        class="rounded-lg border border-slate-300 px-2 py-1 text-sm outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                        class="rounded-lg border border-slate-300 px-2 py-1 text-sm outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                         [min]="today"
                         [value]="dates()[d.MaChiTietPhieuNhap] ?? ''"
                         (input)="setDate(d.MaChiTietPhieuNhap, $any($event.target).value)"
@@ -423,7 +432,7 @@ const STATUS: Record<number, { label: string; severity: Severity }> = {
 
         <div class="mt-3 flex items-center justify-end gap-2 text-sm">
           <span class="text-slate-500">Tổng:</span>
-          <span class="text-base font-semibold tabular-nums text-emerald-700">{{ o.TongGiaTri | number: '1.0-0' }} ₫</span>
+          <span class="text-base font-semibold tabular-nums text-indigo-700">{{ o.TongGiaTri | number: '1.0-0' }} ₫</span>
         </div>
       }
 

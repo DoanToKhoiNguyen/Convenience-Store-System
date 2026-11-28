@@ -22,7 +22,7 @@ const STORE = {
 
 // Màu nền cho sản phẩm chưa có ảnh
 const COLORS = [
-  'bg-emerald-100 text-emerald-700',
+  'bg-indigo-100 text-indigo-700',
   'bg-sky-100 text-sky-700',
   'bg-amber-100 text-amber-700',
   'bg-rose-100 text-rose-700',
@@ -31,7 +31,7 @@ const COLORS = [
 ];
 
 // Màu nền nhẹ cho biểu tượng danh mục
-const CAT_TONES = ['bg-emerald-50', 'bg-sky-50', 'bg-amber-50', 'bg-rose-50', 'bg-violet-50', 'bg-teal-50'];
+const CAT_TONES = ['bg-indigo-50', 'bg-sky-50', 'bg-amber-50', 'bg-rose-50', 'bg-violet-50', 'bg-teal-50'];
 
 // Biểu tượng theo từ khóa trong tên danh mục (danh mục lấy từ dữ liệu thật, chỉ biểu tượng là chọn theo tên)
 const CATEGORY_ICONS: { keys: string[]; icon: string }[] = [
@@ -60,13 +60,13 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
   template: `
     <div class="min-h-screen bg-slate-50 text-slate-800">
       <!-- Thanh thông báo -->
-      <div class="bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-900 text-emerald-50">
+      <div class="bg-gradient-to-r from-indigo-950 via-indigo-900 to-violet-900 text-indigo-50">
         <div class="mx-auto flex max-w-7xl items-center justify-center gap-3 px-4 py-2 text-[11px] font-medium tracking-wide sm:justify-between sm:text-xs">
           <span class="flex items-center gap-1.5">
-            <i class="pi pi-bolt text-[10px] text-emerald-300"></i> Xem giá và khám phá sản phẩm trước khi ghé cửa hàng
+            <i class="pi pi-bolt text-[10px] text-indigo-300"></i> Xem giá và khám phá sản phẩm trước khi ghé cửa hàng
           </span>
           <span class="hidden items-center gap-1.5 sm:flex">
-            <i class="pi pi-shop text-[10px] text-emerald-300"></i> Mua trực tiếp tại quầy · Giá có thể thay đổi
+            <i class="pi pi-shop text-[10px] text-indigo-300"></i> Mua trực tiếp tại quầy · Giá có thể thay đổi
           </span>
         </div>
       </div>
@@ -75,12 +75,12 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
       <header class="sticky top-0 z-30 border-b border-slate-200/70 bg-white/85 shadow-sm backdrop-blur-xl">
         <div class="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:gap-6">
           <a routerLink="/" class="flex shrink-0 items-center gap-2.5">
-            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
               <i class="pi pi-shop text-lg"></i>
             </span>
             <span class="hidden leading-4 sm:block">
               <span class="block text-lg font-extrabold tracking-tight text-slate-800">Cửa hàng tiện lợi</span>
-              <span class="block text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-600">Convenience Store</span>
+              <span class="block text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-600">Convenience Store</span>
             </span>
           </a>
 
@@ -89,7 +89,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
             <input
               type="search"
               placeholder="Tìm sản phẩm, ví dụ: nuoc ngot, mi goi, sua..."
-              class="w-full rounded-full border border-slate-200 bg-slate-100/70 py-2.5 pl-11 pr-4 text-sm text-slate-800 transition placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-100"
+              class="w-full rounded-full border border-slate-200 bg-slate-100/70 py-2.5 pl-11 pr-4 text-sm text-slate-800 transition placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-100"
               [value]="keyword()"
               (input)="onSearch($any($event.target).value)"
             />
@@ -99,9 +99,9 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
             @if (store.hotline) {
               <a
                 [href]="'tel:' + store.hotline"
-                class="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-4 transition hover:bg-emerald-50"
+                class="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-4 transition hover:bg-indigo-50"
               >
-                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-indigo-700">
                   <i class="pi pi-phone"></i>
                 </span>
                 <span class="leading-4">
@@ -111,7 +111,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
               </a>
             } @else {
               <div class="flex items-center gap-2.5 py-1 pl-1 pr-2">
-                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-indigo-700">
                   <i class="pi pi-shopping-bag"></i>
                 </span>
                 <span class="leading-4">
@@ -127,24 +127,24 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
       <!-- Banner giới thiệu -->
       <section
         class="relative overflow-hidden text-white"
-        style="background-image: linear-gradient(130deg, #022c22 0%, #047857 45%, #10b981 100%)"
+        style="background-image: linear-gradient(130deg, #1e1b4b 0%, #4338ca 45%, #6366f1 100%)"
       >
-        <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-emerald-300/20 blur-3xl"></div>
+        <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-indigo-300/20 blur-3xl"></div>
         <div class="pointer-events-none absolute -bottom-32 left-1/4 h-80 w-80 rounded-full bg-teal-300/20 blur-3xl"></div>
         <div class="pointer-events-none absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 22px 22px;"></div>
 
         <div class="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 md:grid-cols-2 lg:py-16">
           <div>
             <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-semibold tracking-wide ring-1 ring-white/25 backdrop-blur">
-              <i class="pi pi-sparkles text-[11px] text-emerald-200"></i> Cửa hàng tiện lợi
+              <i class="pi pi-sparkles text-[11px] text-indigo-200"></i> Cửa hàng tiện lợi
             </span>
             <h1 class="mt-5 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-[3.4rem]">
               Mua sắm tiện lợi
-              <span class="mt-1 block bg-gradient-to-r from-emerald-200 via-teal-100 to-white bg-clip-text text-transparent">
+              <span class="mt-1 block bg-gradient-to-r from-indigo-200 via-violet-100 to-white bg-clip-text text-transparent">
                 mỗi ngày
               </span>
             </h1>
-            <p class="mt-5 max-w-xl text-base leading-relaxed text-emerald-50/90 sm:text-lg">
+            <p class="mt-5 max-w-xl text-base leading-relaxed text-indigo-50/90 sm:text-lg">
               Đồ uống, thực phẩm, bánh kẹo và nhiều mặt hàng thiết yếu khác. Khám phá sản phẩm và giá bán ngay tại đây
               trước khi ghé cửa hàng.
             </p>
@@ -152,7 +152,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
             <div class="mt-7 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                class="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-emerald-700 shadow-xl shadow-emerald-950/20 transition hover:-translate-y-0.5 hover:bg-emerald-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
+                class="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-indigo-700 shadow-xl shadow-indigo-950/20 transition hover:-translate-y-0.5 hover:bg-indigo-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
                 (click)="productsEl.scrollIntoView({ behavior: 'smooth' })"
               >
                 Khám phá sản phẩm <i class="pi pi-arrow-down text-xs"></i>
@@ -160,11 +160,11 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
 
               @if (!loading() && !error()) {
                 <div class="flex items-center gap-2">
-                  <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-2 text-xs font-semibold text-emerald-50 ring-1 ring-white/20 backdrop-blur">
-                    <i class="pi pi-box text-[11px] text-emerald-200"></i> {{ products().length }} sản phẩm
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-2 text-xs font-semibold text-indigo-50 ring-1 ring-white/20 backdrop-blur">
+                    <i class="pi pi-box text-[11px] text-indigo-200"></i> {{ products().length }} sản phẩm
                   </span>
-                  <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-2 text-xs font-semibold text-emerald-50 ring-1 ring-white/20 backdrop-blur">
-                    <i class="pi pi-tags text-[11px] text-emerald-200"></i> {{ categories().length }} danh mục
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-2 text-xs font-semibold text-indigo-50 ring-1 ring-white/20 backdrop-blur">
+                    <i class="pi pi-tags text-[11px] text-indigo-200"></i> {{ categories().length }} danh mục
                   </span>
                 </div>
               }
@@ -176,19 +176,19 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
             <div class="absolute inset-6 rounded-[3rem] bg-white/10"></div>
             <div class="absolute inset-14 rounded-[2.5rem] bg-white/10"></div>
 
-            <div class="absolute left-1/2 top-1/2 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[2rem] bg-white text-5xl shadow-2xl shadow-emerald-950/30 sm:h-28 sm:w-28 sm:text-6xl">
+            <div class="absolute left-1/2 top-1/2 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[2rem] bg-white text-5xl shadow-2xl shadow-indigo-950/30 sm:h-28 sm:w-28 sm:text-6xl">
               🛒
             </div>
-            <div class="absolute left-[3%] top-[4%] flex h-16 w-16 -rotate-6 items-center justify-center rounded-2xl bg-white shadow-xl shadow-emerald-950/25 transition duration-500 hover:rotate-0 sm:h-20 sm:w-20 sm:text-4xl text-3xl">
+            <div class="absolute left-[3%] top-[4%] flex h-16 w-16 -rotate-6 items-center justify-center rounded-2xl bg-white shadow-xl shadow-indigo-950/25 transition duration-500 hover:rotate-0 sm:h-20 sm:w-20 sm:text-4xl text-3xl">
               🥤
             </div>
-            <div class="absolute right-[3%] top-[8%] flex h-16 w-16 rotate-6 items-center justify-center rounded-2xl bg-white shadow-xl shadow-emerald-950/25 transition duration-500 hover:rotate-0 sm:h-20 sm:w-20 sm:text-4xl text-3xl">
+            <div class="absolute right-[3%] top-[8%] flex h-16 w-16 rotate-6 items-center justify-center rounded-2xl bg-white shadow-xl shadow-indigo-950/25 transition duration-500 hover:rotate-0 sm:h-20 sm:w-20 sm:text-4xl text-3xl">
               🍜
             </div>
-            <div class="absolute bottom-[6%] left-[8%] flex h-16 w-16 rotate-3 items-center justify-center rounded-2xl bg-white shadow-xl shadow-emerald-950/25 transition duration-500 hover:rotate-0 sm:h-20 sm:w-20 sm:text-4xl text-3xl">
+            <div class="absolute bottom-[6%] left-[8%] flex h-16 w-16 rotate-3 items-center justify-center rounded-2xl bg-white shadow-xl shadow-indigo-950/25 transition duration-500 hover:rotate-0 sm:h-20 sm:w-20 sm:text-4xl text-3xl">
               🍪
             </div>
-            <div class="absolute bottom-[4%] right-[6%] flex h-16 w-16 -rotate-3 items-center justify-center rounded-2xl bg-white shadow-xl shadow-emerald-950/25 transition duration-500 hover:rotate-0 sm:h-20 sm:w-20 sm:text-4xl text-3xl">
+            <div class="absolute bottom-[4%] right-[6%] flex h-16 w-16 -rotate-3 items-center justify-center rounded-2xl bg-white shadow-xl shadow-indigo-950/25 transition duration-500 hover:rotate-0 sm:h-20 sm:w-20 sm:text-4xl text-3xl">
               🧃
             </div>
           </div>
@@ -201,7 +201,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
           <section class="mb-12">
             <div class="mb-5 flex flex-wrap items-end justify-between gap-2">
               <div>
-                <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-600">Danh mục</span>
+                <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-600">Danh mục</span>
                 <h2 class="mt-1 text-2xl font-extrabold tracking-tight text-slate-800 sm:text-3xl">Khám phá danh mục</h2>
                 <p class="mt-1 text-sm text-slate-500">Chọn một danh mục để xem nhanh các sản phẩm cùng loại.</p>
               </div>
@@ -217,17 +217,17 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                 <button
                   type="button"
-                  class="group relative flex flex-col items-center gap-2.5 rounded-2xl border p-4 text-center transition duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  class="group relative flex flex-col items-center gap-2.5 rounded-2xl border p-4 text-center transition duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   [class]="category() === null
-                    ? 'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-200 shadow-md shadow-emerald-500/10'
-                    : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-lg'"
+                    ? 'border-indigo-500 bg-indigo-50/70 ring-2 ring-indigo-200 shadow-md shadow-indigo-500/10'
+                    : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-lg'"
                   [attr.aria-pressed]="category() === null"
                   (click)="onCategory(null); productsEl.scrollIntoView({ behavior: 'smooth' })"
                 >
                   @if (category() === null) {
-                    <i class="pi pi-check-circle absolute right-2.5 top-2.5 text-sm text-emerald-600"></i>
+                    <i class="pi pi-check-circle absolute right-2.5 top-2.5 text-sm text-indigo-600"></i>
                   }
-                  <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-3xl transition duration-300 group-hover:scale-110">
+                  <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-3xl transition duration-300 group-hover:scale-110">
                     🛍️
                   </span>
                   <span class="min-h-[2.5rem] text-sm font-semibold leading-5 text-slate-800">Tất cả</span>
@@ -237,16 +237,16 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                 @for (c of categories(); track c.name; let i = $index) {
                   <button
                     type="button"
-                    class="group relative flex flex-col items-center gap-2.5 rounded-2xl border p-4 text-center transition duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    class="group relative flex flex-col items-center gap-2.5 rounded-2xl border p-4 text-center transition duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     [class]="category() === c.name
-                      ? 'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-200 shadow-md shadow-emerald-500/10'
-                      : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-lg'"
+                      ? 'border-indigo-500 bg-indigo-50/70 ring-2 ring-indigo-200 shadow-md shadow-indigo-500/10'
+                      : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-lg'"
                     [class.opacity-50]="c.count === 0"
                     [attr.aria-pressed]="category() === c.name"
                     (click)="onCategory(c.name); productsEl.scrollIntoView({ behavior: 'smooth' })"
                   >
                     @if (category() === c.name) {
-                      <i class="pi pi-check-circle absolute right-2.5 top-2.5 text-sm text-emerald-600"></i>
+                      <i class="pi pi-check-circle absolute right-2.5 top-2.5 text-sm text-indigo-600"></i>
                     }
                     <span
                       class="flex h-12 w-12 items-center justify-center rounded-2xl text-3xl transition duration-300 group-hover:scale-110"
@@ -267,12 +267,12 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
         <section #productsEl class="scroll-mt-28">
           <div class="mb-5 flex flex-wrap items-end justify-between gap-2">
             <div>
-              <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-600">Sản phẩm</span>
+              <span class="text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-600">Sản phẩm</span>
               <h2 class="mt-1 text-2xl font-extrabold tracking-tight text-slate-800 sm:text-3xl">Tất cả sản phẩm</h2>
               <p class="mt-1 text-sm text-slate-500">Tìm theo tên, thương hiệu hoặc loại hàng. Giá có thể thay đổi.</p>
             </div>
             @if (!loading() && !error()) {
-              <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-bold text-emerald-700">
+              <span class="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1.5 text-xs font-bold text-indigo-700">
                 <i class="pi pi-box text-[11px]"></i> {{ filtered().length }} sản phẩm
               </span>
             }
@@ -285,7 +285,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                 <i class="pi pi-th-large pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
                 <i class="pi pi-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400"></i>
                 <select
-                  class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-9 text-sm font-medium text-slate-700 transition hover:border-emerald-300 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-100"
+                  class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-9 text-sm font-medium text-slate-700 transition hover:border-indigo-300 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-100"
                   (change)="onCategory($any($event.target).value || null)"
                 >
                   <option value="" [selected]="category() === null">Tất cả danh mục ({{ base().length }})</option>
@@ -299,7 +299,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                 <i class="pi pi-sort-alt pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
                 <i class="pi pi-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400"></i>
                 <select
-                  class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-9 text-sm font-medium text-slate-700 transition hover:border-emerald-300 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-100"
+                  class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-9 text-sm font-medium text-slate-700 transition hover:border-indigo-300 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-100"
                   (change)="onSort($any($event.target).value)"
                 >
                   @for (o of sortOptions; track o.key) {
@@ -311,7 +311,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
               @if (keyword().trim() !== '' || category() !== null || inStockOnly()) {
                 <button
                   type="button"
-                  class="ml-auto inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3.5 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                  class="ml-auto inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3.5 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
                   (click)="clearFilters()"
                 >
                   <i class="pi pi-filter-slash text-xs"></i> Xóa bộ lọc
@@ -331,9 +331,9 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                   </span>
                 }
                 @if (category(); as cat) {
-                  <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700 ring-1 ring-emerald-100">
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 font-medium text-indigo-700 ring-1 ring-indigo-100">
                     {{ cat }}
-                    <button type="button" class="text-emerald-400 transition hover:text-emerald-700" aria-label="Bỏ lọc danh mục" (click)="onCategory(null)">
+                    <button type="button" class="text-indigo-400 transition hover:text-indigo-700" aria-label="Bỏ lọc danh mục" (click)="onCategory(null)">
                       <i class="pi pi-times text-[10px]"></i>
                     </button>
                   </span>
@@ -350,7 +350,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
               <p class="text-slate-700">{{ error() }}</p>
               <button
                 type="button"
-                class="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-600 hover:to-teal-700"
+                class="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-600 hover:to-violet-700"
                 (click)="load()"
               >
                 <i class="pi pi-replay text-xs"></i> Thử lại
@@ -378,7 +378,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                 <p class="text-slate-600">Hiện chưa có sản phẩm nào để hiển thị.</p>
               } @else {
                 <p class="text-slate-600">Không tìm thấy sản phẩm phù hợp.</p>
-                <button type="button" class="mt-3 text-sm font-semibold text-emerald-600 underline underline-offset-4" (click)="clearFilters()">
+                <button type="button" class="mt-3 text-sm font-semibold text-indigo-600 underline underline-offset-4" (click)="clearFilters()">
                   Xóa bộ lọc
                 </button>
               }
@@ -388,7 +388,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
               @for (p of visible(); track p.MaSanPham) {
                 <button
                   type="button"
-                  class="group flex flex-col overflow-hidden rounded-3xl border border-slate-200/70 bg-white text-left shadow-sm transition duration-300 hover:-translate-y-1 hover:border-emerald-300 hover:shadow-[0_18px_40px_-12px_rgba(16,185,129,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  class="group flex flex-col overflow-hidden rounded-3xl border border-slate-200/70 bg-white text-left shadow-sm transition duration-300 hover:-translate-y-1 hover:border-indigo-300 hover:shadow-[0_18px_40px_-12px_rgba(99, 102, 241,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   (click)="selected.set(p)"
                 >
                   <div class="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
@@ -417,7 +417,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                   </div>
 
                   <div class="flex flex-1 flex-col gap-1 p-4">
-                    <span class="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600">
+                    <span class="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-indigo-600">
                       {{ p.TenThuongHieu || categoryName(p) }}
                     </span>
                     <h3 class="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-5 text-slate-800">
@@ -425,9 +425,9 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                     </h3>
                     <div class="mt-auto flex items-end justify-between pt-2">
                       <span class="text-lg font-extrabold tracking-tight text-slate-900">
-                        {{ price(p) | number: '1.0-0' }}<span class="ml-0.5 text-sm font-bold text-emerald-600">₫</span>
+                        {{ price(p) | number: '1.0-0' }}<span class="ml-0.5 text-sm font-bold text-indigo-600">₫</span>
                       </span>
-                      <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-300 group-hover:bg-emerald-600 group-hover:text-white">
+                      <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition duration-300 group-hover:bg-indigo-600 group-hover:text-white">
                         <i class="pi pi-arrow-right text-[11px]"></i>
                       </span>
                     </div>
@@ -440,7 +440,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
               <div class="mt-10 text-center">
                 <button
                   type="button"
-                  class="inline-flex items-center gap-2 rounded-full border border-emerald-600 bg-white px-7 py-3 text-sm font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white hover:shadow-lg hover:shadow-emerald-500/25"
+                  class="inline-flex items-center gap-2 rounded-full border border-indigo-600 bg-white px-7 py-3 text-sm font-bold text-indigo-700 transition hover:bg-indigo-600 hover:text-white hover:shadow-lg hover:shadow-indigo-500/25"
                   (click)="loadMore()"
                 >
                   Xem thêm {{ remaining() }} sản phẩm
@@ -459,7 +459,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
             <!-- Thương hiệu -->
             <div>
               <div class="flex items-center gap-2.5">
-                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20">
                   <i class="pi pi-shop text-lg"></i>
                 </span>
                 <h2 class="text-xl font-extrabold tracking-tight text-white">Convenience Store</h2>
@@ -477,7 +477,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                   <li>
                     <button
                       type="button"
-                      class="inline-flex items-center gap-1.5 text-slate-400 transition hover:translate-x-0.5 hover:text-emerald-400"
+                      class="inline-flex items-center gap-1.5 text-slate-400 transition hover:translate-x-0.5 hover:text-indigo-400"
                       (click)="onCategory(c.name); productsEl.scrollIntoView({ behavior: 'smooth' })"
                     >
                       <i class="pi pi-angle-right text-[10px]"></i>{{ c.name }}
@@ -506,19 +506,19 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
               <ul class="mt-4 space-y-3 text-sm text-slate-400">
                 @if (store.address) {
                   <li class="flex gap-2.5">
-                    <i class="pi pi-map-marker mt-0.5 text-emerald-400"></i><span>{{ store.address }}</span>
+                    <i class="pi pi-map-marker mt-0.5 text-indigo-400"></i><span>{{ store.address }}</span>
                   </li>
                 }
                 @if (store.hotline) {
                   <li class="flex gap-2.5">
-                    <i class="pi pi-phone mt-0.5 text-emerald-400"></i>
-                    <a [href]="'tel:' + store.hotline" class="transition hover:text-emerald-400">{{ store.hotline }}</a>
+                    <i class="pi pi-phone mt-0.5 text-indigo-400"></i>
+                    <a [href]="'tel:' + store.hotline" class="transition hover:text-indigo-400">{{ store.hotline }}</a>
                   </li>
                 }
                 @if (store.email) {
                   <li class="flex gap-2.5">
-                    <i class="pi pi-envelope mt-0.5 text-emerald-400"></i>
-                    <a [href]="'mailto:' + store.email" class="break-all transition hover:text-emerald-400">{{ store.email }}</a>
+                    <i class="pi pi-envelope mt-0.5 text-indigo-400"></i>
+                    <a [href]="'mailto:' + store.email" class="break-all transition hover:text-indigo-400">{{ store.email }}</a>
                   </li>
                 }
                 @if (!store.address && !store.hotline && !store.email) {
@@ -534,7 +534,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                       target="_blank"
                       rel="noopener"
                       aria-label="Facebook"
-                      class="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-slate-300 transition hover:bg-emerald-500 hover:text-white"
+                      class="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-slate-300 transition hover:bg-indigo-500 hover:text-white"
                     >
                       <i class="pi pi-facebook"></i>
                     </a>
@@ -545,7 +545,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                       target="_blank"
                       rel="noopener"
                       aria-label="Instagram"
-                      class="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-slate-300 transition hover:bg-emerald-500 hover:text-white"
+                      class="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-slate-300 transition hover:bg-indigo-500 hover:text-white"
                     >
                       <i class="pi pi-instagram"></i>
                     </a>
@@ -556,7 +556,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
                       target="_blank"
                       rel="noopener"
                       aria-label="YouTube"
-                      class="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-slate-300 transition hover:bg-emerald-500 hover:text-white"
+                      class="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-slate-300 transition hover:bg-indigo-500 hover:text-white"
                     >
                       <i class="pi pi-youtube"></i>
                     </a>
@@ -602,15 +602,15 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
 
           <div class="flex min-w-0 flex-col gap-4">
             <div>
-              <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-600">
+              <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-600">
                 {{ p.TenThuongHieu || categoryName(p) }}
               </div>
               <h3 class="mt-1.5 text-xl font-extrabold leading-6 tracking-tight text-slate-800">{{ p.TenSanPham }}</h3>
             </div>
 
-            <div class="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 px-4 py-3 ring-1 ring-emerald-100">
-              <div class="text-[11px] font-semibold uppercase tracking-wider text-emerald-700/70">Giá bán</div>
-              <div class="mt-0.5 text-3xl font-extrabold tracking-tight text-emerald-700">
+            <div class="rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 px-4 py-3 ring-1 ring-indigo-100">
+              <div class="text-[11px] font-semibold uppercase tracking-wider text-indigo-700/70">Giá bán</div>
+              <div class="mt-0.5 text-3xl font-extrabold tracking-tight text-indigo-700">
                 {{ price(p) | number: '1.0-0' }}<span class="ml-1 text-lg font-bold">₫</span>
               </div>
             </div>
@@ -633,7 +633,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
             @if (p.MoTa) {
               <div>
                 <h4 class="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-700">
-                  <i class="pi pi-align-left text-xs text-emerald-500"></i> Mô tả
+                  <i class="pi pi-align-left text-xs text-indigo-500"></i> Mô tả
                 </h4>
                 <p class="text-sm leading-6 text-slate-600">{{ p.MoTa }}</p>
               </div>
@@ -641,7 +641,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
             @if (p.ThanhPhan) {
               <div>
                 <h4 class="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-700">
-                  <i class="pi pi-list text-xs text-emerald-500"></i> Thành phần
+                  <i class="pi pi-list text-xs text-indigo-500"></i> Thành phần
                 </h4>
                 <p class="text-sm leading-6 text-slate-600">{{ p.ThanhPhan }}</p>
               </div>
@@ -649,7 +649,7 @@ const categoryOf = (p: PublicProduct) => p.LoaiSanPham?.trim() || OTHER;
           </div>
         }
 
-        <p class="mt-5 flex items-start gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-xs leading-5 text-emerald-800 ring-1 ring-emerald-100">
+        <p class="mt-5 flex items-start gap-2 rounded-2xl bg-indigo-50 px-4 py-3 text-xs leading-5 text-indigo-800 ring-1 ring-indigo-100">
           <i class="pi pi-info-circle mt-0.5"></i>
           <span>Trang này chỉ dùng để xem thông tin. Vui lòng mua trực tiếp tại cửa hàng.</span>
         </p>

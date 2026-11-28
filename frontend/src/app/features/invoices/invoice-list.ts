@@ -19,7 +19,7 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
   template: `
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shadow-lg shadow-sky-500/20">
           <i class="pi pi-receipt text-lg"></i>
         </span>
         <div>
@@ -47,8 +47,8 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
       @for (t of tabs; track t.key) {
         <button
           type="button"
-          class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition sm:flex-none"
-          [class]="tab() === t.key ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'"
+          class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition sm:flex-none"
+          [class]="tab() === t.key ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'"
           (click)="setTab(t.key)"
         >
           {{ t.label }}
@@ -68,10 +68,10 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
     <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
         <div class="flex items-center gap-2 text-sm font-medium text-slate-700">
-          <i class="pi pi-list text-emerald-500"></i>
+          <i class="pi pi-list text-indigo-500"></i>
           Danh sách hóa đơn
         </div>
-        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
           {{ items().length }} hóa đơn
         </span>
       </div>
@@ -90,7 +90,7 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
           </thead>
           <tbody class="divide-y divide-slate-100">
             @for (inv of items(); track inv.MaHoaDon) {
-              <tr class="transition-colors hover:bg-emerald-100/60">
+              <tr class="transition-colors hover:bg-indigo-100/60">
                 <td class="px-4 py-3.5">
                   <span class="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-700">
                     #{{ inv.MaHoaDon }}
@@ -147,7 +147,7 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
                 <td colspan="6" class="px-4 py-16 text-center">
                   @if (loading()) {
                     <div class="flex flex-col items-center gap-3 text-slate-500">
-                      <i class="pi pi-spin pi-spinner text-2xl text-emerald-500"></i>
+                      <i class="pi pi-spin pi-spinner text-2xl text-indigo-500"></i>
                       <span class="text-sm">Đang tải hóa đơn...</span>
                     </div>
                   } @else {
@@ -222,8 +222,23 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
             </thead>
             <tbody class="divide-y divide-slate-100">
               @for (l of inv.chi_tiet_hoa_don ?? []; track l.MaChiTietHoaDon) {
-                <tr class="transition-colors hover:bg-emerald-50/70">
-                  <td class="px-3 py-2.5 text-slate-700">{{ l.TenSanPham }}</td>
+                <tr class="transition-colors hover:bg-indigo-50/70">
+                  <td class="px-3 py-2.5">
+                    <div class="flex items-center gap-2.5">
+                      @if (l.san_pham?.hinh_anh_url) {
+                        <img
+                          [src]="l.san_pham?.hinh_anh_url ?? ''"
+                          [alt]="l.TenSanPham"
+                          class="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
+                        />
+                      } @else {
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+                          <i class="pi pi-image text-xs"></i>
+                        </div>
+                      }
+                      <span class="text-slate-700">{{ l.TenSanPham }}</span>
+                    </div>
+                  </td>
                   <td class="px-3 py-2.5 text-right tabular-nums text-slate-600">{{ l.SoLuong }}</td>
                   <td class="px-3 py-2.5 text-right font-medium tabular-nums text-slate-800">
                     {{ l.ThanhTien | number: '1.0-0' }} ₫
@@ -234,24 +249,29 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
           </table>
         </div>
 
-        <div class="mt-3 rounded-xl bg-slate-50 p-4 text-sm">
-          <div class="ml-auto w-full space-y-1.5 sm:w-72">
+        <div class="mt-3 overflow-hidden rounded-xl border border-slate-200 text-sm">
+          <div class="divide-y divide-slate-100">
+            <div class="flex items-center justify-between px-4 py-2.5">
+              <span class="text-slate-500">Tiền hàng</span>
+              <span class="tabular-nums text-slate-700">{{ subtotal(inv) | number: '1.0-0' }} ₫</span>
+            </div>
             @if (discount(inv) > 0) {
-              <div class="flex items-center justify-between text-slate-600">
-                <span>Tiền hàng</span>
-                <span class="tabular-nums">{{ subtotal(inv) | number: '1.0-0' }} ₫</span>
-              </div>
-              <div class="flex items-start justify-between gap-3 text-emerald-700">
-                <span>
-                  Giảm giá{{ inv.khuyen_mai ? ' (' + inv.khuyen_mai.TenChuongTrinh + ')' : '' }}
+              <div class="flex items-center justify-between gap-3 px-4 py-2.5">
+                <span class="min-w-0 text-indigo-700">
+                  Giảm giá
+                  @if (inv.khuyen_mai) {
+                    <span class="block truncate text-xs text-indigo-600/80">{{ inv.khuyen_mai.TenChuongTrinh }}</span>
+                  }
                 </span>
-                <span class="shrink-0 font-medium tabular-nums">-{{ discount(inv) | number: '1.0-0' }} ₫</span>
+                <span class="shrink-0 font-medium tabular-nums text-indigo-700">
+                  -{{ discount(inv) | number: '1.0-0' }} ₫
+                </span>
               </div>
             }
-            <div class="flex items-center justify-between border-t border-slate-200 pt-2 text-base font-semibold text-slate-800">
-              <span>Tổng thanh toán</span>
-              <span class="tabular-nums text-emerald-700">{{ inv.TongTien | number: '1.0-0' }} ₫</span>
-            </div>
+          </div>
+          <div class="flex items-center justify-between bg-indigo-50/70 px-4 py-3">
+            <span class="font-semibold text-slate-800">Tổng thanh toán</span>
+            <span class="text-base font-bold tabular-nums text-indigo-700">{{ inv.TongTien | number: '1.0-0' }} ₫</span>
           </div>
         </div>
 
@@ -296,8 +316,8 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
     >
       @if (paying(); as inv) {
         <div class="space-y-4">
-          <div class="rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 px-5 py-4 text-white shadow-lg shadow-emerald-600/20">
-            <div class="flex items-center justify-between text-xs text-emerald-100">
+          <div class="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 px-5 py-4 text-white shadow-lg shadow-indigo-600/20">
+            <div class="flex items-center justify-between text-xs text-indigo-100">
               <span>Hóa đơn #{{ inv.MaHoaDon }}</span>
               <i class="pi pi-credit-card"></i>
             </div>
@@ -355,7 +375,7 @@ type Severity = 'success' | 'warn' | 'danger' | 'secondary';
                 (input)="given.set($any($event.target).value === '' ? null : +$any($event.target).value)"
               />
               @if (given() !== null && given()! >= amount(inv)) {
-                <div class="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                <div class="flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800">
                   <span>Tiền thừa</span>
                   <b class="tabular-nums">{{ given()! - amount(inv) | number: '1.0-0' }} ₫</b>
                 </div>

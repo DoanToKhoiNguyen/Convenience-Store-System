@@ -13,7 +13,7 @@ import { ProductService } from '../product.service';
     <div class="space-y-4">
       <div class="flex flex-wrap items-end justify-between gap-3">
         <div class="flex items-center gap-3">
-          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20">
             <i class="pi pi-history text-lg"></i>
           </span>
           <div>
@@ -24,7 +24,7 @@ import { ProductService } from '../product.service';
 
         <button
           type="button"
-          class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-emerald-300 hover:text-emerald-700"
+          class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700"
           (click)="taiLichSu()"
         >
           <i class="pi pi-refresh text-xs"></i> Tải lại
@@ -34,10 +34,10 @@ import { ProductService } from '../product.service';
       <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5">
           <div class="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <i class="pi pi-list text-emerald-500"></i>
+            <i class="pi pi-list text-indigo-500"></i>
             Danh sách thay đổi
           </div>
-          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+          <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
             {{ danhSachLichSu().length }} bản ghi
           </span>
         </div>
@@ -57,7 +57,7 @@ import { ProductService } from '../product.service';
             </thead>
             <tbody class="divide-y divide-slate-100">
               @for (item of danhSachLichSu(); track item.MaCapNhat) {
-                <tr class="transition-colors hover:bg-emerald-100/60">
+                <tr class="transition-colors hover:bg-indigo-100/60">
                   <td class="whitespace-nowrap px-4 py-3.5">
                     <div class="flex items-center gap-1.5 text-slate-600">
                       <i class="pi pi-clock text-xs text-slate-400"></i>
@@ -77,11 +77,11 @@ import { ProductService } from '../product.service';
                     </div>
                   </td>
                   <td class="px-4 py-3.5 text-right tabular-nums text-slate-500">{{ item.SoLuongHienTai }}</td>
-                  <td class="px-4 py-3.5 text-right font-semibold tabular-nums text-emerald-600">{{ item.SoLuongMoi }}</td>
+                  <td class="px-4 py-3.5 text-right font-semibold tabular-nums text-indigo-600">{{ item.SoLuongMoi }}</td>
                   <td class="px-4 py-3.5 text-center">
                     <span
                       class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums"
-                      [class]="(item.SoLuongMoi - item.SoLuongHienTai) >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'"
+                      [class]="(item.SoLuongMoi - item.SoLuongHienTai) >= 0 ? 'bg-indigo-50 text-indigo-700' : 'bg-red-50 text-red-700'"
                     >
                       {{ item.SoLuongMoi - item.SoLuongHienTai > 0 ? '+' : '' }}{{ item.SoLuongMoi - item.SoLuongHienTai }}
                     </span>

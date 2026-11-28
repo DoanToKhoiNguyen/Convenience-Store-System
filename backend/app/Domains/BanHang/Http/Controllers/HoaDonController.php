@@ -109,7 +109,12 @@ class HoaDonController extends Controller
         $this->service->huyQuaHan();
 
         $user = $request->user();
-        $query = HoaDon::with(['chiTietHoaDon', 'taiKhoan', 'khuyenMai'])->orderBy('MaHoaDon', 'desc');
+        $query = HoaDon::with([
+            'chiTietHoaDon',
+            'chiTietHoaDon.sanPham' => fn ($q) => $q->select('MaSanPham', 'HinhAnh'),
+            'taiKhoan',
+            'khuyenMai',
+        ])->orderBy('MaHoaDon', 'desc');
 
         if ((int) $user->MaVaiTro === 3) {
             $query->where(function ($q) use ($user) {

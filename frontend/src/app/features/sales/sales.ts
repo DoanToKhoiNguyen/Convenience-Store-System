@@ -41,7 +41,7 @@ const categoryOf = (p: Product) => p.LoaiSanPham?.trim() || OTHER;
 
 // Màu nền cho sản phẩm chưa có ảnh
 const COLORS = [
-  'bg-emerald-100 text-emerald-700',
+  'bg-indigo-100 text-indigo-700',
   'bg-sky-100 text-sky-700',
   'bg-amber-100 text-amber-700',
   'bg-rose-100 text-rose-700',
@@ -115,7 +115,7 @@ const COLORS = [
               type="text"
               autocomplete="off"
               placeholder="Gõ chữ cái đầu của tên sản phẩm, ví dụ: n, nuoc, tra..."
-              class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-12 text-base shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100/70"
+              class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-12 text-base shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100/70"
               [value]="keyword()"
               (input)="keyword.set($any($event.target).value)"
               (keydown.enter)="addFirst()"
@@ -168,7 +168,7 @@ const COLORS = [
                 {{ products().length === 0 ? 'Chưa có sản phẩm nào đang bán.' : 'Không tìm thấy sản phẩm phù hợp.' }}
               </p>
               @if (keyword() || category()) {
-                <button type="button" class="mt-3 text-sm font-medium text-emerald-600 underline-offset-2 hover:underline" (click)="clearFilters()">
+                <button type="button" class="mt-3 text-sm font-medium text-indigo-600 underline-offset-2 hover:underline" (click)="clearFilters()">
                   Xóa bộ lọc
                 </button>
               }
@@ -178,9 +178,9 @@ const COLORS = [
               @for (p of filtered(); track p.MaSanPham) {
                 <button
                   type="button"
-                  class="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                  class="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-sm"
                   [class.ring-2]="!!keyword().trim() && p === firstAvailable()"
-                  [class.ring-emerald-400]="!!keyword().trim() && p === firstAvailable()"
+                  [class.ring-indigo-400]="!!keyword().trim() && p === firstAvailable()"
                   [disabled]="stockOf(p) <= 0"
                   (click)="add(p)"
                 >
@@ -206,7 +206,7 @@ const COLORS = [
                     }
 
                     @if (cartQty().get(p.MaSanPham); as n) {
-                      <span class="absolute right-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white shadow-sm ring-2 ring-white/70">
+                      <span class="absolute right-2 top-2 rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-semibold text-white shadow-sm ring-2 ring-white/70">
                         ×{{ n }}
                       </span>
                     }
@@ -222,7 +222,7 @@ const COLORS = [
                       {{ p.TenSanPham }}
                     </div>
                     <div class="mt-1.5 flex items-end justify-between gap-2">
-                      <span class="font-bold text-emerald-600">{{ price(p) | number: '1.0-0' }} ₫</span>
+                      <span class="font-bold text-indigo-600">{{ price(p) | number: '1.0-0' }} ₫</span>
                       <span class="whitespace-nowrap text-xs" [class]="stockClass(p)">{{ stockLabel(p) }}</span>
                     </div>
                   </div>
@@ -237,7 +237,7 @@ const COLORS = [
       <aside #cartEl class="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
         <div class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
           <div class="flex items-center gap-2.5">
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
               <i class="pi pi-shopping-cart text-sm"></i>
             </span>
             <div>
@@ -335,13 +335,13 @@ const COLORS = [
               <span>Tạm tính</span><span class="tabular-nums">{{ total() | number: '1.0-0' }} ₫</span>
             </div>
             @if (discount() > 0) {
-              <div class="flex items-baseline justify-between text-sm text-emerald-700">
+              <div class="flex items-baseline justify-between text-sm text-indigo-700">
                 <span>Giảm giá ({{ promoName() }})</span><span class="tabular-nums">-{{ discount() | number: '1.0-0' }} ₫</span>
               </div>
             }
             <div class="flex items-baseline justify-between border-t border-slate-100 pt-2">
               <span class="font-medium text-slate-700">Cần thanh toán</span>
-              <span class="text-2xl font-bold tabular-nums text-emerald-700">{{ payable() | number: '1.0-0' }} ₫</span>
+              <span class="text-2xl font-bold tabular-nums text-indigo-700">{{ payable() | number: '1.0-0' }} ₫</span>
             </div>
           </div>
 
@@ -349,9 +349,9 @@ const COLORS = [
             @for (m of methods; track m.name) {
               <button
                 type="button"
-                class="flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition"
+                class="flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition"
                 [class]="method() === m.name
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-200'
+                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200'
                   : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'"
                 (click)="method.set(m.name)"
               >
@@ -362,11 +362,11 @@ const COLORS = [
 
           @if (method() === 'Tiền mặt') {
             <div>
-              <label class="mb-1.5 block text-xs font-medium text-slate-600">Khách đưa (₫)</label>
+              <label class="mb-1.5 block text-xs font-semibold text-slate-600">Khách đưa (₫)</label>
               <input
                 type="number"
                 min="0"
-                class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-right text-lg font-semibold tabular-nums transition focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-100/70"
+                class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-right text-lg font-semibold tabular-nums transition focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100/70"
                 placeholder="0"
                 [value]="given() ?? ''"
                 (input)="onGiven($any($event.target).value)"
@@ -378,8 +378,8 @@ const COLORS = [
                     <button
                       type="button"
                       [class]="given() === v
-                        ? 'rounded-full border border-emerald-500 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700'
-                        : 'rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-700'"
+                        ? 'rounded-full border border-indigo-500 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700'
+                        : 'rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-indigo-400 hover:text-indigo-700'"
                       (click)="given.set(v)"
                     >
                       {{ v === payable() ? 'Vừa đủ' : (v | number: '1.0-0') }}
@@ -389,7 +389,7 @@ const COLORS = [
               }
 
               @if (given() !== null && given()! >= payable() && payable() > 0) {
-                <div class="mt-2 flex items-baseline justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800">
+                <div class="mt-2 flex items-baseline justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-indigo-800">
                   <span class="text-sm">Tiền thừa</span>
                   <b class="text-lg tabular-nums">{{ given()! - payable() | number: '1.0-0' }} ₫</b>
                 </div>
@@ -432,7 +432,7 @@ const COLORS = [
     @if (lines().length > 0) {
       <button
         type="button"
-        class="fixed inset-x-4 bottom-4 z-10 flex items-center justify-between rounded-2xl bg-emerald-600 px-4 py-3 text-white shadow-xl shadow-emerald-900/20 transition active:scale-[0.99] lg:hidden"
+        class="fixed inset-x-4 bottom-4 z-10 flex items-center justify-between rounded-2xl bg-indigo-600 px-4 py-3 text-white shadow-xl shadow-indigo-900/20 transition active:scale-[0.99] lg:hidden"
         (click)="cartEl.scrollIntoView({ behavior: 'smooth' })"
       >
         <span class="flex items-center gap-2 text-sm font-medium">

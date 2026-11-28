@@ -15,16 +15,19 @@ type Tab = 'sap_het_han' | 'da_loai';
   imports: [RouterLink, DatePipe, ButtonModule, TagModule],
   template: `
     <div class="mb-4 flex gap-2 border-b border-slate-200">
-      <a routerLink="/admin/stock-alerts" class="-mb-px border-b-2 border-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:text-emerald-700">
+      <a routerLink="/admin/stock-alerts" class="-mb-px border-b-2 border-transparent px-4 py-2 text-sm font-medium text-slate-500 hover:text-indigo-700">
         Sắp hết hàng
       </a>
-      <span class="-mb-px border-b-2 border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700">Sắp hết hạn</span>
+      <span class="-mb-px border-b-2 border-indigo-600 px-4 py-2 text-sm font-medium text-indigo-700">Sắp hết hạn</span>
     </div>
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-2xl font-semibold text-slate-800">Cảnh báo hạn sử dụng</h1>
-        <p class="text-sm text-slate-500">Lô còn hàng sắp hết hạn; lô quá hạn được hệ thống tự động loại khỏi tồn kho</p>
+        <p class="text-sm text-slate-500">
+          Lô còn hàng sắp hết hạn; lô quá hạn tự động bị loại, các lần giảm tồn kho tại trang Cập nhật tồn kho
+          cũng được ghi vào sổ hao hụt
+        </p>
       </div>
       <p-button label="Tải lại" icon="pi pi-refresh" [outlined]="true" [loading]="loading() || loadingRemoved()" (onClick)="load()" />
     </div>
@@ -44,7 +47,7 @@ type Tab = 'sap_het_han' | 'da_loai';
           <i class="pi pi-inbox"></i>
         </div>
         <div>
-          <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Đã tự động loại</div>
+          <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Lượt hao hụt đã ghi nhận</div>
           <div class="text-2xl font-semibold tabular-nums text-slate-700">{{ removedCount() }}</div>
         </div>
       </div>
@@ -53,8 +56,8 @@ type Tab = 'sap_het_han' | 'da_loai';
     <div class="mb-4 inline-flex items-center gap-1 rounded-xl border border-slate-200/70 bg-white p-1 shadow-sm">
       <button
         type="button"
-        class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-        [class]="tab() === 'sap_het_han' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-emerald-700'"
+        class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+        [class]="tab() === 'sap_het_han' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-700'"
         (click)="chonTab('sap_het_han')"
       >
         <i class="pi pi-clock text-xs"></i>
@@ -72,18 +75,18 @@ type Tab = 'sap_het_han' | 'da_loai';
       </button>
       <button
         type="button"
-        class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-        [class]="tab() === 'da_loai' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-emerald-700'"
+        class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+        [class]="tab() === 'da_loai' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-700'"
         (click)="chonTab('da_loai')"
       >
         <i class="pi pi-inbox text-xs"></i>
-        Đã loại
+        Hao hụt
         @if (notice.moiDaLoai()) {
           <span
             class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold leading-none"
             [class]="tab() === 'da_loai' ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'"
-            [title]="removedCount() + ' lô đã bị loại'"
-            [attr.aria-label]="removedCount() + ' lô đã bị loại'"
+            [title]="removedCount() + ' lượt hao hụt đã ghi nhận'"
+            [attr.aria-label]="removedCount() + ' lượt hao hụt đã ghi nhận'"
           >
             <i class="pi pi-bell text-[9px]"></i>
           </span>
@@ -109,7 +112,7 @@ type Tab = 'sap_het_han' | 'da_loai';
           </thead>
           <tbody class="divide-y divide-slate-100">
             @for (l of items(); track l.MaLoHang) {
-              <tr class="transition-colors hover:bg-emerald-100/60">
+              <tr class="transition-colors hover:bg-indigo-100/60">
                 <td class="px-4 py-3">
                   <div class="font-medium text-slate-800">{{ l.TenSanPham }}</div>
                   @if (l.LoaiSanPham) {
@@ -128,7 +131,7 @@ type Tab = 'sap_het_han' | 'da_loai';
                 <td colspan="5" class="px-4 py-12 text-center">
                   @if (loading()) {
                     <span class="inline-flex items-center gap-2 text-slate-400">
-                      <i class="pi pi-spin pi-spinner text-emerald-500"></i> Đang tải...
+                      <i class="pi pi-spin pi-spinner text-indigo-500"></i> Đang tải...
                     </span>
                   } @else {
                     <span class="text-slate-500">Không có lô hàng nào sắp hết hạn.</span>
@@ -147,16 +150,18 @@ type Tab = 'sap_het_han' | 'da_loai';
               <th class="px-4 py-3 font-semibold">Sản phẩm</th>
               <th class="px-4 py-3 font-semibold">Mã lô</th>
               <th class="px-4 py-3 font-semibold">Hạn sử dụng</th>
-              <th class="px-4 py-3 text-right font-semibold">Số lượng đã loại</th>
-              <th class="px-4 py-3 font-semibold">Thời gian loại</th>
+              <th class="px-4 py-3 font-semibold">Lý do</th>
+              <th class="px-4 py-3 text-right font-semibold">Số lượng</th>
+              <th class="px-4 py-3 font-semibold">Thời gian</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             @for (r of removed(); track r.MaLoai) {
-              <tr class="transition-colors hover:bg-emerald-100/60">
+              <tr class="transition-colors hover:bg-indigo-100/60">
                 <td class="px-4 py-3 font-medium text-slate-800">{{ r.TenSanPham }}</td>
                 <td class="px-4 py-3 font-medium text-slate-700">{{ r.MaLo }}</td>
                 <td class="px-4 py-3 text-slate-600">{{ r.HanSuDung | date: 'dd/MM/yyyy' }}</td>
+                <td class="px-4 py-3 text-slate-600">{{ r.LyDo ?? '—' }}</td>
                 <td class="px-4 py-3 text-right font-semibold tabular-nums text-red-600">{{ r.SoLuongLoai }}</td>
                 <td class="px-4 py-3">
                   <div class="text-slate-600">{{ r.ThoiGianLoai | date: 'dd/MM/yyyy HH:mm' }}</div>
@@ -165,13 +170,13 @@ type Tab = 'sap_het_han' | 'da_loai';
               </tr>
             } @empty {
               <tr>
-                <td colspan="5" class="px-4 py-12 text-center">
+                <td colspan="6" class="px-4 py-12 text-center">
                   @if (loadingRemoved()) {
                     <span class="inline-flex items-center gap-2 text-slate-400">
-                      <i class="pi pi-spin pi-spinner text-emerald-500"></i> Đang tải...
+                      <i class="pi pi-spin pi-spinner text-indigo-500"></i> Đang tải...
                     </span>
                   } @else {
-                    <span class="text-slate-500">Chưa có lô hàng nào bị loại.</span>
+                    <span class="text-slate-500">Chưa có lần hao hụt nào được ghi nhận.</span>
                   }
                 </td>
               </tr>
@@ -182,8 +187,9 @@ type Tab = 'sap_het_han' | 'da_loai';
     }
 
     <p class="mt-3 text-xs text-slate-500">
-      Mức cảnh báo lấy từ cột "Cảnh báo HSD (ngày)" của từng sản phẩm. Lô quá hạn được hệ thống tự động trừ khỏi tồn kho
-      (khi mở trang này hoặc theo lịch mỗi phút) và ghi vào tab "Đã loại"; không cần thao tác tay và không thể hoàn lại.
+      Mức cảnh báo lấy từ cột "Cảnh báo HSD (ngày)" của từng sản phẩm. Lô quá hạn tự động bị trừ khỏi tồn kho
+      (khi mở trang này hoặc theo lịch mỗi phút) và ghi vào tab "Hao hụt". Các lần giảm tồn kho tại trang
+      Cập nhật tồn kho cũng được ghi nhận ở đây; không thể hoàn lại.
     </p>
   `,
 })
